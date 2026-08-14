@@ -72,7 +72,7 @@ Usage:
 
 Commands:
   install                         Install/configure node, first peer, enable service
-  show [--uri|--qr|--file|--all]  Show connection info for a peer (default: --all)
+  show [--uri|--qr|--file|--conf|--all]  Show connection info for a peer (default: --all)
   config                          Show node summary (no server private key)
   config set endpoint <host[:port]>
                                   Set public endpoint used in client profiles
@@ -215,7 +215,7 @@ func cmdInstall(args []string) error {
 	fmt.Println("Next steps:")
 	fmt.Println("  1. nbvpn show          # URI + QR + profile file (secrets!)")
 	fmt.Println("  2. Download a client from your NetBridge store page")
-	fmt.Println("  3. Import the URI / QR / .nbvpn.json on the device")
+	fmt.Println("  3. Import the URI / QR / .nbvpn.json, or WireGuard .conf (nbvpn show --conf)")
 	fmt.Println()
 
 	// show first active peer
@@ -315,6 +315,7 @@ const (
 	showModeURI
 	showModeQR
 	showModeFile
+	showModeConf
 )
 
 func cmdShow(args []string) error {
@@ -330,8 +331,10 @@ func cmdShow(args []string) error {
 			mode = showModeQR
 		case "--file":
 			mode = showModeFile
+		case "--conf":
+			mode = showModeConf
 		case "-h", "--help":
-			fmt.Println("Usage: nbvpn show [--uri|--qr|--file|--all] [peer-id|name]")
+			fmt.Println("Usage: nbvpn show [--uri|--qr|--file|--conf|--all] [peer-id|name]")
 			return nil
 		default:
 			if strings.HasPrefix(a, "-") {
@@ -384,6 +387,14 @@ func showPeer(s *state.Store, st *state.ServerState, p *state.PeerRecord, mode s
 	if err := s.WritePeerProfileJSON(p.ID, raw); err != nil {
 		return err
 	}
+	confBody, err := profile.ToWireGuardConf(prof)
+	if err != nil {
+		return err
+	}
+	confPath := s.PeerWGConfPath(p.ID)
+	if err := s.WritePeerWGConf(p.ID, confBody); err != nil {
+		return err
+	}
 	pngPath := s.PeerQRPath(p.ID)
 	if err := qr.WritePNG(uri, pngPath); err != nil {
 		fmt.Fprintf(os.Stderr, "warning: could not write QR PNG: %v\n", err)
@@ -404,6 +415,9 @@ func showPeer(s *state.Store, st *state.ServerState, p *state.PeerRecord, mode s
 		fmt.Println()
 		fmt.Println("--- file ---")
 		fmt.Println(path)
+		fmt.Println()
+		fmt.Println("--- WireGuard .conf (official WireGuard / wg-quick) ---")
+		fmt.Println(confPath)
 		if pngPath != "" {
 			fmt.Println()
 			fmt.Println("--- QR PNG ---")
@@ -433,10 +447,14 @@ func showPeer(s *state.Store, st *state.ServerState, p *state.PeerRecord, mode s
 		fmt.Println(uri)
 	case showModeFile:
 		fmt.Println(path)
+		fmt.Println(confPath)
 		if pngPath != "" {
 			fmt.Println(pngPath)
 			fmt.Fprintln(os.Stderr, "(PNG encodes full nbvpn: URI, not the numeric peer id in the filename)")
 		}
+	case showModeConf:
+		fmt.Println(confPath)
+		fmt.Fprintln(os.Stderr, "(wg-quick / official WireGuard client config; contains private key)")
 	case showModeQR:
 		fmt.Fprintln(os.Stderr, "二维码内容 = 完整 nbvpn: URI（以 nbvpn:1? 开头；不是 peer 数字 id）")
 		fmt.Fprintf(os.Stderr, "payload prefix: %s…\n", qrPayloadPrefix(uri))
@@ -714,6 +732,7 @@ func cmdPeerRevoke(idOrName string) error {
 	}
 	// remove exportable profile + QR PNG so old file paths are gone
 	_ = os.Remove(s.PeerProfilePath(p.ID))
+	_ = os.Remove(s.PeerWGConfPath(p.ID))
 	_ = os.Remove(s.PeerQRPath(p.ID))
 	if err := wg.Sync(s, st, mustAllPeers(s)); err != nil {
 		fmt.Fprintf(os.Stderr, "warning: sync wg config: %v\n", err)

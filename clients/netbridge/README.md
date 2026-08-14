@@ -2,6 +2,22 @@
 
 Flutter 四端客户端：Android / iOS / Windows / macOS。
 
+## 本机 macOS 业务（暂不分发）
+
+macOS **不**走 GitHub Releases / OpenList / Pages 下载。本机使用：
+
+```bash
+cd clients/netbridge
+flutter pub get && flutter gen-l10n
+flutter run -d macos
+```
+
+- Flutter 内隧道：无 Network Extension 签名时多为 **Stub**（UI / 导入）。
+- **真 VPN**：安装[官方 WireGuard](https://www.wireguard.com/install/)，用节点上 `nbvpn show --conf` 导出的 `.conf` 导入激活。
+- 可选本机 ad-hoc `.app`：`./scripts/package-all.sh`（仅本机，不上架）。
+
+详见 `docs/delivery/nbvpn/TRY-CONNECT.md`「本机 macOS 业务」。
+
 ## 打包分发
 
 ```bash
@@ -13,9 +29,9 @@ cd clients/netbridge
 
 | 产物 | 说明 |
 |------|------|
-| `NetBridge-android-arm64.apk` | R8 slim arm64，debug-signed 可侧载 |
-| `NetBridge-macOS.dmg` | ad-hoc 签名，不上架 |
-| `NetBridge-iOS.ipa` | 无 Team 时为 UNSIGNED stub |
-| `NetBridge-windows.exe` | 需在 Windows 上构建 |
+| `NetBridge-android-arm64.apk` | R8 slim arm64，debug-signed 可侧载；**CI / Releases 主路径** |
+| `NetBridge-windows.exe` | Windows 上构建；**CI / Releases 主路径** |
+| `NetBridge-macOS.dmg` / `.app` | **仅本机可选**；CI **不**上传 Releases；不上 OpenList/Pages |
+| `NetBridge-iOS.ipa` | 无 Team 时为 UNSIGNED stub；CI 跳过签名 |
 
 试用步骤：`docs/delivery/nbvpn/TRY-CONNECT.md`

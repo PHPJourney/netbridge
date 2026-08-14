@@ -10,7 +10,7 @@
     "openlistBrowse": "http://154.37.213.245:5244/store",
     "downloadUrlHint": "Primary: GitHub Releases latest/download/<filename>. OpenList remains an optional mirror — see docs/delivery/nbvpn/OPENLIST-UPLOAD.md",
     "status": "github_releases_placeholder",
-    "note": "URLs point at GitHub Releases latest/download placeholders until the first v* tag publishes artifacts. CI: build-server.yml + build-clients.yml. Store UI on GitHub Pages.",
+    "note": "URLs point at GitHub Releases latest/download placeholders until the first v* tag publishes artifacts. CI: build-server.yml + build-clients.yml (Android + Windows clients; macOS/iOS distribution skipped). Store UI on GitHub Pages. macOS = local source run only — no DMG/app.zip in Releases.",
     "officialSite": "https://phpjourney.github.io/netbridge/",
     "termsUrl": "./terms.html",
     "privacyUrl": "./privacy.html",
@@ -39,12 +39,13 @@
     },
     "macos": {
       "label": "macOS",
-      "version": "latest",
-      "sha256": "pending-first-release",
-      "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-macOS.app.zip",
-      "filename": "NetBridge-macOS.app.zip",
-      "status": "ci_placeholder",
-      "note": "CI ad-hoc / unsigned zip (no Developer ID / notarization yet)."
+      "version": "—",
+      "sha256": "",
+      "url": "",
+      "filename": "",
+      "status": "local_source_only",
+      "note": "源码本机运行 / 暂不分发。flutter run -d macos；真隧道用官方 WireGuard + nbvpn show --conf。详见 TRY-CONNECT.md「本机 macOS 业务」。",
+      "noteEn": "Run from source locally / not distributed. flutter run -d macos; real tunnel: official WireGuard + nbvpn show --conf. See TRY-CONNECT.md."
     },
     "android": {
       "label": "Android",
@@ -62,7 +63,7 @@
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/IOS-CI-SKIP.txt",
       "filename": "IOS-CI-SKIP.txt",
       "status": "skipped_signing",
-      "note": "CI skips signed IPA (no Apple certs). Signing later."
+      "note": "CI skips signed IPA (no Apple certs). Signing later. Not a installable download."
     }
   },
   "servers": {

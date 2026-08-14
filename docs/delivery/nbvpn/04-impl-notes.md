@@ -25,8 +25,8 @@
 - **路径**：`clients/netbridge/`
 - **试用产物**（`clients/netbridge/dist/`，`scripts/package-dist.sh`）：
   - **Android**：`NetBridge-android.apk`（release + debug 签名，侧载；**真隧道优先**）SHA256 `1caeea6614cb7700b83ade088ffd77e21479e1afb9f6d5e01c51a4accf021a0e`
-  - **macOS**：`NetBridge-macOS.app` / `.zip` — **ad-hoc**（`codesign --sign -`，`Signature=adhoc`）；entitlements=`Runner/AdHoc.entitlements`（无 NE/App Group）
-  - **诚实说明**：ad-hoc **不是** App Store / Developer ID；macOS 真 WG 隧道仍需 Team + NE；当前 `extensionTargetLinked=false` → **Stub** 可测 UI/导入
+  - **macOS**：**暂不分发**（CI 不挂 DMG/app.zip）。本机：`flutter run -d macos`；真隧道 = 官方 WireGuard + `nbvpn show --conf`。可选本机 ad-hoc `.app`（不上架）
+  - **诚实说明**：无 Team + NE 时 Flutter 内为 **Stub**；业务过网用官方 WireGuard `.conf`
   - 部署目标 macOS 12.0（`wireguard_flutter` 要求）
 - **测试**：`flutter test` 全绿；`go test ./...` 全绿
 - **详述**：`clients/netbridge/IMPL.md`
@@ -54,4 +54,5 @@
 | 2026-08-14 | VPS Debian 真 wg 冒烟；Store mock 链接；URI 粘贴清洗；ufw 51820；Sync 修复 |
 | 2026-08-14 | build-release amd64+arm64；FIREWALL.md；peer/URI UX；客户端导入+错误文案；VPS 热更 |
 | 2026-08-14 | per-distro install；Android APK + macOS ad-hoc；TRY-CONNECT；VPS sync |
+| 2026-08-14 | macOS 暂不分发：CI skip；Store 标「源码本机」；`nbvpn show --conf`；TRY-CONNECT 本机业务 |
 | 2026-08-14 | Windows Server MVP：exe + install.ps1；scope IN-02b；releases.windows |

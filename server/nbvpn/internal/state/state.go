@@ -129,6 +129,11 @@ func (s *Store) PeerQRPath(id string) string {
 	return filepath.Join(s.peersDir(), id+".png")
 }
 
+// PeerWGConfPath is a wg-quick / official WireGuard client .conf for this peer.
+func (s *Store) PeerWGConfPath(id string) string {
+	return filepath.Join(s.peersDir(), id+".conf")
+}
+
 func (s *Store) WGConfPath() string {
 	return filepath.Join(s.DataDir, "nbvpn.conf")
 }
@@ -249,6 +254,13 @@ func (s *Store) WritePeerProfileJSON(id string, data []byte) error {
 		return err
 	}
 	return os.WriteFile(s.PeerProfilePath(id), data, 0o600)
+}
+
+func (s *Store) WritePeerWGConf(id string, conf string) error {
+	if err := s.EnsureDirs(); err != nil {
+		return err
+	}
+	return os.WriteFile(s.PeerWGConfPath(id), []byte(conf), 0o600)
 }
 
 func (s *Store) RemoveAll() error {

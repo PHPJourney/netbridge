@@ -1,7 +1,9 @@
 # 试用连接步骤（nbvpn）
 
 > 本机试用：安装客户端 → 从 VPS 取 URI → 粘贴导入 → 连接。  
-> **不是** App Store / 正式分发说明。macOS 为 **本机 ad-hoc 签名**；iOS 无 Team 时 IPA 为 **未签名流水线产物**，普通设备无法安装。
+> **不是** App Store / 正式分发说明。  
+> **macOS 暂不分发**（无 DMG / app.zip 上架 Releases / OpenList / Pages）：以 **源码本机业务** 为主，见下方「本机 macOS 业务」。  
+> iOS 无 Team 时 IPA 为 **未签名流水线产物**，普通设备无法安装。
 
 ## 0. 前置
 
@@ -16,7 +18,7 @@
 |------|--------|------|---------------------|
 | **Android** | `NetBridge-android-arm64.apk` | debug-signed（可侧载） | **可用**（系统 VPN 授权） |
 | **Windows** | `NetBridge-windows.exe` / portable.zip | 无 Authenticode | **可能可用**；常需 **管理员** 运行 |
-| **macOS** | `NetBridge-macOS.dmg` | ad-hoc（不上架） | **受限**：无 Apple Team + NE 时多为 Stub（UI/导入） |
+| **macOS** | **暂不分发**（源码 / 可选本机 ad-hoc `.app`） | 无 NE 签名 | Flutter UI：**Stub**；**真隧道**用官方 WireGuard + `nbvpn show --conf` |
 | **iOS** | `NetBridge-iOS.ipa` | 需 Team；否则 UNSIGNED | **受限**：同 macOS；未签名包 **不能**装到普通设备 |
 
 ## 1. 安装客户端
@@ -34,22 +36,40 @@
 3. 连接 VPN 时若失败，尝试 **以管理员身份运行**
 4. 打开应用 → 添加节点 → 粘贴 URI
 
-### macOS（本机 ad-hoc / 自签，非 App Store）
+### 本机 macOS 业务（推荐路径 · 暂不分发）
 
-1. 打开 `clients/netbridge/dist/NetBridge-macOS.dmg`，将 **NetBridge.app** 拖到 Applications（或直接用同目录 `.app` / `.zip`）
-2. 若 Gatekeeper 拦截：**右键 → 打开**，或到「系统设置 → 隐私与安全性」允许
-3. 校验签名（可选）：
+> CI / Releases / OpenList / Pages **不**提供 macOS DMG 或 `.app.zip` 下载。  
+> 目标：本机业务使用（UI 联调 + 真 WireGuard 隧道），不是面向用户分发。
+
+#### A. Flutter 客户端（UI / 导入 · Stub 隧道）
+
+```bash
+cd clients/netbridge
+flutter pub get
+flutter gen-l10n
+flutter run -d macos
+```
+
+- 无 Apple Team + Network Extension 时，应用内 VPN 多为 **Stub**（可测列表、粘贴 URI、扫码），**不能保证**系统级隧道。
+- 可选本机 ad-hoc `.app`（仅本机，不上架）：`./scripts/package-all.sh`（或 `SKIP_MACOS=0` 默认路径产出 `dist/NetBridge-macOS.app` / `.dmg`）。**不要**把该包放进 OpenList / Pages 下载区。
+
+#### B. 真 VPN 隧道（无 NE 签名）：官方 WireGuard + `nbvpn show --conf`
+
+1. 安装 [官方 WireGuard for macOS](https://www.wireguard.com/install/)（App Store / wireguard.com）。
+2. 在 **已安装 nbvpn 的节点**上导出客户端配置：
    ```bash
-   codesign -dv --verbose=2 clients/netbridge/dist/NetBridge-macOS.app
-   # ad-hoc 时 Authority 通常显示 adhoc / signed by -
+   # 打印 .conf 路径（含私钥；勿公开）
+   ssh your-vps 'sudo nbvpn show --conf'
+   # 或 show --all / --file：同目录会写出 <peer-id>.conf
+   scp your-vps:/var/lib/nbvpn/peers/<peer-id>.conf ~/Downloads/
    ```
-4. 打开应用 → 添加节点 → 粘贴 URI
+3. 打开官方 WireGuard → **Import tunnel(s) from file…** → 选该 `.conf` → 激活隧道。
+4. 用 `ssh your-vps 'nbvpn status'` / `sudo wg show` 确认 handshake。
 
-**诚实说明（macOS 隧道）**
+**诚实说明**
 
-- 本包为 **ad-hoc / 本地自签**，**不**具备 App Store / Developer ID 公证能力。
-- Network Extension + 真 WireGuard 隧道通常仍需 **Developer Team + NE entitlements**；在仅 ad-hoc 下，应用可能落在 **Stub 隧道**（可测 UI / 导入 / 列表），**不能保证**系统级 VPN 握手。
-- **真机联调优先用 Android APK**。
+- 分发通道：**Android + Windows 客户端**；macOS **源码本机**；iOS **仍跳过签名**。
+- 真机联调若只想「一键 App 内隧道」，优先 **Android APK**；Mac 上要过网请用路径 B。
 
 ### iOS（需 Apple 凭证才能真机安装）
 
@@ -119,7 +139,7 @@ sudo ./server/install/install.sh
 | **有 VPN 钥匙图标 + 流量在跳，但 App 没网** | **服务端缺 IP 转发 / NAT（最常见）** — 见下方 §5.1 |
 | Android 无授权框 | OEM 权限；重装 APK |
 | 状态栏完全没有 VPN 图标 | 隧道可能未真正 up；与「有图标没网」不同，先看系统 VPN 授权 |
-| macOS 能导入不能真连 | 预期可能（ad-hoc 无 NE）；改用 Android |
+| macOS Flutter 能导入不能真连 | 预期（无 NE）；改用「本机 macOS 业务」路径 B（官方 WireGuard + `.conf`）或 Android |
 | URI 无效 | 去掉引号/换行；用 `nbvpn show --uri` 干净输出 |
 | 扫码无反应 / 第二次扫不动 | 更新 APK：扫码页会 pause/resume；重复配置应提示「已添加」；失败可「重试」或相册/粘贴 |
 | 删除后再扫仍无效 | 先确认列表已空；改用粘贴 URI 或 `peers/*.png` 相册识别（多为密 QR 识别失败，非删不干净） |

@@ -13,7 +13,7 @@
 
 `public/releases.json` 存清单元数据（版本、SHA256、下载 URL / 安装命令）以及站点 meta（官方地址、法律页、合作伙伴）。
 
-当前为 **`meta.status: mock_links`**：URL 刻意带 `/store/mock/…`，供落地页展示可点链接与版本/校验和；**不是** OpenList 上已存在的真包。真上传后按 `scripts/fill-releases-after-upload.md` 替换，并把 status 改为正式值。
+当前主路径为 **GitHub Releases + Pages**（`meta.status: github_releases_placeholder`）。macOS 为 `local_source_only`（无下载链）。OpenList 仍可为镜像，见 `OPENLIST-UPLOAD.md`。
 
 上传后操作清单：`scripts/fill-releases-after-upload.md`；可选脚本：`scripts/update-releases-urls.sh --print-template`。
 
@@ -104,7 +104,7 @@ npm run preview  # 默认 http://127.0.0.1:4173（与 meta.officialSite mock 对
 | AC | 覆盖方式 |
 |----|----------|
 | AC-01 分区 | `#clients` / `#servers` 分节 |
-| AC-02 四端 | Win / macOS / Android / iOS 卡片 |
+| AC-02 四端 | Win / Android 可下载；macOS 标「源码本机 / 暂不分发」；iOS 无签名包 |
 | AC-03 服务端 | Debian / Ubuntu / CentOS / RHEL + 校验和 |
 | AC-04 无账号 | 全站无登录入口 |
 | AC-05 无节点列表 | 导航仅步骤/客户端/服务端/使用帮助/责任 |

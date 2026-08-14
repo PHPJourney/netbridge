@@ -112,8 +112,9 @@
 
 ```
 [ ] /store/clients/android/NetBridge-android-arm64.apk
-[ ] /store/clients/macos/NetBridge-macOS.dmg
-[ ] /store/clients/ios/NetBridge-iOS.ipa          # stub，知悉风险
+[ ] /store/clients/windows/NetBridge-windows.exe
+[ ] （不分发）macOS — 源码本机运行；勿上传 DMG / app.zip
+[ ] （暂不分发）iOS — CI 无签名 IPA
 [ ] /store/servers/linux/nbvpn-linux-amd64
 [ ] /store/servers/windows/nbvpn-windows-amd64.exe          # Win10+
 [ ] /store/servers/windows/nbvpn-windows-amd64-win2012.exe   # Server 2012 R2（Go 1.20）
@@ -121,7 +122,6 @@
 [ ] /store/servers/linux/{install.sh,_common.sh,deb-family.sh,rhel-family.sh}
 [ ] /store/servers/windows/install.ps1
 [ ] /store/servers/windows/WINDOWS.md
-[ ] （暂缺）/store/clients/windows/NetBridge-windows.exe      # 需 Win10+ 构建；2012 不可跑客户端
 ```
 
 上传后请提供各文件的 **OpenList 直链**（或 `/d/...` 路径），以便更新 `apps/store/public/releases.json`。
@@ -151,7 +151,7 @@ OpenList 仍可作为镜像；**默认分发改为 GitHub Releases + Pages**。
 | Store UI | https://phpjourney.github.io/netbridge/ （workflow `pages-store.yml`） |
 | 产物 | Actions artifacts；打 `v*` tag 后挂到 GitHub Release |
 | 服务端 workflow | `build-server.yml` → `nbvpn-linux-amd64` / `arm64` / `nbvpn-windows-amd64.exe` / `nbvpn-windows-amd64-win2012.exe` + install zip |
-| 客户端 workflow | `build-clients.yml` → Android APK、Windows exe、macOS `.app.zip`（无公证）；iOS 跳过签名 |
+| 客户端 workflow | `build-clients.yml` → Android APK、Windows exe；**macOS / iOS 跳过分发**（仅 skip note） |
 | `releases.json` | 已改为 `…/releases/latest/download/<filename>` 占位；首个 Release 发布后更新 sha256 |
 
 本地大文件不必上传 OpenList 也可完成分发：在 Actions 下载 artifact，或使用 Release 直链。

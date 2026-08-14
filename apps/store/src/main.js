@@ -180,8 +180,33 @@ function clientCard(key, item) {
   const version = item.version || "—";
   const sha = item.sha256 || "—";
   const url = item.url || "";
-  const pending = item.status === "pending_upload" || !url;
-  const note = item.note || "";
+  const status = item.status || "";
+  const lang = getLang();
+  const note =
+    lang === "en" ? item.noteEn || item.note || "" : item.note || item.noteEn || "";
+  const localOnly =
+    status === "local_source_only" || status === "source_local" || status === "not_distributed";
+  const skipped = status === "skipped_signing";
+  const pending =
+    !localOnly && !skipped && (status === "pending_upload" || !url);
+
+  let actionHtml;
+  if (localOnly) {
+    actionHtml = `<span class="btn btn-ghost is-disabled" aria-disabled="true">${escapeHtml(t("dl.localSource"))}</span>`;
+  } else if (skipped) {
+    actionHtml = `<span class="btn btn-ghost is-disabled" aria-disabled="true">${escapeHtml(t("dl.skippedSigning"))}</span>`;
+  } else if (pending) {
+    actionHtml = `<span class="btn btn-ghost is-disabled" aria-disabled="true">${escapeHtml(t("dl.uploadPending"))}</span>`;
+  } else {
+    actionHtml = `<a class="btn btn-ghost" href="${escapeAttr(url)}" download>${escapeHtml(t("dl.download"))}</a>`;
+  }
+
+  const noteHtml =
+    localOnly || skipped || pending
+      ? `<p class="card-error">${escapeHtml(note || (localOnly ? t("dl.localSourceNote") : pending ? t("dl.pendingNote") : t("dl.skippedSigningNote")))}</p>`
+      : note
+        ? `<p class="distro-note">${escapeHtml(note)}</p>`
+        : "";
 
   return `
     <article class="download-card" data-platform="${escapeAttr(key)}">
@@ -189,20 +214,12 @@ function clientCard(key, item) {
       <p class="card-version">${escapeHtml(t("dl.version"))} ${escapeHtml(version)}</p>
       <p class="card-checksum">
         <span>SHA256</span>
-        ${escapeHtml(sha || t("dl.shaPending"))}
+        ${escapeHtml(sha || (localOnly || skipped ? "—" : t("dl.shaPending")))}
       </p>
       <div class="card-actions">
-        ${
-          pending
-            ? `<span class="btn btn-ghost is-disabled" aria-disabled="true">${escapeHtml(t("dl.uploadPending"))}</span>`
-            : `<a class="btn btn-ghost" href="${escapeAttr(url)}" download>${escapeHtml(t("dl.download"))}</a>`
-        }
+        ${actionHtml}
       </div>
-      ${
-        pending
-          ? `<p class="card-error">${escapeHtml(note || t("dl.pendingNote"))}</p>`
-          : ""
-      }
+      ${noteHtml}
     </article>
   `;
 }

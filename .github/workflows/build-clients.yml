@@ -90,40 +90,26 @@ jobs:
             clients/netbridge/dist/NetBridge-windows.exe.sha256
             clients/netbridge/dist/NetBridge-windows-portable.zip
 
-  macos:
-    name: macOS app zip (unsigned / ad-hoc)
-    runs-on: macos-latest
-    defaults:
-      run:
-        working-directory: clients/netbridge
+  macos-note:
+    name: macOS (skipped — no distribution)
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
-      - run: flutter config --enable-macos-desktop
-      - run: flutter pub get
-      - run: flutter gen-l10n
-      - name: Build macOS (no Developer ID / notarization)
+      - name: Skip macOS Release artifacts
         run: |
-          flutter build macos --release
-          mkdir -p dist
-          APP=$(find build/macos/Build/Products/Release -maxdepth 1 -name '*.app' | head -1)
-          test -n "$APP"
-          # ad-hoc codesign is fine; do not notarize / Developer ID
-          codesign --force --deep -s - "$APP" || true
-          ditto -c -k --sequesterRsrc --keepParent "$APP" dist/NetBridge-macOS.app.zip
-          shasum -a 256 dist/NetBridge-macOS.app.zip | tee dist/NetBridge-macOS.app.zip.sha256
-          echo "unsigned/ad-hoc; notarization skipped" > dist/NetBridge-macOS.codesign.txt
+          echo "macOS client is local-source / business-use only for now."
+          echo "No DMG / .app.zip attached to GitHub Releases."
+          mkdir -p note
+          cat > note/MACOS-CI-SKIP.txt <<'TXT'
+          NetBridge macOS: CI does not publish distribution packages (DMG / app.zip).
+          Local business use: cd clients/netbridge && flutter run -d macos
+          Real VPN without NE signing: official WireGuard app + nbvpn show --conf (.conf).
+          Optional local ad-hoc .app via scripts/package-all.sh — not for OpenList/Pages download.
+          See docs/delivery/nbvpn/TRY-CONNECT.md section「本机 macOS 业务」.
+          TXT
       - uses: actions/upload-artifact@v4
         with:
-          name: client-macos
-          path: |
-            clients/netbridge/dist/NetBridge-macOS.app.zip
-            clients/netbridge/dist/NetBridge-macOS.app.zip.sha256
-            clients/netbridge/dist/NetBridge-macOS.codesign.txt
+          name: client-macos-skip-note
+          path: note/MACOS-CI-SKIP.txt
 
   ios-note:
     name: iOS (skipped — no signing)
@@ -147,7 +133,7 @@ jobs:
   release-clients:
     name: Attach client artifacts to Release
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [android, windows, macos, ios-note]
+    needs: [android, windows, macos-note, ios-note]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
