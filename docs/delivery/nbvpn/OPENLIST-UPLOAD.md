@@ -90,8 +90,11 @@
 | `/Users/mac/Documents/NetBridge/server/install/_common.sh` | `/store/servers/linux/_common.sh` | 公共函数 | `00fdfae1edd906985cfba62edd366d6bb2f35eeb607bfe7f6d6bf86cc1345fbf` |
 | `/Users/mac/Documents/NetBridge/server/install/smoke-verify.sh` | `/store/servers/linux/smoke-verify.sh` | 安装后冒烟 | `add1cbf90cc0d0a54b199a3bd7990fa14f237df09ec77af067eea60da6807cb3` |
 | `/Users/mac/Documents/NetBridge/server/install/FIREWALL.md` | `/store/servers/linux/FIREWALL.md` | 防火墙说明 | `4507bff68d3bd604ff53f54f39fb89abbee9dceab9dafe3a64fd3c11eca36151` |
-| `/Users/mac/Documents/NetBridge/server/install/windows/install.ps1` | `/store/servers/windows/install.ps1` | Windows 安装脚本（PS4 / 2012 安全） | `234f71356c1ba177b86342352a1672cfcc0cc684f6e39bd51f974b1f19be989e` |
-| `/Users/mac/Documents/NetBridge/server/install/windows/WINDOWS.md` | `/store/servers/windows/WINDOWS.md` | Windows 节点文档（含 Docker / win2012） | `f38ced0b4c28ec0f2e36fe5e3168b70cb6acefc93fe5658248ea7ed10ff1c988` |
+| `/Users/mac/Documents/NetBridge/server/install/windows/install.ps1` | `/store/servers/windows/install.ps1` | Windows 安装脚本（PS4 / 2012 安全） | （随 main 更新后重算 sha） |
+| `/Users/mac/Documents/NetBridge/server/install/windows/WINDOWS.md` | `/store/servers/windows/WINDOWS.md` | Windows 节点文档（Setup.exe + 2012） | （随 main 更新后重算 sha） |
+| GitHub Release `NetBridge-nbvpn-Setup.exe` | `/store/servers/windows/NetBridge-nbvpn-Setup.exe` | **首选** 服务端安装包 | 下一 tag CI 产出 |
+| GitHub Release `NetBridge-windows-setup.exe` | `/store/clients/windows/NetBridge-windows-setup.exe` | **首选** 客户端安装包 | 下一 tag CI 产出 |
+| GitHub Release `NetBridge-windows-portable.zip` | `/store/clients/windows/NetBridge-windows-portable.zip` | 客户端便携 zip（次选） | 已有 / 续传 |
 
 > `curl … \| bash` 类 `installCommand` 至少要保证入口脚本 + `_common.sh` + `*-family.sh` + 对应二进制同目录或脚本内 `NBVPN_BINARY_URL` 可下。
 

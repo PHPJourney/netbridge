@@ -17,7 +17,7 @@
 | 平台 | 安装包 | 签名 | 真实 WireGuard 隧道 |
 |------|--------|------|---------------------|
 | **Android** | `NetBridge-android-arm64.apk` | debug-signed（可侧载） | **可用**（系统 VPN 授权） |
-| **Windows** | `NetBridge-windows.exe` / portable.zip | 无 Authenticode | **可能可用**；常需 **管理员** 运行 |
+| **Windows** | **`NetBridge-windows-setup.exe`**（推荐）/ portable.zip | 无 Authenticode | **可能可用**；常需 **管理员** 运行 |
 | **macOS** | **暂不分发**（源码 / 可选本机 ad-hoc `.app`） | 无 NE 签名 | Flutter UI：**Stub**；**真隧道**用官方 WireGuard + `nbvpn show --conf` |
 | **iOS** | `NetBridge-iOS.ipa` | 需 Team；否则 UNSIGNED | **受限**：同 macOS；未签名包 **不能**装到普通设备 |
 
@@ -31,10 +31,11 @@
 
 ### Windows
 
-1. 在 **Windows 机器**上构建（macOS 无法交叉编译），见 `clients/netbridge/dist/WINDOWS-BUILD.md`
-2. 解压 `NetBridge-windows-portable.zip` 并运行其中的 exe，或直接运行 `NetBridge-windows.exe`（需同目录 DLL）
+1. 从 GitHub Releases / 商店页下载 **`NetBridge-windows-setup.exe`**，以管理员运行安装（开始菜单 / 可选桌面快捷方式）
+2. 备用：解压 `NetBridge-windows-portable.zip` 并运行其中的 `netbridge.exe`
 3. 连接 VPN 时若失败，尝试 **以管理员身份运行**
-4. 打开应用 → 添加节点 → 粘贴 URI
+4. 打开应用 → 添加节点 → 粘贴 URI（或扫描服务端 `.png` 二维码）
+5. 构建说明见 `clients/netbridge/dist/WINDOWS-BUILD.md` / `clients/netbridge/installer/windows/`
 
 ### 本机 macOS 业务（推荐路径 · 暂不分发）
 

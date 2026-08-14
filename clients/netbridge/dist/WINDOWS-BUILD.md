@@ -56,8 +56,22 @@ export WINDOWS_ARTIFACT=/path/to/build/windows/x64/runner/Release
 ```
 
 Outputs when Windows artifact is available:
-- `dist/NetBridge-windows.exe` — main runner exe
-- `dist/NetBridge-windows-portable.zip` — full Flutter Windows Release folder (required DLLs)
+- **`dist/NetBridge-windows-setup.exe`** — **primary** Inno Setup installer (Program Files + Start Menu + uninstaller)
+- `dist/NetBridge-windows-portable.zip` — secondary portable zip (full Release folder)
+- `dist/NetBridge-windows.exe` — runner exe alone (insufficient without DLLs)
+
+## Inno Setup (local / CI)
+
+CI (`build-clients.yml` on windows-2022) installs Inno Setup via Chocolatey and runs:
+
+```powershell
+cd clients\netbridge
+flutter build windows --release
+.\installer\windows\build-setup.ps1
+# → dist\NetBridge-windows-setup.exe
+```
+
+Script: `clients/netbridge/installer/windows/NetBridge-setup.iss`
 
 VPN: WireGuard tunnel may require **Run as administrator**. No Authenticode
 signing is applied by this script.

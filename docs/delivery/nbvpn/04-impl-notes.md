@@ -56,3 +56,4 @@
 | 2026-08-14 | per-distro install；Android APK + macOS ad-hoc；TRY-CONNECT；VPS sync |
 | 2026-08-14 | macOS 暂不分发：CI skip；Store 标「源码本机」；`nbvpn show --conf`；TRY-CONNECT 本机业务 |
 | 2026-08-14 | Windows Server MVP：exe + install.ps1；scope IN-02b；releases.windows |
+| 2026-08-14 | Windows Setup：客户端/服务端 Inno Setup；2012 NetNat/QR/ProgramData 修复 |

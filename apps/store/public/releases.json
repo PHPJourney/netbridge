@@ -10,7 +10,7 @@
     "openlistBrowse": "http://154.37.213.245:5244/store",
     "downloadUrlHint": "Primary: GitHub Releases latest/download/<filename>. OpenList remains an optional mirror — see docs/delivery/nbvpn/OPENLIST-UPLOAD.md",
     "status": "github_releases_published",
-    "note": "v0.1.0 published on GitHub Releases. Clients: Android APK + Windows portable zip. macOS/iOS not distributed (local source / signing deferred). Server: linux amd64/arm64, windows amd64 + win2012, nbvpn-server-v0.1.0.zip.",
+    "note": "Next tag: prefer NetBridge-windows-setup.exe + NetBridge-nbvpn-Setup.exe. v0.1.0 still has portable zip / raw exe until next Release.",
     "officialSite": "https://phpjourney.github.io/netbridge/",
     "termsUrl": "./terms.html",
     "privacyUrl": "./privacy.html",
@@ -33,11 +33,13 @@
     "windows": {
       "label": "Windows",
       "version": "0.1.0",
-      "sha256": "a0ab1257e5fe8952fe084e185a0e3a55f04df4f5d0a7376fec0bff4f0ba70703",
-      "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-windows-portable.zip",
-      "filename": "NetBridge-windows-portable.zip",
+      "sha256": "pending_next_tag",
+      "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-windows-setup.exe",
+      "filename": "NetBridge-windows-setup.exe",
+      "portableUrl": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-windows-portable.zip",
+      "portableFilename": "NetBridge-windows-portable.zip",
       "status": "available",
-      "note": "Use portable zip (exe + DLLs). Also NetBridge-windows.exe alone is insufficient. Win10+."
+      "note": "Primary: Setup.exe (Program Files + shortcuts). Portable zip is secondary. Win10+. SHA256 refresh on next tag after CI builds Setup."
     },
     "macos": {
       "label": "macOS",
@@ -116,16 +118,18 @@
     "windows": {
       "label": "Windows Server",
       "version": "0.1.0",
-      "sha256": "42fa4125ac06c8adbccab1a26d9ebbf1c169af9cd2acc9bfd8cc247ef24036d7",
+      "sha256": "pending_next_tag",
+      "setupUrl": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-nbvpn-Setup.exe",
+      "setupFilename": "NetBridge-nbvpn-Setup.exe",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-windows-amd64.exe",
       "filename": "nbvpn-windows-amd64.exe",
       "win2012Url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-windows-amd64-win2012.exe",
       "win2012Filename": "nbvpn-windows-amd64-win2012.exe",
       "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/windows/install.ps1",
       "docsUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/windows/WINDOWS.md",
-      "installCommand": "powershell -ExecutionPolicy Bypass -File .\\install.ps1",
+      "installCommand": "Run NetBridge-nbvpn-Setup.exe as Administrator  (advanced: .\\install.ps1)",
       "status": "available",
-      "note": "Win10+/Server 2016+: nbvpn-windows-amd64.exe. Server 2012 R2: nbvpn-windows-amd64-win2012.exe. Bundle: nbvpn-server-v0.1.0.zip"
+      "note": "Primary: NetBridge-nbvpn-Setup.exe. Advanced: install.ps1 + exe. Server 2012 R2: win2012 exe. SHA256 refresh on next tag."
     }
   }
 }

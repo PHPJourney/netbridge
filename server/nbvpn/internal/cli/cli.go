@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/netbridge/nbvpn/internal/endpoint"
@@ -90,6 +92,8 @@ Environment:
                    (Linux default /var/lib/nbvpn;
                     Windows default %ProgramData%\nbvpn;
                     fallback if unwritable)
+  NBVPN_TERMINAL_QR=1  Force terminal QR on Windows default show
+  NO_COLOR / NBVPN_FORCE_ANSI  Disable / force ANSI color in terminal QR
 
 Firewall / endpoint:
   Clients need UDP listen port open on host firewall AND cloud security group
@@ -98,10 +102,12 @@ Firewall / endpoint:
 
 Dry-run:
   On macOS, hosts without wg-quick, or Windows without WireGuard for Windows,
-  install still generates keys and profiles; start/stop/status report dry-run.
+  install still generates keys and profiles (data dir + PNG/JSON/conf);
+  start/stop/status report dry-run. Install WireGuard before a real tunnel.
 
 Pipe tip:
   nbvpn show --uri   # URI on stdout; secret warning on stderr
+  nbvpn show --qr    # terminal QR (Windows: opt-in; prefer open PNG)
 
 `)
 }
@@ -186,6 +192,7 @@ func cmdInstall(args []string) error {
 	fmt.Println()
 	fmt.Println("=== nbvpn install complete ===")
 	fmt.Printf("data dir: %s\n", s.DataDir)
+	printDataDirVerify(s)
 	fmt.Printf("publicKey: %s\n", st.PublicKey)
 	fmt.Printf("listenPort: %d\n", st.ListenPort)
 	if st.Endpoint == "" {
@@ -198,13 +205,19 @@ func cmdInstall(args []string) error {
 	if caps.DryRun {
 		fmt.Println()
 		fmt.Println("Note:", caps.Notes)
+		if caps.Platform == "windows" {
+			fmt.Println("IMPORTANT: Install WireGuard for Windows before a real tunnel:")
+			fmt.Println("  https://www.wireguard.com/install/")
+			fmt.Println("  Profiles/keys are already written; re-run install.ps1 after WireGuard is installed.")
+		}
 	}
 	fmt.Println()
 	fmt.Println("Firewall (required for clients to reach this node):")
 	fmt.Printf("  • Host: allow UDP %d\n", st.ListenPort)
 	fmt.Printf("  • Cloud security group / ACL: inbound UDP %d\n", st.ListenPort)
 	if caps.Platform == "windows" {
-		fmt.Println("  • Windows: install.ps1 opens firewall + enables IP forward / NetNat (see WINDOWS.md)")
+		fmt.Println("  • Windows: NetBridge-nbvpn-Setup.exe or install.ps1 (firewall + IP forward; see WINDOWS.md)")
+		fmt.Println("  • Data dir is under ProgramData (often hidden): explorer %ProgramData%\\nbvpn")
 		fmt.Println("  • Details: server/install/windows/WINDOWS.md + server/install/FIREWALL.md")
 	} else {
 		fmt.Println("  • NAT: nbvpn enables ip_forward + MASQUERADE (PostUp); if ufw is on, also:")
@@ -213,9 +226,14 @@ func cmdInstall(args []string) error {
 	}
 	fmt.Println()
 	fmt.Println("Next steps:")
-	fmt.Println("  1. nbvpn show          # URI + QR + profile file (secrets!)")
+	if runtime.GOOS == "windows" {
+		fmt.Println("  1. nbvpn show          # URI + files + PNG path (no terminal QR by default)")
+		fmt.Println("     Open the .png in Explorer, or: nbvpn show --uri / nbvpn show --qr")
+	} else {
+		fmt.Println("  1. nbvpn show          # URI + QR + profile file (secrets!)")
+	}
 	fmt.Println("  2. Download a client from your NetBridge store page")
-	fmt.Println("  3. Import the URI / QR / .nbvpn.json, or WireGuard .conf (nbvpn show --conf)")
+	fmt.Println("  3. Import the URI / QR PNG / .nbvpn.json, or WireGuard .conf (nbvpn show --conf)")
 	fmt.Println()
 
 	// show first active peer
@@ -223,6 +241,44 @@ func cmdInstall(args []string) error {
 		return showPeer(s, st, peers[0], showModeAll)
 	}
 	return nil
+}
+
+func printDataDirVerify(s *state.Store) {
+	fmt.Println("--- verify data dir ---")
+	check := func(label, path string) {
+		if st, err := os.Stat(path); err == nil && !st.IsDir() {
+			fmt.Printf("  OK  %s\n", path)
+		} else if err == nil && st.IsDir() {
+			fmt.Printf("  OK  %s\\ (dir)\n", path)
+		} else {
+			fmt.Printf("  MISSING  %s (%v)\n", path, err)
+		}
+	}
+	check("data", s.DataDir)
+	check("server.json", filepath.Join(s.DataDir, "server.json"))
+	check("nbvpn.conf", s.WGConfPath())
+	peersDir := filepath.Join(s.DataDir, "peers")
+	check("peers", peersDir)
+	entries, err := os.ReadDir(peersDir)
+	if err != nil {
+		fmt.Printf("  (could not list peers: %v)\n", err)
+		return
+	}
+	n := 0
+	for _, e := range entries {
+		name := e.Name()
+		if strings.HasSuffix(name, ".nbvpn.json") || strings.HasSuffix(name, ".png") || strings.HasSuffix(name, ".conf") {
+			fmt.Printf("  OK  %s\n", filepath.Join(peersDir, name))
+			n++
+		}
+	}
+	if n == 0 {
+		fmt.Println("  (no peer export files yet — unexpected after install)")
+	}
+	if runtime.GOOS == "windows" {
+		fmt.Println("Tip: ProgramData is a hidden folder. Run:  explorer %ProgramData%\\nbvpn")
+		fmt.Println("  or enable \"Hidden items\" in Explorer View options.")
+	}
 }
 
 func mustAllPeers(s *state.Store) []*state.PeerRecord {
@@ -420,21 +476,24 @@ func showPeer(s *state.Store, st *state.ServerState, p *state.PeerRecord, mode s
 		fmt.Println(confPath)
 		if pngPath != "" {
 			fmt.Println()
-			fmt.Println("--- QR PNG ---")
+			fmt.Println("--- QR PNG (preferred on Windows / narrow consoles) ---")
 			fmt.Println(pngPath)
 			fmt.Println("(filename uses peer id; PNG pixels encode the full URI above)")
+			if runtime.GOOS == "windows" {
+				fmt.Println("Open this PNG in Explorer (or Photos) and scan with the NetBridge client.")
+			}
 		}
-		fmt.Println()
-		fmt.Println("--- QR (scan with NetBridge client) ---")
-		fmt.Println("二维码内容 = 完整 nbvpn: URI（与上方 URI 相同，以 nbvpn:1? 开头）")
-		fmt.Println("QR payload = full nbvpn: URI (same as URI section; starts with nbvpn:1?)")
-		fmt.Printf("payload prefix: %s…\n", qrPayloadPrefix(uri))
-		q, err := qr.RenderTerminal(uri)
-		if err != nil {
-			return err
+		if wantTerminalQR(false) {
+			fmt.Println()
+			fmt.Println("--- QR (scan with NetBridge client) ---")
+			fmt.Println("二维码内容 = 完整 nbvpn: URI（与上方 URI 相同，以 nbvpn:1? 开头）")
+			fmt.Println("QR payload = full nbvpn: URI (same as URI section; starts with nbvpn:1?)")
+			fmt.Printf("payload prefix: %s…\n", qrPayloadPrefix(uri))
+			printTerminalQR(uri)
+		} else if runtime.GOOS == "windows" {
+			fmt.Println()
+			fmt.Println(qr.WindowsDefaultHint)
 		}
-		fmt.Print(q)
-		fmt.Println(qr.FallbackHint)
 		return nil
 	}
 	// Machine-friendly modes: secret warning on stderr so stdout stays pipeable.
@@ -461,14 +520,36 @@ func showPeer(s *state.Store, st *state.ServerState, p *state.PeerRecord, mode s
 		if pngPath != "" {
 			fmt.Println(pngPath)
 		}
-		q, err := qr.RenderTerminal(uri)
-		if err != nil {
-			return err
-		}
-		fmt.Print(q)
-		fmt.Println(qr.FallbackHint)
+		printTerminalQR(uri)
 	}
 	return nil
+}
+
+// wantTerminalQR: on Windows, terminal block QR is opt-in (--qr or NBVPN_TERMINAL_QR=1).
+func wantTerminalQR(forceQRMode bool) bool {
+	if forceQRMode {
+		return true
+	}
+	if runtime.GOOS == "windows" {
+		return os.Getenv("NBVPN_TERMINAL_QR") == "1"
+	}
+	return true
+}
+
+func printTerminalQR(uri string) {
+	q, err := qr.RenderTerminal(uri)
+	if err != nil {
+		if qr.IsTooWide(err) {
+			fmt.Fprintf(os.Stderr, "warning: %v\n", err)
+			fmt.Println(qr.FallbackHint)
+			return
+		}
+		fmt.Fprintf(os.Stderr, "warning: terminal QR: %v\n", err)
+		fmt.Println(qr.FallbackHint)
+		return
+	}
+	fmt.Print(q)
+	fmt.Println(qr.FallbackHint)
 }
 
 func qrPayloadPrefix(uri string) string {

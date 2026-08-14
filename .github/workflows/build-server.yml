@@ -111,9 +111,51 @@ jobs:
             server/nbvpn/dist/nbvpn-windows-amd64-win2012.exe
             server/nbvpn/dist/nbvpn-windows-amd64-win2012.exe.sha256
 
+  windows-setup:
+    name: Windows Setup.exe (Inno)
+    needs: [windows-win10]
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: nbvpn-windows-amd64
+          path: stage
+      - name: Stage install scripts
+        shell: pwsh
+        run: |
+          Copy-Item -Force server\install\windows\install.ps1 stage\
+          Copy-Item -Force server\install\windows\WINDOWS.md stage\
+          Copy-Item -Force server\install\windows\setup.bat stage\
+          Copy-Item -Force server\install\windows\nbvpn-setup.iss stage\
+          Copy-Item -Force server\install\windows\build-setup.ps1 stage\
+          Get-ChildItem stage
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { $iscc = "${env:ProgramFiles}\Inno Setup 6\ISCC.exe" }
+          if (-not (Test-Path $iscc)) { throw "ISCC.exe not found after choco install" }
+          echo "ISCC=$iscc" >> $env:GITHUB_ENV
+      - name: Build NetBridge-nbvpn-Setup.exe
+        shell: pwsh
+        env:
+          NBVPN_VERSION: ${{ github.ref_name }}
+        run: |
+          & .\server\install\windows\build-setup.ps1 -StageDir (Resolve-Path stage) -OutDir (Resolve-Path stage\dist) -Version $env:NBVPN_VERSION
+          Get-ChildItem stage\dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nbvpn-windows-setup
+          path: |
+            stage/dist/NetBridge-nbvpn-Setup.exe
+            stage/dist/NetBridge-nbvpn-Setup.exe.sha256
+            stage/dist/NetBridge-nbvpn-Setup-zip.zip
+
   package:
     name: package-server-zip
-    needs: [linux, windows-win10, windows-win2012]
+    needs: [linux, windows-win10, windows-win2012, windows-setup]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -127,17 +169,20 @@ jobs:
           set -euo pipefail
           OUT=dist-server
           mkdir -p "$OUT/bin" "$OUT/install/windows" release-upload
-          find artifacts -type f \( -name 'nbvpn-*' \) -exec cp -f {} "$OUT/bin/" \;
+          find artifacts -type f \( -name 'nbvpn-*' -o -name 'NetBridge-nbvpn-Setup*' \) -exec cp -f {} "$OUT/bin/" \;
+          # Setup.exe may land under bin/ from merge; also copy explicitly if nested
+          find artifacts -type f -name 'NetBridge-nbvpn-Setup*' -exec cp -f {} release-upload/ \;
           cp -a server/install/*.sh "$OUT/install/" 2>/dev/null || true
           cp -a server/install/*.md "$OUT/install/" 2>/dev/null || true
           cp -a server/install/windows/* "$OUT/install/windows/"
           (
             cd "$OUT"
-            sha256sum bin/* > SHA256SUMS.txt
+            sha256sum bin/* > SHA256SUMS.txt 2>/dev/null || true
             zip -r "../nbvpn-server-${GITHUB_REF_NAME}.zip" .
           )
           cp -f nbvpn-server-*.zip release-upload/
-          cp -f "$OUT"/bin/* release-upload/
+          cp -f "$OUT"/bin/* release-upload/ 2>/dev/null || true
+          ls -la release-upload
       - uses: actions/upload-artifact@v4
         with:
           name: nbvpn-server-bundle

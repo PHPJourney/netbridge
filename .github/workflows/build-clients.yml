@@ -53,7 +53,7 @@ jobs:
           path: clients/netbridge/dist/NetBridge-android*.apk*
 
   windows:
-    name: Windows exe
+    name: Windows Setup + portable
     # windows-latest may be 2025 (VS 18); Flutter 3.35 defaults unknown majors to VS 2019.
     runs-on: windows-2022
     defaults:
@@ -78,25 +78,42 @@ jobs:
       - run: flutter gen-l10n
       - name: Build Windows release
         run: flutter build windows --release
-      - name: Stage exe
+      - name: Install Inno Setup
         shell: pwsh
         run: |
+          choco install innosetup -y --no-progress
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { $iscc = "${env:ProgramFiles}\Inno Setup 6\ISCC.exe" }
+          if (-not (Test-Path $iscc)) { throw "ISCC.exe not found" }
+          echo "ISCC=$iscc" >> $env:GITHUB_ENV
+      - name: Stage Setup.exe + portable zip
+        shell: pwsh
+        env:
+          NBVPN_VERSION: ${{ github.ref_name }}
+        run: |
           New-Item -ItemType Directory -Force -Path dist | Out-Null
-          $exe = Get-ChildItem -Path build\windows\x64\runner\Release -Filter *.exe -Recurse | Select-Object -First 1
-          if (-not $exe) { throw "No Windows exe found" }
-          Copy-Item $exe.FullName dist\NetBridge-windows.exe -Force
-          # portable zip of Release folder
-          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath dist\NetBridge-windows-portable.zip -Force
+          $rel = "build\windows\x64\runner\Release"
+          if (-not (Test-Path "$rel\netbridge.exe")) { throw "netbridge.exe missing under $rel" }
+          Copy-Item "$rel\netbridge.exe" dist\NetBridge-windows.exe -Force
+          Compress-Archive -Path "$rel\*" -DestinationPath dist\NetBridge-windows-portable.zip -Force
           Get-FileHash dist\NetBridge-windows.exe -Algorithm SHA256 |
             ForEach-Object { "$($_.Hash.ToLower())  NetBridge-windows.exe" } |
             Set-Content dist\NetBridge-windows.exe.sha256
+          Get-FileHash dist\NetBridge-windows-portable.zip -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash.ToLower())  NetBridge-windows-portable.zip" } |
+            Set-Content dist\NetBridge-windows-portable.zip.sha256
+          & .\installer\windows\build-setup.ps1 -ReleaseDir (Resolve-Path $rel) -OutDir (Resolve-Path dist) -Version $env:NBVPN_VERSION
+          Get-ChildItem dist
       - uses: actions/upload-artifact@v4
         with:
           name: client-windows
           path: |
+            clients/netbridge/dist/NetBridge-windows-setup.exe
+            clients/netbridge/dist/NetBridge-windows-setup.exe.sha256
+            clients/netbridge/dist/NetBridge-windows-portable.zip
+            clients/netbridge/dist/NetBridge-windows-portable.zip.sha256
             clients/netbridge/dist/NetBridge-windows.exe
             clients/netbridge/dist/NetBridge-windows.exe.sha256
-            clients/netbridge/dist/NetBridge-windows-portable.zip
 
   macos-note:
     name: macOS (skipped — no distribution)

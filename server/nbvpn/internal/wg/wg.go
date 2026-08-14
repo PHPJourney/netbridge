@@ -170,6 +170,9 @@ func EnsureIPForwardingWindows() {
 
 // WriteConfigs writes data-dir conf and optionally system WireGuard conf.
 func WriteConfigs(store *state.Store, st *state.ServerState, peers []*state.PeerRecord) error {
+	if err := store.EnsureDirs(); err != nil {
+		return err
+	}
 	body := BuildServerConf(st, peers)
 	if err := os.WriteFile(store.WGConfPath(), []byte(body), 0o600); err != nil {
 		return err

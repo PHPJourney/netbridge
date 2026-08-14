@@ -43,7 +43,7 @@ func TestWritePNGEncodesFullURINotPeerID(t *testing.T) {
 }
 
 func TestRenderTerminal_hasQuietZoneAndANSI(t *testing.T) {
-	out, err := RenderTerminal(sampleURI)
+	out, err := RenderTerminalOpts(sampleURI, RenderOptions{UseANSI: true, MaxCols: 200})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,6 +79,23 @@ func TestRenderTerminal_hasQuietZoneAndANSI(t *testing.T) {
 		t.Fatalf("QR too narrow (%d); missing quiet zone or encode failed", width)
 	}
 	t.Logf("terminal QR: %d cols × %d rows (half-block packed)", width, len(lines))
+}
+
+func TestRenderTerminal_noANSI(t *testing.T) {
+	out, err := RenderTerminalOpts(sampleURI, RenderOptions{UseANSI: false, MaxCols: 200})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(out, "\033") {
+		t.Fatal("expected no ANSI escapes when UseANSI=false")
+	}
+}
+
+func TestRenderTerminal_tooWide(t *testing.T) {
+	_, err := RenderTerminalOpts(sampleURI, RenderOptions{UseANSI: false, MaxCols: 10})
+	if !IsTooWide(err) {
+		t.Fatalf("want TooWideError, got %v", err)
+	}
 }
 
 func TestModuleSize_includesBorder(t *testing.T) {

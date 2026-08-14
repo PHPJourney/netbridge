@@ -180,6 +180,7 @@ function clientCard(key, item) {
   const version = item.version || "—";
   const sha = item.sha256 || "—";
   const url = item.url || "";
+  const portableUrl = item.portableUrl || "";
   const status = item.status || "";
   const lang = getLang();
   const note =
@@ -198,7 +199,17 @@ function clientCard(key, item) {
   } else if (pending) {
     actionHtml = `<span class="btn btn-ghost is-disabled" aria-disabled="true">${escapeHtml(t("dl.uploadPending"))}</span>`;
   } else {
-    actionHtml = `<a class="btn btn-ghost" href="${escapeAttr(url)}" download>${escapeHtml(t("dl.download"))}</a>`;
+    const isWindows = key === "windows";
+    const primaryLabel = isWindows ? t("dl.downloadWinSetup") : t("dl.download");
+    const parts = [
+      `<a class="btn btn-ghost" href="${escapeAttr(url)}" download>${escapeHtml(primaryLabel)}</a>`,
+    ];
+    if (isWindows && portableUrl) {
+      parts.push(
+        `<a class="btn btn-ghost" href="${escapeAttr(portableUrl)}" download>${escapeHtml(t("dl.downloadWinPortable"))}</a>`
+      );
+    }
+    actionHtml = parts.join("\n        ");
   }
 
   const noteHtml =
@@ -230,12 +241,13 @@ function serverBlock(key, item) {
   const sha = item.sha256 || t("dl.shaPending");
   const cmd = item.installCommand || t("dl.uploadPending");
   const url = item.url || "";
+  const setupUrl = item.setupUrl || "";
   const installScriptUrl = item.installScriptUrl || "";
   const win2012Url = item.win2012Url || "";
   const docsUrl = item.docsUrl || "";
   const note =
     getLang() === "en" ? item.noteEn || item.note || "" : item.note || item.noteEn || "";
-  const hasAnyDownload = Boolean(url || installScriptUrl || win2012Url);
+  const hasAnyDownload = Boolean(url || setupUrl || installScriptUrl || win2012Url);
   const pending = item.status === "pending_upload" || !hasAnyDownload;
   const isWindows = key === "windows";
 
@@ -245,12 +257,9 @@ function serverBlock(key, item) {
       `<span class="btn btn-ghost is-disabled" aria-disabled="true">${escapeHtml(t("dl.uploadPending"))}</span>`
     );
   } else {
-    if (installScriptUrl) {
-      const scriptLabel = isWindows
-        ? t("dl.downloadInstallPs1")
-        : t("dl.downloadInstallScript");
+    if (isWindows && setupUrl) {
       actions.push(
-        `<a class="btn btn-ghost" href="${escapeAttr(installScriptUrl)}" download>${escapeHtml(scriptLabel)}</a>`
+        `<a class="btn btn-ghost" href="${escapeAttr(setupUrl)}" download>${escapeHtml(t("dl.downloadWinSetup"))}</a>`
       );
     }
     if (url) {
@@ -268,6 +277,14 @@ function serverBlock(key, item) {
         `<a class="btn btn-ghost" href="${escapeAttr(win2012Url)}" download>${escapeHtml(t("dl.downloadWin2012Exe"))}</a>`
       );
     }
+    if (installScriptUrl) {
+      const scriptLabel = isWindows
+        ? t("dl.downloadInstallPs1")
+        : t("dl.downloadInstallScript");
+      actions.push(
+        `<a class="btn btn-ghost" href="${escapeAttr(installScriptUrl)}" download>${escapeHtml(scriptLabel)}</a>`
+      );
+    }
     if (docsUrl) {
       actions.push(
         `<a class="btn btn-ghost" href="${escapeAttr(docsUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(t("dl.downloadDocs"))}</a>`
@@ -276,7 +293,7 @@ function serverBlock(key, item) {
   }
 
   const sameFolderHint = isWindows
-    ? `<p class="distro-hint">${escapeHtml(t("dl.windowsSameFolder"))}</p>`
+    ? `<p class="distro-hint">${escapeHtml(t("dl.windowsSetupPrimary"))}<br>${escapeHtml(t("dl.windowsSameFolder"))}</p>`
     : "";
 
   return `

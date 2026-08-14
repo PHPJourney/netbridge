@@ -4,14 +4,18 @@
   NetBridge nbvpn — Windows Server install (MVP)
 
 .DESCRIPTION
-  Installs nbvpn.exe, enables IPv4 forwarding + optional NetNat, opens UDP firewall,
-  then runs `nbvpn install` (keys, first peer, WireGuard tunnel service when available).
+  Installs nbvpn.exe, enables IPv4 forwarding + optional NetNat (Server 2016+),
+  opens UDP firewall, then runs `nbvpn install` (keys, first peer, profiles;
+  WireGuard tunnel service when available).
+
+  Prefer NetBridge-nbvpn-Setup.exe from GitHub Releases when available.
+  This script remains the advanced / Server 2012 path.
 
   Prerequisites:
     - Windows Server 2019/2022 recommended; Server 2012 R2 needs Go 1.20-built exe
     - Administrator PowerShell (Windows PowerShell 4+ / 5.1)
     - WireGuard for Windows: https://www.wireguard.com/install/
-      (provides wireguard.exe + wg.exe + Wintun) — official installer targets newer Windows
+      (optional for dry-run profile export; required for a real tunnel)
 
 .PARAMETER SkipInstall
   Only place binary + networking prep; do not run `nbvpn install`.
@@ -23,12 +27,7 @@
   Where to place nbvpn.exe (default: C:\Program Files\NetBridge)
 
 .EXAMPLE
-  # From deploy folder (elevated), with exe next to this script:
   powershell -ExecutionPolicy Bypass -File .\install.ps1
-
-.EXAMPLE
-  $env:NBVPN_BINARY_URL = 'https://example/nbvpn-windows-amd64-win2012.exe'
-  .\install.ps1
 #>
 [CmdletBinding()]
 param(
@@ -49,7 +48,6 @@ function Test-IsAdmin {
   return $p.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-# PowerShell 4-safe path helpers (never pass $null to -Path)
 function Get-CommandPath($cmd) {
   if (-not $cmd) { return $null }
   if ($cmd.Source) { return [string]$cmd.Source }
@@ -64,11 +62,32 @@ function Join-SafePath([string]$Base, [string]$Child) {
   return (Join-Path -Path $Base -ChildPath $Child)
 }
 
+function Get-WindowsBuildInfo {
+  $ver = [Environment]::OSVersion.Version
+  $isLegacy = ($ver.Major -lt 10)  # Server 2012 / 2012 R2 = 6.2 / 6.3
+  return @{
+    Version   = $ver
+    IsLegacy  = $isLegacy
+    Caption   = ("Windows {0}.{1}" -f $ver.Major, $ver.Minor)
+  }
+}
+
+function Test-SupportsNewNetNat {
+  $cmd = Get-Command New-NetNat -ErrorAction SilentlyContinue
+  if (-not $cmd) { return $false }
+  try {
+    $params = $cmd.Parameters
+    if (-not $params) { return $false }
+    return [bool]($params.ContainsKey('InternalIPInterfaceAddressPrefix'))
+  } catch {
+    return $false
+  }
+}
+
 if (-not (Test-IsAdmin)) {
   throw "Run as Administrator: powershell -ExecutionPolicy Bypass -File install.ps1"
 }
 
-# Resolve at SCRIPT scope — inside functions $MyInvocation is the function, not the script
 $ScriptDir = $null
 if ($PSScriptRoot -and ($PSScriptRoot -is [string]) -and $PSScriptRoot.Length -gt 0) {
   $ScriptDir = $PSScriptRoot
@@ -86,6 +105,9 @@ if (-not $ScriptDir) {
   $ScriptDir = (Get-Location).Path
 }
 Write-Log "ScriptDir: $ScriptDir"
+
+$osInfo = Get-WindowsBuildInfo
+Write-Log ("OS: {0} (legacy={1})" -f $osInfo.Caption, $osInfo.IsLegacy)
 
 $RepoRoot = $null
 $tryRoots = @(
@@ -110,7 +132,8 @@ if ($RepoRoot) {
 Write-Log "NetBridge nbvpn Windows install (label $Version)"
 Write-Log "InstallDir: $InstallDir"
 
-# --- WireGuard tools ---
+# --- WireGuard tools (soft-fail) ---
+$wgMissing = $false
 $wgCmd = Get-Command wg.exe -ErrorAction SilentlyContinue
 $wireguardCmd = Get-Command wireguard.exe -ErrorAction SilentlyContinue
 $wireguardPath = Get-CommandPath $wireguardCmd
@@ -145,13 +168,18 @@ if (-not $wgPath -and $wireguardPath) {
 }
 
 if (-not $wireguardPath) {
-  Write-Warn "WireGuard for Windows not found."
+  $wgMissing = $true
+  Write-Warn "WireGuard for Windows NOT FOUND — continuing in dry-run (keys/profiles only)."
   Write-Host @"
-Install WireGuard (includes Wintun + wireguard.exe + wg.exe):
-  https://www.wireguard.com/install/
 
-Then re-run this script. nbvpn can still generate keys/URI/QR in dry-run without it.
-On Server 2012 R2, official WireGuard/Wintun support is limited — prefer Server 2019+.
+********************************************************************************
+  MUST install WireGuard before a real VPN tunnel:
+    https://download.wireguard.com/windows-client/wireguard-installer.exe
+    https://www.wireguard.com/install/
+  After WireGuard is installed, re-run this script (or: nbvpn install).
+  On Server 2012 R2, official WireGuard/Wintun support is limited — prefer 2019+.
+********************************************************************************
+
 "@
 } else {
   Write-Log "Found wireguard: $wireguardPath"
@@ -197,7 +225,6 @@ if ($src) {
   $tmpName = "nbvpn-windows-amd64-$([guid]::NewGuid().ToString('n')).exe"
   $tmp = Join-SafePath $env:TEMP $tmpName
   if (-not $tmp) { throw "TEMP is empty; cannot download" }
-  # PS4: prefer .NET download if Invoke-WebRequest lacks -UseBasicParsing quirks
   try {
     Invoke-WebRequest -Uri $BinaryUrl -OutFile $tmp -UseBasicParsing
   } catch {
@@ -227,11 +254,11 @@ Place next to this script (prefer for Server 2012 R2):
 Or Win10+/Server 2016+:
   nbvpn-windows-amd64.exe
 Or set -BinaryUrl / NBVPN_BINARY_URL
+Or use NetBridge-nbvpn-Setup.exe from GitHub Releases.
 Build: ./server/nbvpn/scripts/build-windows-docker.sh win2012|win10
 "@
 }
 
-# Ensure InstallDir is on PATH for this session and machine (append if missing)
 $machinePath = [Environment]::GetEnvironmentVariable('Path', 'Machine')
 if (-not $machinePath) { $machinePath = '' }
 if ($machinePath -notlike "*$InstallDir*") {
@@ -247,7 +274,7 @@ $env:Path = "$InstallDir;$env:Path"
 & $TargetExe version
 if ($LASTEXITCODE -ne 0) { Write-Warn "nbvpn version returned non-zero" }
 
-# --- IP forward + NAT (client internet) ---
+# --- IP forward + NAT ---
 Write-Log "Enabling IPv4 forwarding"
 try {
   netsh interface ipv4 set global forwarding=enabled | Out-Null
@@ -255,7 +282,6 @@ try {
   Write-Warn "netsh forwarding: $_"
 }
 
-# Get-NetIPInterface / Set-NetIPInterface: Server 2012 R2+ with NetTCPIP; skip if missing
 if (Get-Command Get-NetIPInterface -ErrorAction SilentlyContinue) {
   try {
     Get-NetIPInterface -AddressFamily IPv4 -ErrorAction SilentlyContinue |
@@ -267,28 +293,33 @@ if (Get-Command Get-NetIPInterface -ErrorAction SilentlyContinue) {
 
 $natName = 'nbvpnNat'
 $natPrefix = '10.8.0.0/24'
-if (Get-Command Get-NetNat -ErrorAction SilentlyContinue) {
+if ($osInfo.IsLegacy) {
+  Write-Warn @"
+Server 2012 / 2012 R2: skipping New-NetNat (API not available / incomplete).
+For client internet egress, enable RRAS NAT or ICS manually:
+  1. Server Manager → Add Roles → Remote Access → Routing
+  2. Routing and Remote Access → Configure → NAT
+  3. Or share the public NIC via ICS (Network Connections → Properties → Sharing)
+See WINDOWS.md.
+"@
+} elseif (Test-SupportsNewNetNat) {
   $existingNat = Get-NetNat -Name $natName -ErrorAction SilentlyContinue
   if (-not $existingNat) {
-    Write-Log "Creating NetNat $natName for $natPrefix (requires Hyper-V / supported SKU)"
+    Write-Log "Creating NetNat $natName for $natPrefix"
     try {
       New-NetNat -Name $natName -InternalIPInterfaceAddressPrefix $natPrefix | Out-Null
       Write-Log "NetNat created"
     } catch {
       Write-Warn @"
 New-NetNat failed: $_.
-Client VPN may connect without internet egress until you enable NAT:
-  - Install Hyper-V / use New-NetNat, OR
-  - Enable Routing and Remote Access (RRAS) with NAT, OR
-  - Configure ICS on the public NIC.
-See WINDOWS.md for details.
+Enable RRAS NAT or ICS for client internet. See WINDOWS.md.
 "@
     }
   } else {
     Write-Log "NetNat $natName already present"
   }
 } else {
-  Write-Warn "Get-NetNat not available on this OS (common on Server 2012). Configure RRAS/ICS for client internet."
+  Write-Warn "New-NetNat with InternalIPInterfaceAddressPrefix not available. Configure RRAS/ICS (WINDOWS.md)."
 }
 
 # --- Firewall UDP 51820 ---
@@ -313,16 +344,44 @@ if ($SkipInstall -or $env:NBVPN_SKIP_INSTALL -eq '1') {
   exit 0
 }
 
-Write-Log "Running: nbvpn install"
+Write-Log "Running: nbvpn install (creates %ProgramData%\nbvpn even without WireGuard)"
 & $TargetExe install
 $code = $LASTEXITCODE
 if ($code -ne 0) {
   throw "nbvpn install exited $code"
 }
 
+# --- Verify data dir ---
+$dataDir = Join-SafePath $env:ProgramData 'nbvpn'
+if (-not $dataDir) { $dataDir = 'C:\ProgramData\nbvpn' }
+Write-Host ""
+Write-Host "=== Verify data directory ==="
+Write-Host "ProgramData is often HIDDEN. Open with:"
+Write-Host "  explorer $dataDir"
+if (Test-Path -LiteralPath $dataDir) {
+  Write-Log "Found: $dataDir"
+  Get-ChildItem -LiteralPath $dataDir -Recurse -ErrorAction SilentlyContinue |
+    Select-Object -First 40 FullName, Length |
+    Format-Table -AutoSize
+} else {
+  Write-Warn "Expected data dir missing: $dataDir — check NBVPN_DATA_DIR or LocalAppData\nbvpn"
+  $fallback = Join-SafePath $env:LOCALAPPDATA 'nbvpn'
+  if ($fallback -and (Test-Path -LiteralPath $fallback)) {
+    Write-Log "Found fallback: $fallback"
+    Get-ChildItem -LiteralPath $fallback -Recurse -ErrorAction SilentlyContinue |
+      Select-Object -First 40 FullName, Length |
+      Format-Table -AutoSize
+  }
+}
+
 Write-Host ""
 Write-Host "=== Windows install finished ==="
 Write-Host "Binary: $TargetExe"
-Write-Host "Show URI/QR/file:  nbvpn show"
+Write-Host "Show URI / files / PNG:  nbvpn show"
+Write-Host "  (terminal QR skipped on Windows by default; open the .png or use --uri)"
 Write-Host "Docs: server\install\windows\WINDOWS.md"
 Write-Host "Remember cloud ACL / security group: inbound UDP 51820"
+if ($wgMissing) {
+  Write-Host ""
+  Write-Host "*** WireGuard still missing — install it, then re-run for a live tunnel ***"
+}
