@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-14T12:00:00Z",
+  "updatedAt": "2026-08-14T12:30:00Z",
   "meta": {
     "landingPage": "GitHub Pages (apps/store)",
     "artifactStorage": "GitHub Releases (primary); OpenList optional mirror",
@@ -10,7 +10,7 @@
     "openlistBrowse": "http://154.37.213.245:5244/store",
     "downloadUrlHint": "Primary: GitHub Releases latest/download/<filename>. OpenList remains an optional mirror — see docs/delivery/nbvpn/OPENLIST-UPLOAD.md",
     "status": "github_releases_published",
-    "note": "Next tag: prefer NetBridge-windows-setup.exe + NetBridge-nbvpn-Setup.exe. v0.1.0 still has portable zip / raw exe until next Release.",
+    "note": "v0.1.1 publishes NetBridge-nbvpn-Setup.exe. Client Setup SHA refreshed when Build Clients assets land.",
     "officialSite": "https://phpjourney.github.io/netbridge/",
     "termsUrl": "./terms.html",
     "privacyUrl": "./privacy.html",
@@ -26,8 +26,8 @@
         "url": "#"
       }
     ],
-    "releaseTag": "v0.1.0",
-    "releaseUrl": "https://github.com/PHPJourney/netbridge/releases/tag/v0.1.0"
+    "releaseTag": "v0.1.1",
+    "releaseUrl": "https://github.com/PHPJourney/netbridge/releases/tag/v0.1.1"
   },
   "clients": {
     "windows": {
@@ -39,7 +39,7 @@
       "portableUrl": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-windows-portable.zip",
       "portableFilename": "NetBridge-windows-portable.zip",
       "status": "available",
-      "note": "Primary: Setup.exe (Program Files + shortcuts). Portable zip is secondary. Win10+. SHA256 refresh on next tag after CI builds Setup."
+      "note": "Primary: Setup.exe (Program Files + shortcuts). Portable zip is secondary. Win10+. SHA256: refresh after Build Clients uploads Setup to v0.1.1."
     },
     "macos": {
       "label": "macOS",
@@ -73,8 +73,8 @@
   "servers": {
     "debian": {
       "label": "Debian",
-      "version": "0.1.0",
-      "sha256": "3b131838d3d4a35a161a036045e8f40e7caad1030e76a64a58fefee836442ec7",
+      "version": "0.1.1",
+      "sha256": "7617f65bcb4efe793cbdd225c9c5b34ae0e3d41e327a1a1b1002ce4a013c023e",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-linux-amd64",
       "filename": "nbvpn-linux-amd64",
       "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/debian.sh",
@@ -84,8 +84,8 @@
     },
     "ubuntu": {
       "label": "Ubuntu",
-      "version": "0.1.0",
-      "sha256": "3b131838d3d4a35a161a036045e8f40e7caad1030e76a64a58fefee836442ec7",
+      "version": "0.1.1",
+      "sha256": "7617f65bcb4efe793cbdd225c9c5b34ae0e3d41e327a1a1b1002ce4a013c023e",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-linux-amd64",
       "filename": "nbvpn-linux-amd64",
       "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/ubuntu.sh",
@@ -95,8 +95,8 @@
     },
     "centos": {
       "label": "CentOS",
-      "version": "0.1.0",
-      "sha256": "3b131838d3d4a35a161a036045e8f40e7caad1030e76a64a58fefee836442ec7",
+      "version": "0.1.1",
+      "sha256": "7617f65bcb4efe793cbdd225c9c5b34ae0e3d41e327a1a1b1002ce4a013c023e",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-linux-amd64",
       "filename": "nbvpn-linux-amd64",
       "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/centos.sh",
@@ -106,19 +106,19 @@
     },
     "rhel": {
       "label": "RHEL",
-      "version": "0.1.0",
-      "sha256": "3b131838d3d4a35a161a036045e8f40e7caad1030e76a64a58fefee836442ec7",
+      "version": "0.1.1",
+      "sha256": "7617f65bcb4efe793cbdd225c9c5b34ae0e3d41e327a1a1b1002ce4a013c023e",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-linux-amd64",
       "filename": "nbvpn-linux-amd64",
       "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/rhel.sh",
       "installCommand": "curl -fsSL https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/rhel.sh | sudo bash",
       "status": "available",
-      "note": "linux-amd64 primary; also nbvpn-linux-arm64 and nbvpn-server-v0.1.0.zip in Release."
+      "note": "linux-amd64 primary; also nbvpn-linux-arm64 and nbvpn-server-v0.1.1.zip in Release."
     },
     "windows": {
       "label": "Windows Server",
-      "version": "0.1.0",
-      "sha256": "pending_next_tag",
+      "version": "0.1.1",
+      "sha256": "1a0b1a4247cc235329a9475ac8b5eb918f8e5e1f3b07433dc39f8dc5dc0f15f1",
       "setupUrl": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-nbvpn-Setup.exe",
       "setupFilename": "NetBridge-nbvpn-Setup.exe",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-windows-amd64.exe",
@@ -130,8 +130,8 @@
       "bootstrapUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/windows/bootstrap.ps1",
       "installCommand": "irm https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/windows/bootstrap.ps1 | iex",
       "status": "available",
-      "note": "Primary: Setup.exe（无需命令行）。高级：PowerShell bootstrap 一键或 install.ps1 + exe。Server 2012 R2 走 win2012。SHA256 下个 tag 刷新。",
-      "noteEn": "Primary: Setup.exe (no CLI). Advanced: PowerShell bootstrap one-liner or install.ps1 + exe. Server 2012 R2 uses the win2012 path. SHA256 refresh on next tag."
+      "note": "Primary: Setup.exe（无需命令行）。高级：PowerShell bootstrap 一键或 install.ps1 + exe。Server 2012 R2 走 win2012。",
+      "noteEn": "Primary: Setup.exe (no CLI). Advanced: PowerShell bootstrap one-liner or install.ps1 + exe. Server 2012 R2 uses the win2012 path."
     }
   }
 }
