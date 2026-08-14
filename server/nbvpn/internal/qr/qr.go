@@ -10,12 +10,14 @@ import (
 )
 
 // Terminal half-block QR: keep output within ~48–56 console columns so SSH /
-// narrow Windows terminals do not wrap. PNG uses High (Q) for camera scans.
+// narrow Windows terminals do not wrap (independent of PNG size).
+// PNG: High recovery for camera scans; absolute side pngSizePx (~256–384 band).
+// Former -10 module scale produced ~1010px for typical nbvpn URIs.
 const (
 	terminalRecoveryPreferred = qrcode.Medium
 	terminalRecoveryCompact   = qrcode.Low
 	pngRecovery               = qrcode.High
-	pngModulePx               = -10 // pixels per module (skip2 negative size)
+	pngSizePx                 = 320 // absolute PNG side (quiet zone included)
 	// MaxTerminalCols: hard max module/glyph width for half-block rendering.
 	// Target band is 48–56; pick 52 as default clamp.
 	MaxTerminalCols = 52
@@ -132,8 +134,9 @@ func IsTooWide(err error) bool {
 }
 
 // WritePNG writes a black-on-white PNG of the full URI (mode 0600; contains secrets).
+// Side length is pngSizePx (~320); Desktop copies use the same file bytes.
 func WritePNG(content, path string) error {
-	png, err := qrcode.Encode(content, pngRecovery, pngModulePx)
+	png, err := qrcode.Encode(content, pngRecovery, pngSizePx)
 	if err != nil {
 		return fmt.Errorf("QR PNG encode failed: %w", err)
 	}

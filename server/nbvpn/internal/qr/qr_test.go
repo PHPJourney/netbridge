@@ -2,6 +2,8 @@ package qr
 
 import (
 	"bytes"
+	"image"
+	_ "image/png"
 	"os"
 	"path/filepath"
 	"strings"
@@ -163,6 +165,23 @@ func TestWritePNG_roundtripFile(t *testing.T) {
 	if string(raw[:8]) != "\x89PNG\r\n\x1a\n" {
 		t.Fatal("not a PNG signature")
 	}
+	f, err := os.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	img, _, err := image.Decode(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	side := img.Bounds().Dx()
+	if side != pngSizePx {
+		t.Fatalf("PNG side %d want %d", side, pngSizePx)
+	}
+	if side < 256 || side > 384 {
+		t.Fatalf("PNG side %d outside scannable-but-compact band 256–384", side)
+	}
+	t.Logf("PNG %dx%d file=%d bytes", side, img.Bounds().Dy(), st.Size())
 }
 
 func stripANSI(s string) string {
