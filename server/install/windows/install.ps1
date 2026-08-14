@@ -44,8 +44,64 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-function Write-Log([string]$Message) { Write-Host "==> $Message" }
-function Write-Warn([string]$Message) { Write-Warning $Message }
+# Setup / operator logs (Inno MsgBox points here on failure)
+$script:NbVpnSetupLog = Join-Path $env:TEMP ("nbvpn-setup-{0:yyyyMMdd-HHmmss}.log" -f (Get-Date))
+$script:NbVpnSetupLogLatest = Join-Path $env:TEMP 'nbvpn-setup-latest.log'
+$script:NbVpnSetupLastError = Join-Path $env:TEMP 'nbvpn-setup-last-error.txt'
+try {
+  '' | Set-Content -LiteralPath $script:NbVpnSetupLogLatest -Encoding UTF8
+  if (Test-Path -LiteralPath $script:NbVpnSetupLastError) {
+    Remove-Item -Force -LiteralPath $script:NbVpnSetupLastError -ErrorAction SilentlyContinue
+  }
+} catch { }
+
+function Write-SetupFile([string]$Message) {
+  $line = '[{0:yyyy-MM-dd HH:mm:ss}] {1}' -f (Get-Date), $Message
+  try {
+    Add-Content -LiteralPath $script:NbVpnSetupLog -Value $line -Encoding UTF8
+    Add-Content -LiteralPath $script:NbVpnSetupLogLatest -Value $line -Encoding UTF8
+  } catch { }
+}
+
+function Write-Log([string]$Message) {
+  Write-Host "==> $Message"
+  Write-SetupFile $Message
+}
+function Write-Warn([string]$Message) {
+  Write-Warning $Message
+  Write-SetupFile "WARN: $Message"
+}
+
+function Save-SetupFailure([string]$Message) {
+  $body = @"
+NetBridge nbvpn install.ps1 FAILED
+
+$Message
+
+Setup log: $($script:NbVpnSetupLog)
+Latest log: $($script:NbVpnSetupLogLatest)
+msiexec log: $(Join-Path $env:ProgramData 'nbvpn\wireguard-msiexec.log')
+msiexec TEMP: $(Join-Path $env:TEMP 'nbvpn-wireguard-msiexec.log')
+
+If this is Server 2012/2012 R2: use nbvpn-windows-amd64-win2012.exe + install.ps1
+(modern Setup.exe is for Windows 10 / Server 2016+).
+"@
+  try {
+    Set-Content -LiteralPath $script:NbVpnSetupLastError -Value $body -Encoding UTF8
+    Write-SetupFile "FAIL: $Message"
+  } catch { }
+  Write-Host ""
+  Write-Host "=== FAILURE DETAILS (also in $($script:NbVpnSetupLastError)) ==="
+  Write-Host $body
+}
+
+# Persist unexpected throws for Inno MsgBox (exit code alone is not enough)
+trap {
+  try {
+    Save-SetupFailure ("Unhandled: " + $_.Exception.Message)
+  } catch { }
+  break
+}
 
 function Test-IsAdmin {
   $id = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -90,7 +146,9 @@ function Test-SupportsNewNetNat {
 }
 
 if (-not (Test-IsAdmin)) {
-  throw "Run as Administrator: powershell -ExecutionPolicy Bypass -File install.ps1"
+  $msg = "Run as Administrator: powershell -ExecutionPolicy Bypass -File install.ps1"
+  Save-SetupFailure $msg
+  throw $msg
 }
 
 $ScriptDir = $null
@@ -110,6 +168,7 @@ if (-not $ScriptDir) {
   $ScriptDir = (Get-Location).Path
 }
 Write-Log "ScriptDir: $ScriptDir"
+Write-Log "Setup log: $($script:NbVpnSetupLog)"
 
 $osInfo = Get-WindowsBuildInfo
 Write-Log ("OS: {0} (legacy={1})" -f $osInfo.Caption, $osInfo.IsLegacy)
@@ -140,14 +199,30 @@ Write-Log "InstallDir: $InstallDir"
 # --- WireGuard for Windows (auto-install pinned MSI when missing) ---
 $wgHelper = Join-SafePath $ScriptDir 'Install-WireGuard.ps1'
 if (-not $wgHelper -or -not (Test-Path -LiteralPath $wgHelper)) {
-  throw "Missing Install-WireGuard.ps1 next to install.ps1 ($ScriptDir)"
+  $msg = "Missing Install-WireGuard.ps1 next to install.ps1 ($ScriptDir)"
+  Save-SetupFailure $msg
+  throw $msg
 }
 . $wgHelper
 
-$wgSearchRoots = @($ScriptDir)
-if ($InstallDir) { $wgSearchRoots += $InstallDir }
+# Search both script dir (Setup unpack) and InstallDir — MSI lives in {app}\vendor\wireguard
+$wgSearchRoots = @()
+if ($ScriptDir) { $wgSearchRoots += $ScriptDir }
+if ($InstallDir -and ($InstallDir -ne $ScriptDir)) { $wgSearchRoots += $InstallDir }
+# Explicit vendor hints for logging / Find-BundledWireGuardMsi roots
+foreach ($r in @($ScriptDir, $InstallDir)) {
+  if (-not $r) { continue }
+  $v = Join-SafePath $r 'vendor\wireguard'
+  if ($v -and (Test-Path -LiteralPath $v)) {
+    Write-Log "Found vendor\wireguard: $v"
+    Get-ChildItem -LiteralPath $v -ErrorAction SilentlyContinue | ForEach-Object {
+      Write-Log ("  vendor file: {0} ({1} bytes)" -f $_.Name, $_.Length)
+    }
+  }
+}
 $skipWg = $SkipWireGuard -or ($env:NBVPN_SKIP_WIREGUARD -eq '1')
-$wgResult = Ensure-WireGuardForWindows -SearchRoots $wgSearchRoots -AllowDownload -SkipInstall:$skipWg
+$setupLogDir = Join-Path $env:ProgramData 'nbvpn'
+$wgResult = Ensure-WireGuardForWindows -SearchRoots $wgSearchRoots -AllowDownload -SkipInstall:$skipWg -SetupLogDir $setupLogDir
 
 $wgMissing = $false
 $wgRebootSuggested = [bool]$wgResult.RebootSuggested
@@ -162,23 +237,28 @@ switch ($wgResult.Status) {
 
 ********************************************************************************
   Server 2012 / 2012 R2: official WireGuard for Windows is NOT supported.
-  Continuing with keys/profiles only (dry-run). Prefer Server 2016+ / Win10+.
-  Manual / historical builds: https://www.wireguard.com/install/
+  Continuing with keys/profiles only (dry-run) — this is NOT a Setup hard-fail.
+  Prefer Server 2016+ / Win10+ for a real tunnel.
+  On 2012 use: nbvpn-windows-amd64-win2012.exe + install.ps1 from Releases
+  (modern NetBridge-nbvpn-Setup.exe targets Win10+/2016+).
+  Manual / historical WG: https://www.wireguard.com/install/
 ********************************************************************************
 
 "@
+    Write-Log $wgResult.Message
   }
   'Skipped' {
     $wgMissing = $true
     Write-Warn $wgResult.Message
   }
   default {
-    # Present on modern OS after failed auto-install: hard-fail (one-click expectation)
+    # Modern OS after failed auto-install: hard-fail (one-click expectation).
+    # Legacy: never hard-fail on WG — continue dry-run.
     if ($osInfo.IsLegacy) {
       $wgMissing = $true
       Write-Warn $wgResult.Message
     } else {
-      throw @"
+      $msg = @"
 WireGuard for Windows could not be installed automatically.
 
 $($wgResult.Message)
@@ -186,7 +266,10 @@ $($wgResult.Message)
 Pinned MSI: see wireguard-bundle.json / https://download.wireguard.com/windows-client/
 Or: https://www.wireguard.com/install/
 Advanced dry-run only: re-run with -SkipWireGuard
+Setup log: $($script:NbVpnSetupLog)
 "@
+      Save-SetupFailure $msg
+      throw $msg
     }
   }
 }
@@ -321,8 +404,22 @@ public static extern IntPtr SendMessageTimeout(
   Write-Warn "Could not broadcast environment change: $_"
 }
 
+Write-Log "Checking nbvpn binary runs: $TargetExe"
 & $TargetExe version
-if ($LASTEXITCODE -ne 0) { Write-Warn "nbvpn version returned non-zero" }
+if ($LASTEXITCODE -ne 0) {
+  if ($osInfo.IsLegacy) {
+    $msg = @"
+Bundled nbvpn.exe failed to run on this OS (exit $LASTEXITCODE).
+Server 2012/2012 R2 needs nbvpn-windows-amd64-win2012.exe (Go ≤ 1.20), not the
+Win10+ binary inside modern NetBridge-nbvpn-Setup.exe.
+Download the win2012 asset from GitHub Releases and run install.ps1 next to it.
+Setup log: $($script:NbVpnSetupLog)
+"@
+    Save-SetupFailure $msg
+    throw $msg
+  }
+  Write-Warn "nbvpn version returned non-zero (exit $LASTEXITCODE)"
+}
 
 Write-Host ""
 Write-Host "=== PATH verification ==="
@@ -426,7 +523,9 @@ Write-Log "Running: nbvpn install (creates %ProgramData%\nbvpn even without Wire
 & $TargetExe install
 $code = $LASTEXITCODE
 if ($code -ne 0) {
-  throw "nbvpn install exited $code"
+  $msg = "nbvpn install exited $code (this is not always a WireGuard MSI failure — see Setup log)"
+  Save-SetupFailure $msg
+  throw $msg
 }
 
 # --- Verify data dir ---

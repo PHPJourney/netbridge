@@ -1,19 +1,21 @@
-# RELEASE NOTES — Windows native GUI + WireGuard Setup harden (pre-v0.1.3)
+# RELEASE NOTES — WireGuard msiexec quoting + GUI 14001 (pre-v0.1.4)
 
-> Tag **v0.1.3** when ready for GitHub Release. This commit is on `main` only.
+> Tag **v0.1.4** when ready for GitHub Release. This commit is on `main` only — do **not** treat as a release until tagged.
 
-## Server (`NetBridge-nbvpn-Setup.exe`)
+## Fixes (v0.1.3 → v0.1.4)
 
-- **WG auto-install**: Setup **must** embed pinned MSI; `install.ps1` hard-fails Setup on error (no silent skip).
-- **`nbvpn-gui.exe`**: Fyne native window (not browser). In-window QR, Start/Stop via hidden `nbvpn`, app icon.
-- **Tray**: close → hide; tunnel keeps running; tray exit quits process.
-- **Icon**: embedded in `nbvpn.exe` / `nbvpn-gui.exe` + Setup icon.
+### WireGuard Setup hard-fail
 
-## Client (Flutter Windows)
+- **Root cause (Win10+/2016+):** `Install-WireGuard.ps1` passed msiexec args as a PowerShell array; MSI under `C:\Program Files\NetBridge\vendor\wireguard\` contains spaces → msiexec often **1619/1603** → `install.ps1` exit 1 → Inno aborted.
+- **Fix:** single quoted `ArgumentList` string; treat **3010/1641** as success; accept **1638** / partial install if `wireguard.exe` exists; success = **exe on disk**.
+- **Server 2012:** Setup `MinVersion=10.0` + clear refuse banner. Use `nbvpn-windows-amd64-win2012.exe` + `install.ps1` (WG skipped, dry-run).
+- **Logs:** `%TEMP%\nbvpn-setup-latest.log`, `%TEMP%\nbvpn-setup-last-error.txt`, msiexec logs under TEMP + `%ProgramData%\nbvpn\` — Inno MsgBox shows detail.
 
-- Close → tray; left-click tray restores; right-click: show / switch server / connect-disconnect / exit.
-- VPN stays connected while hidden.
+### GUI CreateProcess 14001
+
+- **Root cause:** Fyne/CGO MinGW build dynamically linked runtime DLLs (`libgcc` / `libstdc++` / `libwinpthread`) → SxS / 14001 on clean hosts.
+- **Fix:** CI static-links MinGW CRT (`CGO_LDFLAGS` + `-extldflags=-static`); `objdump` gate; Setup **no longer** auto-launches GUI post-install.
 
 ## Tag
 
-Push does **not** create a tag. Create `v0.1.3` when you want Release artifacts.
+Push does **not** create a tag. Create **`v0.1.4`** when you want Release artifacts / store sha update.

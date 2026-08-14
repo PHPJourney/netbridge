@@ -41,6 +41,7 @@ SolidCompression=yes
 PrivilegesRequired=admin
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
+MinVersion=10.0
 WizardStyle=modern
 SetupLogging=yes
 ChangesEnvironment=yes
@@ -67,6 +68,7 @@ Source: "{#SrcDir}\vendor\wireguard\*"; DestDir: "{app}\vendor\wireguard"; Flags
 Name: "{group}\NetBridge nbvpn GUI"; Filename: "{app}\nbvpn-gui.exe"; WorkingDir: "{app}"; IconFilename: "{app}\nbvpn-gui.exe"; Check: GuiExists
 Name: "{group}\nbvpn CLI help"; Filename: "{cmd}"; Parameters: "/k ""{app}\nbvpn.exe"" help"; IconFilename: "{app}\nbvpn.exe"
 Name: "{group}\Open data folder"; Filename: "{win}\explorer.exe"; Parameters: "%ProgramData%\nbvpn"
+Name: "{group}\Open Setup logs (TEMP)"; Filename: "{win}\explorer.exe"; Parameters: "%TEMP%"
 Name: "{group}\Uninstall NetBridge nbvpn"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\NetBridge nbvpn GUI"; Filename: "{app}\nbvpn-gui.exe"; WorkingDir: "{app}"; IconFilename: "{app}\nbvpn-gui.exe"; Tasks: desktopicon; Check: GuiExists
 
@@ -78,9 +80,10 @@ Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environmen
   ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"; \
   Check: NeedsAddPath(ExpandConstant('{app}')); Flags: preservestringtype
 
-; install.ps1 runs in CurStepChanged (hard-fail). Optional post-install GUI launch:
+; Do NOT auto-launch GUI after install (Fyne/CGO historically needed runtime DLLs → CreateProcess 14001).
+; User can start from Start Menu after a successful configure step.
 [Run]
-Filename: "{app}\nbvpn-gui.exe"; Description: "Launch NetBridge nbvpn GUI"; Flags: nowait postinstall skipifsilent; Check: GuiExists
+; intentionally empty — launch GUI manually from Start Menu
 
 [Code]
 function NeedsAddPath(Param: string): Boolean;
@@ -102,19 +105,87 @@ begin
   Result := FileExists(ExpandConstant('{app}\nbvpn-gui.exe'));
 end;
 
-function WireGuardMsiStaged: Boolean;
+function IsLegacyWindowsHost: Boolean;
 var
-  FindRec: TFindRec;
+  Ver: TWindowsVersion;
 begin
-  Result := FindFirst(ExpandConstant('{#SrcDir}\vendor\wireguard\*.msi'), FindRec);
-  if Result then
-    FindClose(FindRec);
+  GetWindowsVersionEx(Ver);
+  { Server 2012 / 2012 R2 = 6.2 / 6.3; Win10 / Server 2016+ = 10.0 }
+  Result := Ver.Major < 10;
+end;
+
+function ReadTextFileLimited(const FileName: string; MaxChars: Integer): string;
+var
+  Lines: TArrayOfString;
+  i: Integer;
+  Acc: string;
+begin
+  Result := '';
+  if not FileExists(FileName) then
+    exit;
+  if not LoadStringsFromFile(FileName, Lines) then
+    exit;
+  Acc := '';
+  for i := 0 to GetArrayLength(Lines) - 1 do
+  begin
+    if Acc <> '' then
+      Acc := Acc + #13#10;
+    Acc := Acc + Lines[i];
+    if Length(Acc) >= MaxChars then
+    begin
+      Acc := Copy(Acc, 1, MaxChars) + #13#10 + '…(truncated)';
+      break;
+    end;
+  end;
+  Result := Acc;
+end;
+
+function TempSetupErrorPath: string;
+begin
+  Result := ExpandConstant('{%TEMP}\nbvpn-setup-last-error.txt');
+end;
+
+function TempSetupLogPath: string;
+begin
+  Result := ExpandConstant('{%TEMP}\nbvpn-setup-latest.log');
+end;
+
+function FormatInstallFailureMessage(ResultCode: Integer): string;
+var
+  Detail: string;
+begin
+  Detail := ReadTextFileLimited(TempSetupErrorPath, 1200);
+  if Detail = '' then
+    Detail := ReadTextFileLimited(TempSetupLogPath, 800);
+  Result :=
+    'install.ps1 failed with exit code ' + IntToStr(ResultCode) + '.' + #13#10#13#10 +
+    'This is often WireGuard MSI install, wrong OS binary, or nbvpn configure — ' +
+    'not a silent skip.' + #13#10#13#10 +
+    'Logs:' + #13#10 +
+    '  %TEMP%\nbvpn-setup-last-error.txt' + #13#10 +
+    '  %TEMP%\nbvpn-setup-latest.log' + #13#10 +
+    '  %TEMP%\nbvpn-wireguard-msiexec.log' + #13#10 +
+    '  %ProgramData%\nbvpn\wireguard-msiexec.log' + #13#10 +
+    '  Setup log (this wizard)' + #13#10;
+  if Detail <> '' then
+    Result := Result + #13#10 + '--- detail ---' + #13#10 + Detail;
 end;
 
 function InitializeSetup(): Boolean;
 begin
   Result := True;
-  { Compile-time staging is enforced by build-setup; runtime check is belt-and-suspenders for local builds }
+  if IsLegacyWindowsHost then
+  begin
+    MsgBox(
+      'This Setup targets Windows 10 / Windows Server 2016+.' + #13#10#13#10 +
+      'Server 2012 / 2012 R2:' + #13#10 +
+      '  • Official WireGuard for Windows 1.1 MSI is NOT supported' + #13#10 +
+      '  • Use nbvpn-windows-amd64-win2012.exe + install.ps1 from GitHub Releases' + #13#10 +
+      '  • Do not expect the Fyne GUI (nbvpn-gui.exe) on 2012' + #13#10#13#10 +
+      'Setup will exit so WireGuard/GUI are not half-installed.',
+      mbError, MB_OK);
+    Result := False;
+  end;
 end;
 
 function ExecInstallPs1(): Boolean;
@@ -125,16 +196,20 @@ begin
   Params := '-NoProfile -ExecutionPolicy Bypass -File "' + ExpandConstant('{app}\install.ps1') +
     '" -InstallDir "' + ExpandConstant('{app}') + '"';
   Log('Running install.ps1: ' + Params);
+  Log('Working dir: ' + ExpandConstant('{app}'));
   if not Exec('powershell.exe', Params, ExpandConstant('{app}'), SW_SHOW, ewWaitUntilTerminated, ResultCode) then
   begin
-    MsgBox('Failed to launch install.ps1 (WireGuard + nbvpn configure).', mbError, MB_OK);
+    MsgBox(
+      'Failed to launch install.ps1 (WireGuard + nbvpn configure).' + #13#10 +
+      'Run elevated PowerShell:' + #13#10 +
+      '  powershell -ExecutionPolicy Bypass -File "' + ExpandConstant('{app}\install.ps1') + '"',
+      mbError, MB_OK);
     Result := False;
     exit;
   end;
   if ResultCode <> 0 then
   begin
-    MsgBox('install.ps1 failed with exit code ' + IntToStr(ResultCode) +
-      '. WireGuard may not be installed. See Setup log / PowerShell output.', mbError, MB_OK);
+    MsgBox(FormatInstallFailureMessage(ResultCode), mbError, MB_OK);
     Result := False;
     exit;
   end;
@@ -146,6 +221,8 @@ begin
   if CurStep = ssPostInstall then
   begin
     if not ExecInstallPs1() then
-      RaiseException('NetBridge install.ps1 failed — Setup aborted so WireGuard is not silently skipped.');
+      RaiseException(
+        'NetBridge install.ps1 failed — Setup aborted so WireGuard is not silently skipped.' + #13#10 +
+        'See %TEMP%\nbvpn-setup-last-error.txt and %TEMP%\nbvpn-setup-latest.log');
   end;
 end;

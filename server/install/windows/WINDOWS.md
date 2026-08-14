@@ -179,11 +179,40 @@ nbvpn status       # CLI still works
 
 GUI shells out to the installed `nbvpn.exe` with a **hidden console** (no black cmd flash). Stop must leave `nbvpn status` as not running.
 
-### WireGuard install reliability (v0.1.3+)
+### WireGuard install reliability (v0.1.4+)
 
 **Root cause of “Setup didn’t install WG” on earlier builds:** Inno used `skipifsourcedoesntexist` for `vendor\wireguard\*`, so a Setup could ship **without** the MSI; install-time download could fail on locked-down hosts; and `[Run] install.ps1` non-zero exit only **warned** (user could Continue). Not primarily a “2012 branch” issue unless the host was actually 2012.
 
-**Now:** CI/`build-setup.ps1` **refuse to build** without a pinned `.msi`; Inno **requires** `vendor\wireguard\*`; `install.ps1` runs in `CurStepChanged` and **aborts Setup** on failure; msiexec is waited with a log under `%ProgramData%\nbvpn\wireguard-msiexec.log`. Already-installed `wireguard.exe` → skip.
+**v0.1.3 hard-fail** aborted Setup on `install.ps1` exit ≠ 0 (good), but two real failures still looked opaque:
+
+1. **msiexec path quoting** — MSI under `C:\Program Files\NetBridge\vendor\wireguard\` has spaces; PowerShell `Start-Process -ArgumentList @(…)` mangled the path → msiexec 1619/1603 → hard-fail.
+2. **Server 2012** — modern Setup / WG 1.1 MSI / Fyne GUI are not for 2012; failures were mislabeled as generic WG errors.
+
+**Now (v0.1.4):**
+
+| Policy | Behavior |
+|--------|----------|
+| Win10+ / Server 2016+ | Bundled MSI must install (or `wireguard.exe` already present → skip). Hard-fail Setup if missing after install. |
+| Server 2012 / 2012 R2 | Setup **refuses** (`MinVersion=10.0` + banner). Use `nbvpn-windows-amd64-win2012.exe` + `install.ps1` (WG skipped, dry-run profiles). |
+| msiexec **3010** / **1641** | Treated as success; reboot then `nbvpn start`. |
+| Success criterion | `wireguard.exe` under Program Files (not msiexec 0 alone). |
+| Logs | `%TEMP%\nbvpn-setup-latest.log`, `%TEMP%\nbvpn-setup-last-error.txt`, `%TEMP%\nbvpn-wireguard-msiexec.log`, `%ProgramData%\nbvpn\wireguard-msiexec.log` — Inno MsgBox shows path + tail. |
+
+CI/`build-setup.ps1` still **refuse to build** without a pinned `.msi`; Inno **requires** `vendor\wireguard\*`.
+
+### GUI CreateProcess 14001 (v0.1.4+)
+
+**Cause:** `nbvpn-gui` is Fyne + CGO built with MinGW. Dynamically linked `libgcc` / `libstdc++` / `libwinpthread` → on clean Servers without those DLLs, Windows reports **side-by-side / 14001**.
+
+**Fix:** CI builds with `-static-libgcc -static-libstdc++` and `-extldflags=-static`, then `objdump` fails the job if MinGW runtime DLLs remain. Setup **does not** auto-launch the GUI after install (Start Menu instead).
+
+```powershell
+# After Setup (new terminal):
+nbvpn-gui          # or Start Menu → NetBridge nbvpn GUI
+nbvpn status       # CLI still works
+```
+
+GUI shells out to the installed `nbvpn.exe` with a **hidden console** (no black cmd flash). Stop must leave `nbvpn status` as not running.
 
 ## Show / QR on Windows
 
@@ -219,7 +248,7 @@ sc.exe query WireGuardTunnel`$nbvpn
 ## Gaps vs Linux (honest)
 
 1. **NAT on 2012**: no `New-NetNat` — use RRAS/ICS.
-2. **Server 2012 + current WG**: no official tunnel — dry-run profiles only.
+2. **Server 2012 + current WG**: no official tunnel — dry-run profiles only; use win2012 exe + `install.ps1` (not modern Setup).
 3. **arm64 Windows** not in MVP artifacts.
 4. **Reboot**: rare (`msiexec` 3010) before Wintun/WireGuardNT loads.
 
