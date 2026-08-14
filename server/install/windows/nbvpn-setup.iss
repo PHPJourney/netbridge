@@ -51,6 +51,11 @@ UninstallDisplayIcon={app}\nbvpn-gui.exe
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
+; MinVersion=10.0 aborts BEFORE InitializeSetup — override the stock English box
+; ("This program does not support the version of Windows...") with a clear zh+en path.
+[Messages]
+WindowsVersionNotSupported=本安装包仅支持 Windows 10 / Windows Server 2016 及以上，不能在 Server 2012 / 2012 R2 上运行。%n%n若您的系统是 Server 2012 / 2012 R2：请勿使用本 Setup / 现代 GUI。请从 GitHub Releases（v0.1.4+）下载：%n  • nbvpn-windows-amd64-win2012.exe%n  • install.ps1%n放到同一文件夹后，以管理员打开 PowerShell：%n  powershell -ExecutionPolicy Bypass -File .\install.ps1 -SkipWireGuard%n%n说明：无 Fyne GUI；官方 WireGuard 1.1 MSI 不支持 2012（仅导出配置 / dry-run）。%n%n---%nThis Setup requires Windows 10 / Server 2016+. On Server 2012 / 2012 R2 use nbvpn-windows-amd64-win2012.exe + install.ps1 (-SkipWireGuard). No Fyne GUI.
+
 [Files]
 Source: "{#SrcDir}\{#SrcExe}"; DestDir: "{app}"; DestName: "nbvpn.exe"; Flags: ignoreversion
 Source: "{#SrcDir}\{#SrcGuiExe}"; DestDir: "{app}"; DestName: "nbvpn-gui.exe"; Flags: ignoreversion
@@ -174,15 +179,17 @@ end;
 function InitializeSetup(): Boolean;
 begin
   Result := True;
+  { Backup if MinVersion is ever lowered — primary refuse is [Messages] WindowsVersionNotSupported }
   if IsLegacyWindowsHost then
   begin
     MsgBox(
-      'This Setup targets Windows 10 / Windows Server 2016+.' + #13#10#13#10 +
-      'Server 2012 / 2012 R2:' + #13#10 +
-      '  • Official WireGuard for Windows 1.1 MSI is NOT supported' + #13#10 +
-      '  • Use nbvpn-windows-amd64-win2012.exe + install.ps1 from GitHub Releases' + #13#10 +
-      '  • Do not expect the Fyne GUI (nbvpn-gui.exe) on 2012' + #13#10#13#10 +
-      'Setup will exit so WireGuard/GUI are not half-installed.',
+      '本安装包仅支持 Windows 10 / Windows Server 2016+。' + #13#10#13#10 +
+      'Server 2012 / 2012 R2 请改用：' + #13#10 +
+      '  • nbvpn-windows-amd64-win2012.exe' + #13#10 +
+      '  • install.ps1' + #13#10 +
+      '管理员执行：powershell -ExecutionPolicy Bypass -File .\install.ps1 -SkipWireGuard' + #13#10#13#10 +
+      '无 Fyne GUI；官方 WireGuard 1.1 不支持 2012。' + #13#10 +
+      'Setup 将退出，避免半安装。',
       mbError, MB_OK);
     Result := False;
   end;

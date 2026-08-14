@@ -117,12 +117,36 @@ nbvpn start
 explorer $env:ProgramData\nbvpn
 ```
 
-### B. PowerShell (advanced / 2012)
+### B. PowerShell — Server 2012 / 2012 R2（不要用 Setup）
+
+**不要下载** `NetBridge-nbvpn-Setup.exe`、`nbvpn-windows-amd64.exe`、`nbvpn-gui-*.exe`（会英文报不支持当前 Windows / Go 1.21+ 无法运行）。
+
+从 GitHub Release（如 v0.1.4）下载这两个文件到同一文件夹（例 `C:\NetBridge\deploy\`）：
+
+1. `nbvpn-windows-amd64-win2012.exe`
+2. `install.ps1`（Release 旁路或 raw：`server/install/windows/install.ps1`）
+
+管理员 PowerShell：
+
+```powershell
+mkdir C:\NetBridge\deploy -Force
+cd C:\NetBridge\deploy
+# 确认本目录已有 nbvpn-windows-amd64-win2012.exe 与 install.ps1
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -SkipWireGuard
+```
+
+- `-SkipWireGuard`：跳过官方 WG 1.1 MSI（2012 不支持）。
+- **无 Fyne GUI**；用 CLI：`nbvpn show --uri` / `nbvpn status`（隧道多为 dry-run / 仅导出配置）。
+- 客户端真隧道建议换 **Server 2016+** 或 Linux 节点。
+
+Or one-liner (detects OS): `irm …/bootstrap.ps1 | iex`
+
+### C. PowerShell (advanced / modern Windows without Setup)
 
 ```powershell
 mkdir C:\NetBridge\deploy -Force
 # copy install.ps1 + Install-WireGuard.ps1 + wireguard-bundle.json
-# + nbvpn-windows-amd64-win2012.exe (or amd64.exe) into that folder
+# + nbvpn-windows-amd64.exe into that folder
 # optional: vendor\wireguard\wireguard-amd64-*.msi for offline
 cd C:\NetBridge\deploy
 powershell -ExecutionPolicy Bypass -File .\install.ps1

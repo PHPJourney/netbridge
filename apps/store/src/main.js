@@ -371,6 +371,19 @@ function windowsServerBlock({
       <p class="distro-hint">${escapeHtml(t("dl.windowsSetupHint"))}</p>
       <details class="distro-advanced">
         <summary>${escapeHtml(t("dl.windowsAdvanced"))}</summary>
+        ${
+          win2012Url
+            ? `<p class="distro-advanced-lead">${escapeHtml(t("dl.windows2012Lead"))}</p>
+        <div class="card-actions">
+          <a class="btn btn-ghost btn-block" href="${escapeAttr(win2012Url)}" download>${escapeHtml(t("dl.downloadWin2012Exe"))}</a>
+        </div>
+        <div class="command-row">
+          <code data-copy-source>${escapeHtml(t("dl.windows2012Cmd"))}</code>
+          <button class="btn btn-ghost copy-btn" type="button" data-copy ${pending ? "disabled" : ""}>${escapeHtml(t("dl.copy"))}</button>
+        </div>
+        <p class="distro-hint">${escapeHtml(t("dl.windowsSameFolder"))}</p>`
+            : ""
+        }
         <p class="distro-advanced-lead">${escapeHtml(t("dl.windowsBootstrapHint"))}</p>
         <div class="command-row">
           <code data-copy-source>${escapeHtml(cmd)}</code>

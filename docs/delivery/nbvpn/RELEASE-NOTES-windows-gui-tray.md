@@ -2,6 +2,12 @@
 
 > Tag **v0.1.4** when ready for GitHub Release. This commit is on `main` only — do **not** treat as a release until tagged.
 
+## Follow-up on main (post-v0.1.4, suggest **v0.1.5** when retagging Setup)
+
+- **Inno `MinVersion=10.0`** on 2012 showed stock English `WindowsVersionNotSupported`. Override `[Messages]` + `InitializeSetup` with **zh+en** path to `win2012 exe` + `install.ps1 -SkipWireGuard`.
+- Store Windows card: Setup hint = Win10+/2016+ only; Advanced opens with **2012 download CTA** (not buried as a text link).
+- PE check: modern `nbvpn-windows-amd64.exe` still `MajorOS/Subsystem=6.1` — Win10 “does not support” from Setup is **MinVersion**, not PE; 2012 also cannot run Go 1.21+ CLI even if PE is 6.1.
+
 ## Fixes (v0.1.3 → v0.1.4)
 
 ### WireGuard Setup hard-fail
