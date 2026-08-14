@@ -724,6 +724,13 @@ code {
   min-width: 4.5rem;
 }
 
+.distro-hint {
+  margin: 0.55rem 0 0.85rem;
+  font-size: 0.88rem;
+  color: var(--accent, #2ec4b8);
+  line-height: 1.45;
+}
+
 .distro-note {
   margin: 0.65rem 0 0;
   font-size: 0.88rem;

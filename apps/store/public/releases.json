@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-14T10:30:00Z",
+  "updatedAt": "2026-08-14T18:55:00Z",
   "meta": {
     "landingPage": "GitHub Pages (apps/store)",
     "artifactStorage": "GitHub Releases (primary); OpenList optional mirror",
@@ -72,46 +72,58 @@
       "version": "latest",
       "sha256": "pending-first-release",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-linux-amd64",
+      "filename": "nbvpn-linux-amd64",
+      "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/debian.sh",
       "installCommand": "curl -fsSL https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/debian.sh | sudo bash",
       "status": "ci_placeholder",
-      "note": "Binary from GitHub Releases; set NBVPN_BINARY_URL if install script needs it."
+      "note": "One-liner pulls the install script from GitHub raw. Binary from Releases (set NBVPN_BINARY_URL if needed)."
     },
     "ubuntu": {
       "label": "Ubuntu",
       "version": "latest",
       "sha256": "pending-first-release",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-linux-amd64",
+      "filename": "nbvpn-linux-amd64",
+      "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/ubuntu.sh",
       "installCommand": "curl -fsSL https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/ubuntu.sh | sudo bash",
       "status": "ci_placeholder",
-      "note": "Shares nbvpn-linux-amd64 with Debian."
+      "note": "Shares nbvpn-linux-amd64 with Debian. One-liner includes companion script URL."
     },
     "centos": {
       "label": "CentOS",
       "version": "latest",
       "sha256": "pending-first-release",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-linux-amd64",
+      "filename": "nbvpn-linux-amd64",
+      "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/centos.sh",
       "installCommand": "curl -fsSL https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/centos.sh | sudo bash",
       "status": "ci_placeholder",
-      "note": "Rocky/Alma via rhel-family."
+      "note": "Rocky/Alma via rhel-family. One-liner includes companion script URL."
     },
     "rhel": {
       "label": "RHEL",
       "version": "latest",
       "sha256": "pending-first-release",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-linux-amd64",
+      "filename": "nbvpn-linux-amd64",
+      "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/rhel.sh",
       "installCommand": "curl -fsSL https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/rhel.sh | sudo bash",
       "status": "ci_placeholder",
-      "note": "Shares linux-amd64; arm64 artifact: nbvpn-linux-arm64"
+      "note": "Shares linux-amd64; arm64 artifact: nbvpn-linux-arm64. One-liner includes companion script URL."
     },
     "windows": {
       "label": "Windows Server",
       "version": "latest",
       "sha256": "pending-first-release",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-windows-amd64.exe",
-      "installCommand": "powershell -ExecutionPolicy Bypass -File .\\install.ps1",
       "filename": "nbvpn-windows-amd64.exe",
+      "win2012Url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-windows-amd64-win2012.exe",
+      "win2012Filename": "nbvpn-windows-amd64-win2012.exe",
+      "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/windows/install.ps1",
+      "docsUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/windows/WINDOWS.md",
+      "installCommand": "powershell -ExecutionPolicy Bypass -File .\\install.ps1",
       "status": "ci_placeholder",
-      "note": "Win10+/Server 2016+: nbvpn-windows-amd64.exe. Server 2012 R2: nbvpn-windows-amd64-win2012.exe (Go 1.20). Bundle: nbvpn-server-<tag>.zip"
+      "note": "Download install.ps1 and the matching exe into the same folder, then run the PowerShell command. Win10+/Server 2016+: nbvpn-windows-amd64.exe. Server 2012 R2: nbvpn-windows-amd64-win2012.exe (Go 1.20). Exe comes from GitHub Releases (raw cannot serve binaries well)."
     }
   }
 }

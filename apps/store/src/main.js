@@ -230,8 +230,54 @@ function serverBlock(key, item) {
   const sha = item.sha256 || t("dl.shaPending");
   const cmd = item.installCommand || t("dl.uploadPending");
   const url = item.url || "";
-  const note = item.note || "";
-  const pending = item.status === "pending_upload" || !url;
+  const installScriptUrl = item.installScriptUrl || "";
+  const win2012Url = item.win2012Url || "";
+  const docsUrl = item.docsUrl || "";
+  const note =
+    getLang() === "en" ? item.noteEn || item.note || "" : item.note || item.noteEn || "";
+  const hasAnyDownload = Boolean(url || installScriptUrl || win2012Url);
+  const pending = item.status === "pending_upload" || !hasAnyDownload;
+  const isWindows = key === "windows";
+
+  const actions = [];
+  if (pending) {
+    actions.push(
+      `<span class="btn btn-ghost is-disabled" aria-disabled="true">${escapeHtml(t("dl.uploadPending"))}</span>`
+    );
+  } else {
+    if (installScriptUrl) {
+      const scriptLabel = isWindows
+        ? t("dl.downloadInstallPs1")
+        : t("dl.downloadInstallScript");
+      actions.push(
+        `<a class="btn btn-ghost" href="${escapeAttr(installScriptUrl)}" download>${escapeHtml(scriptLabel)}</a>`
+      );
+    }
+    if (url) {
+      const pkgLabel = isWindows
+        ? t("dl.downloadWinExe")
+        : item.filename
+          ? `${t("dl.download")} ${item.filename}`
+          : t("dl.downloadPkg");
+      actions.push(
+        `<a class="btn btn-ghost" href="${escapeAttr(url)}" download>${escapeHtml(pkgLabel)}</a>`
+      );
+    }
+    if (win2012Url) {
+      actions.push(
+        `<a class="btn btn-ghost" href="${escapeAttr(win2012Url)}" download>${escapeHtml(t("dl.downloadWin2012Exe"))}</a>`
+      );
+    }
+    if (docsUrl) {
+      actions.push(
+        `<a class="btn btn-ghost" href="${escapeAttr(docsUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(t("dl.downloadDocs"))}</a>`
+      );
+    }
+  }
+
+  const sameFolderHint = isWindows
+    ? `<p class="distro-hint">${escapeHtml(t("dl.windowsSameFolder"))}</p>`
+    : "";
 
   return `
     <article class="distro-block" data-distro="${escapeAttr(key)}">
@@ -242,12 +288,9 @@ function serverBlock(key, item) {
         <code data-copy-source>${escapeHtml(cmd)}</code>
         <button class="btn btn-ghost copy-btn" type="button" data-copy ${pending ? "disabled" : ""}>${escapeHtml(t("dl.copy"))}</button>
       </div>
+      ${sameFolderHint}
       <div class="card-actions">
-        ${
-          pending
-            ? `<span class="btn btn-ghost is-disabled" aria-disabled="true">${escapeHtml(t("dl.uploadPending"))}</span>`
-            : `<a class="btn btn-ghost" href="${escapeAttr(url)}" download>${escapeHtml(t("dl.downloadPkg"))}</a>`
-        }
+        ${actions.join("\n        ")}
       </div>
       ${note ? `<p class="distro-note">${escapeHtml(note)}</p>` : ""}
     </article>
