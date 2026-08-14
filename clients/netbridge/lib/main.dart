@@ -58,6 +58,9 @@ class NetBridgeApp extends StatefulWidget {
 
 class _NetBridgeAppState extends State<NetBridgeApp> {
   AppController get _controller => widget.controller;
+  /// Keep a stable navigator across locale-driven MaterialApp rebuilds so
+  /// add-server routes are not wiped when the server list notifies.
+  final GlobalKey<NavigatorState> _navKey = GlobalKey<NavigatorState>();
 
   @override
   void dispose() {
@@ -78,6 +81,7 @@ class _NetBridgeAppState extends State<NetBridgeApp> {
       listenable: _controller,
       builder: (context, _) {
         return MaterialApp(
+          navigatorKey: _navKey,
           onGenerateTitle: (ctx) => AppLocalizations.of(ctx).appTitle,
           debugShowCheckedModeBanner: false,
           theme: buildNbTheme(),
@@ -97,6 +101,8 @@ class _NetBridgeAppState extends State<NetBridgeApp> {
             }
             return const Locale('zh');
           },
+          // Home listens to controller itself; avoid depending on MaterialApp
+          // recreation for list updates.
           home: HomeScreen(controller: _controller),
         );
       },

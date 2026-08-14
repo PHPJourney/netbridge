@@ -137,9 +137,9 @@ VpnTunnel createVpnTunnel({bool forceStub = false}) {
     return StubVpnTunnel(
       capabilityNote:
           'iOS/macOS：WGExtension 脚手架已就位，但尚未在 Xcode 链接/签名 '
-          '(AppleTunnelConfig.extensionTargetLinked=false)。当前为模拟隧道；'
-          '完成 IMPL.md「Xcode 步骤」后改为 true。App Group: '
-          '${AppleTunnelConfig.appGroupId}。',
+          '(AppleTunnelConfig.extensionTargetLinked=false)。'
+          '不会弹出系统 VPN 权限；点连接会提示改用官方 WireGuard 或完成签名。'
+          'App Group: ${AppleTunnelConfig.appGroupId}。',
     );
   }
   return StubVpnTunnel();

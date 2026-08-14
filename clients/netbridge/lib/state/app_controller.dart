@@ -144,9 +144,18 @@ class AppController extends ChangeNotifier {
       createdAt: now,
       updatedAt: now,
     );
+    // Update UI immediately — never wait on Keychain/prefs (macOS sandbox
+    // Keychain often fails; a thrown persist used to skip notifyListeners).
     servers = [...servers, entry];
-    await persist();
     notifyListeners();
+    try {
+      await persist();
+    } catch (e) {
+      lastError = languageCode == 'en'
+          ? 'Server saved in memory but disk persist failed: $e'
+          : '服务器已加入列表，但写入本地存储失败：$e';
+      notifyListeners();
+    }
     return entry;
   }
 
@@ -155,8 +164,15 @@ class AppController extends ChangeNotifier {
     if (i < 0) return;
     servers[i].localName = localName.trim();
     servers[i].updatedAt = DateTime.now().toUtc();
-    await persist();
     notifyListeners();
+    try {
+      await persist();
+    } catch (e) {
+      lastError = languageCode == 'en'
+          ? 'Rename kept in memory but persist failed: $e'
+          : '已重命名，但写入本地存储失败：$e';
+      notifyListeners();
+    }
   }
 
   Future<void> deleteServer(String id) async {
@@ -167,8 +183,15 @@ class AppController extends ChangeNotifier {
       activeServerId = null;
     }
     servers = servers.where((e) => e.id != id).toList();
-    await persist();
     notifyListeners();
+    try {
+      await persist();
+    } catch (e) {
+      lastError = languageCode == 'en'
+          ? 'Removed from list but persist failed: $e'
+          : '已从列表移除，但写入本地存储失败：$e';
+      notifyListeners();
+    }
   }
 
   Future<void> setKillSwitch(bool value) async {
@@ -187,6 +210,10 @@ class AppController extends ChangeNotifier {
   String humanize(Object error) =>
       humanizeVpnError(error, languageCode: languageCode);
 
+  String get stubVpnBlockedMessage => languageCode == 'en'
+      ? 'This build has no signed Network Extension, so macOS/iOS will not show a system VPN permission dialog and cannot create a real tunnel. Use the official WireGuard app with the .conf from `nbvpn`, or sign + embed WGExtension (Apple Developer Team) — see Settings / IMPL.md.'
+      : '当前构建未嵌入已签名的 Network Extension：macOS/iOS 不会弹出系统 VPN 权限，也无法建立真实隧道。请用官方 WireGuard 客户端导入 nbvpn 导出的 .conf；若需应用内真连，需 Apple Developer Team 签名并链接 WGExtension（见设置页 / IMPL.md）。';
+
   Future<void> connect(String serverId) async {
     ServerEntry? entry;
     for (final e in servers) {
@@ -198,6 +225,16 @@ class AppController extends ChangeNotifier {
     if (entry == null) return;
 
     lastError = null;
+
+    // Stub ≠ VPN: never fake “connected” or imply a permission prompt.
+    if (!supportsRealTunnel) {
+      activeServerId = null;
+      status = VpnUiStatus.error;
+      lastError = stubVpnBlockedMessage;
+      notifyListeners();
+      return;
+    }
+
     // Only one tunnel: disconnect first if switching.
     if (activeServerId != null &&
         activeServerId != serverId &&
@@ -212,26 +249,15 @@ class AppController extends ChangeNotifier {
     try {
       await tunnel.connect(entry.profile, killSwitch: killSwitch);
     } catch (e) {
-      // On Apple, if extension is linked but startVpn fails, fall back to stub
-      // so UI remains usable (scaffold without WireGuardKit / unsigned build).
-      if (!_usingFallbackStub &&
-          (defaultTargetPlatform == TargetPlatform.iOS ||
-              defaultTargetPlatform == TargetPlatform.macOS)) {
-        try {
-          await _stageSub?.cancel();
-          _usingFallbackStub = true;
-          _fallbackStub = createVpnTunnel(forceStub: true);
-          await _fallbackStub!.initialize();
-          _stageSub = _fallbackStub!.stageStream.listen(_onStage);
-          lastError = languageCode == 'en'
-              ? 'Packet Tunnel failed to start; fell back to stub (not production VPN). Detail: ${humanize(e)}'
-              : 'Packet Tunnel 启动失败，已回退模拟隧道（非生产 VPN）。详情：${humanize(e)}';
-          await _fallbackStub!.connect(entry.profile, killSwitch: killSwitch);
-          notifyListeners();
-          return;
-        } catch (_) {
-          // fall through to error
-        }
+      // Apple: do not silently fall back to Stub “connected”.
+      if (defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.macOS) {
+        status = VpnUiStatus.error;
+        lastError =
+            '$stubVpnBlockedMessage ${languageCode == 'en' ? 'Detail' : '详情'}: ${humanize(e)}';
+        activeServerId = null;
+        notifyListeners();
+        return;
       }
       status = VpnUiStatus.error;
       lastError = humanize(e);

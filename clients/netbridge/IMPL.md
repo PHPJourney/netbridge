@@ -12,7 +12,7 @@ Flutter 单仓四端（Android / iOS / Windows / macOS）客户端，产品名 *
 - 导入：`nbvpn:1?<base64url>` URI、`.nbvpn.json`、移动端相机扫码（QR=URI）  
 - Profile 解析：`lib/profile/`（与服务端 Go 契约对齐）；`sanitizeUriInput` + `parseFlexibleImport`  
 - 连接错误：`lib/services/vpn/vpn_errors.dart`（`humanizeVpnError`，支持 zh/en）  
-- 凭据：`flutter_secure_storage`；Kill Switch / 语言偏好：`shared_preferences`（Kill Switch 默认开）  
+- 凭据 / 服务器清单：`ServerStore`（`flutter_secure_storage` + **桌面端 SharedPreferences 镜像**；macOS 沙盒 Keychain 失败时列表仍可读写）；Kill Switch / 语言：`shared_preferences`（Kill Switch 默认开）  
 - 品牌链接：`lib/config/brand_links.dart`（官方站 / 用户协议 / 隐私政策；默认对齐 store `meta` OpenList，**生产须替换为正式 URL**）  
 - 文案：`flutter gen-l10n`（`lib/l10n/app_zh.arb` + `app_en.arb`）；设置内「跟随系统 / 中文 / English」
 - **Windows / 桌面托盘**：`lib/desktop/desktop_tray.dart` — 关窗隐藏到托盘（VPN 保持）；右键显式 `popUpContextMenu`：显示主窗口、切换已保存节点、连接/断开、退出
@@ -70,9 +70,9 @@ flutter run -d <ios-device-id>
 | **Android** | 完整（含扫码） | **可用**（`wireguard_flutter`，需系统 VPN 授权） | 偏好已存；依赖 VPN 服务路由，完整阻断视 OEM | 推荐优先联调 |
 | **iOS** | 完整（含扫码） | **脚手架就绪，未链接** | UI + 偏好；无系统级 KS | 见下方 Xcode 步骤；`extensionTargetLinked=false` → Stub |
 | **Windows** | 完整（文件/URI；无相机扫码） | **部分**（插件支持，需**管理员**运行） | UI + 偏好；无防火墙 KS | 提权与安装包签名待 release |
-| **macOS** | 完整（文件/URI） | **脚手架就绪，未链接** | UI + 偏好 | 同 iOS |
+| **macOS** | 完整（文件/URI）；清单持久化见上 | **脚手架就绪，未链接** | UI + 偏好 | 同 iOS；**无系统 VPN 权限弹窗（预期）** |
 
-初始化或（Apple）`startVpn` 失败时，自动回退 **StubVpnTunnel**，保证 UI 可验收；设置页展示能力说明。
+初始化时若原生插件失败，仍回退 **StubVpnTunnel** 以便导入/列表可用；**连接时不再静默假连接**——Stub / 未链接 NE 会给出明确中文错误（请用官方 WireGuard + `.conf`，或完成 Team 签名后设 `extensionTargetLinked=true`）。
 
 ## 隧道集成细节
 
@@ -189,7 +189,7 @@ flutter run -d <ios-device-id>
 5. 自动重连：依赖 `wireguard_flutter` 的 `reconnect` / `wait_connection` 阶段映射；Stub 可模拟重连  
 6. iOS/macOS：**无 Team ID 时无法完成签名与真隧道**；脚手架 + Stub 不关闭 DEF-02  
 7. 自建联调：`ssh netbridge-vps` → `nbvpn show --uri`（警告在 stderr）/ 拷贝 `peers/*.png`；粘贴可含 WARNING 行或 JSON。本环境无 Android 设备时无法完成本轮真握手  
-8. **不要声称** iOS/macOS Extension 生产就绪：默认 `extensionTargetLinked=false` → Stub  
+8. **不要声称** iOS/macOS Extension 生产就绪：默认 `extensionTargetLinked=false` → Stub；连接会报错而非显示「已连接」。无 Team/证书时**不会**出现系统 VPN 权限弹窗。  
 9. 重复导入：同 endpoint+公私钥已存在时 Snackbar「已添加」，删除后安全存储写 `[]`，同一 URI 可再导入  
 10. `BrandLinks` 的 Terms/Privacy 为 store meta 风格 **占位 URL**，上架前必须换成正式法务页  
 
