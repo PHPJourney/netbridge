@@ -1,4 +1,4 @@
-; NetBridge nbvpn — Windows Server Setup (Inno Setup 6+)
+﻿; NetBridge nbvpn — Windows Server Setup (Inno Setup 6+)
 ; Build: iscc nbvpn-setup.iss  (or build-setup.ps1)
 ; Expects staging folder with:
 ;   nbvpn-windows-amd64.exe  (or set via /DSrcExe=...)

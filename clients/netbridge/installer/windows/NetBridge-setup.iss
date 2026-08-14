@@ -1,4 +1,5 @@
-; NetBridge Windows client — Inno Setup 6+
+﻿; NetBridge Windows client — Inno Setup 6+
+; Encoding: UTF-8 with BOM required for Chinese AppName/Icons (Inno 6 Unicode).
 ; Build from CI after: flutter build windows --release
 ; /DSrcDir=... path to build\windows\x64\runner\Release
 ; /DOutputDir=...
@@ -16,6 +17,7 @@
 [Setup]
 AppId={{B7E1D904-5C2A-4A8F-9E11-6F7A8B9C0D1E}
 AppName=网桥 VPN (NetBridge)
+AppVerName=网桥 VPN (NetBridge) {#MyAppVersion}
 AppVersion={#MyAppVersion}
 AppPublisher=NetBridge
 AppPublisherURL=https://github.com/PHPJourney/netbridge

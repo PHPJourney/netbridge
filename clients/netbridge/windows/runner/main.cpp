@@ -28,7 +28,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   Win32Window::Point origin(10, 10);
   // Default wide layout; min size enforced in WM_GETMINMAXINFO.
   Win32Window::Size size(1100, 720);
-  if (!window.Create(L"网桥 VPN", origin, size)) {
+  // Use \u escapes so MSVC always gets correct UTF-16 even without /utf-8.
+  if (!window.Create(L"\u7f51\u6865 VPN", origin, size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);
