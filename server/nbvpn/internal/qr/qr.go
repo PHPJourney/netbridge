@@ -9,14 +9,19 @@ import (
 	qrcode "github.com/skip2/go-qrcode"
 )
 
-// Terminal uses Medium so the matrix stays narrower on 80-col SSH sessions.
-// PNG uses High (Q, contract §4) for more robust camera scans of the image file.
+// Terminal half-block QR: keep output within ~48–56 console columns so SSH /
+// narrow Windows terminals do not wrap. PNG uses High (Q) for camera scans.
 const (
-	terminalRecovery = qrcode.Medium
-	pngRecovery      = qrcode.High
-	pngModulePx      = -10 // pixels per module (skip2 negative size)
-	// MaxTerminalCols: skip printing a terminal QR wider than this (narrow consoles / PS4).
-	MaxTerminalCols = 40
+	terminalRecoveryPreferred = qrcode.Medium
+	terminalRecoveryCompact   = qrcode.Low
+	pngRecovery               = qrcode.High
+	pngModulePx               = -10 // pixels per module (skip2 negative size)
+	// MaxTerminalCols: hard max module/glyph width for half-block rendering.
+	// Target band is 48–56; pick 52 as default clamp.
+	MaxTerminalCols = 52
+	// MinTerminalCols / MaxTerminalColsCap document the accepted band.
+	MinTerminalCols    = 48
+	MaxTerminalColsCap = 56
 )
 
 // ANSI: force light background + dark modules so dark terminal themes do not invert the code.
@@ -25,11 +30,11 @@ const (
 	ansiOff = "\033[0m"
 )
 
-// FallbackHint tells operators what to use when the terminal QR may wrap or fail to scan.
-const FallbackHint = "If the terminal QR does not scan (wrap/font/theme): use --file, --uri, or open the PNG beside the peer profile. Note: peer numeric id / PNG filename is NOT the QR payload — payload is always the full nbvpn:1?… URI."
+// FallbackHint tells operators what to use when the terminal QR may wrap or is too dense.
+const FallbackHint = "Prefer the QR PNG (or --uri / --file) when the terminal QR is skipped, wraps, or is too dense to scan. Peer numeric id / PNG filename is NOT the QR payload — payload is always the full nbvpn:1?… URI."
 
 // WindowsDefaultHint is printed when terminal QR is skipped on Windows (default).
-const WindowsDefaultHint = "Windows: terminal QR skipped (old PowerShell may wrap / show raw ANSI). Open the QR PNG above, or paste the URI. Opt-in: nbvpn show --qr"
+const WindowsDefaultHint = "Windows: terminal QR skipped (old PowerShell may wrap / show raw ANSI). Open the QR PNG above, or paste the URI. Opt-in: nbvpn show --qr (still clamped to max width)"
 
 // ColorEnabled reports whether ANSI color escapes should be emitted.
 // Disabled on Windows unless FORCE_COLOR=1 or NBVPN_FORCE_ANSI=1; always off if NO_COLOR is set.
@@ -50,33 +55,65 @@ func ColorEnabled() bool {
 // RenderOptions controls terminal QR rendering.
 type RenderOptions struct {
 	UseANSI bool
-	MaxCols int // 0 = MaxTerminalCols
+	MaxCols int // 0 = MaxTerminalCols; clamped to [MinTerminalCols, MaxTerminalColsCap] when set via ClampMaxCols
+}
+
+// ClampMaxCols normalizes a requested max into the 48–56 band (or default 52).
+func ClampMaxCols(n int) int {
+	if n <= 0 {
+		return MaxTerminalCols
+	}
+	if n < MinTerminalCols {
+		return MinTerminalCols
+	}
+	if n > MaxTerminalColsCap {
+		return MaxTerminalColsCap
+	}
+	return n
 }
 
 // RenderTerminal returns a half-block Unicode QR for content (full URI).
 // Two QR rows pack into one terminal row (▀▄█) so modules stay roughly square on ~2:1 cells.
-// Colors are forced to dark-on-light when UseANSI; encoder quiet zone is kept (DisableBorder=false).
+// Colors are forced to dark-on-light when UseANSI; encoder quiet zone is kept when possible.
 func RenderTerminal(content string) (string, error) {
 	return RenderTerminalOpts(content, RenderOptions{UseANSI: ColorEnabled(), MaxCols: MaxTerminalCols})
 }
 
 // RenderTerminalOpts encodes content with explicit options.
-// Returns ErrTooWide when the bitmap exceeds MaxCols (caller should point users at PNG/URI).
+// Returns ErrTooWide when the bitmap cannot fit MaxCols even after compact recovery
+// (caller should point users at PNG/URI).
 func RenderTerminalOpts(content string, opts RenderOptions) (string, error) {
-	q, err := qrcode.New(content, terminalRecovery)
-	if err != nil {
-		return "", fmt.Errorf("QR encode failed: %w", err)
-	}
-	q.DisableBorder = false
-	bitmap := q.Bitmap()
 	maxCols := opts.MaxCols
 	if maxCols <= 0 {
 		maxCols = MaxTerminalCols
 	}
-	if len(bitmap) > 0 && len(bitmap[0]) > maxCols {
-		return "", &TooWideError{Cols: len(bitmap[0]), Max: maxCols}
+
+	attempts := []struct {
+		level  qrcode.RecoveryLevel
+		border bool
+	}{
+		{terminalRecoveryPreferred, false}, // DisableBorder=false → quiet zone
+		{terminalRecoveryCompact, false},
+		{terminalRecoveryCompact, true}, // last resort: drop encoder quiet zone
 	}
-	return renderHalfBlocks(bitmap, opts.UseANSI), nil
+
+	var lastCols int
+	for _, a := range attempts {
+		q, err := qrcode.New(content, a.level)
+		if err != nil {
+			return "", fmt.Errorf("QR encode failed: %w", err)
+		}
+		q.DisableBorder = a.border
+		bitmap := q.Bitmap()
+		if len(bitmap) == 0 {
+			continue
+		}
+		lastCols = len(bitmap[0])
+		if lastCols <= maxCols {
+			return renderHalfBlocks(bitmap, opts.UseANSI), nil
+		}
+	}
+	return "", &TooWideError{Cols: lastCols, Max: maxCols}
 }
 
 // TooWideError means the terminal QR would wrap on a narrow console.
@@ -109,7 +146,7 @@ func WritePNG(content, path string) error {
 
 // ModuleSize returns the terminal bitmap side length (including quiet zone) for tests.
 func ModuleSize(content string) (int, error) {
-	q, err := qrcode.New(content, terminalRecovery)
+	q, err := qrcode.New(content, terminalRecoveryPreferred)
 	if err != nil {
 		return 0, err
 	}

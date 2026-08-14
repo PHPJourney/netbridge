@@ -213,6 +213,17 @@ Win32Window::MessageHandler(HWND hwnd,
       }
       return 0;
 
+    case WM_GETMINMAXINFO: {
+      // Logical ~900×560 so desktop master–detail remains usable.
+      auto info = reinterpret_cast<MINMAXINFO*>(lparam);
+      HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+      UINT dpi = FlutterDesktopGetDpiForMonitor(monitor);
+      double scale = dpi / 96.0;
+      info->ptMinTrackSize.x = static_cast<LONG>(900 * scale);
+      info->ptMinTrackSize.y = static_cast<LONG>(560 * scale);
+      return 0;
+    }
+
     case WM_DWMCOLORIZATIONCOLORCHANGED:
       UpdateTheme(hwnd);
       return 0;

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../layout/responsive.dart';
 import '../../profile/profile.dart';
 import '../../widgets/common_widgets.dart';
 
@@ -61,17 +62,17 @@ class _PasteUriScreenState extends State<PasteUriScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final desktop = isDesktopLayout(context);
     return Scaffold(
       appBar: AppBar(title: Text(l10n.pasteUriTitle)),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
+      body: DesktopConstrainedBody(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             TextField(
               controller: _controller,
-              maxLines: 6,
-              minLines: 4,
+              maxLines: desktop ? 8 : 6,
+              minLines: desktop ? 5 : 4,
               decoration: InputDecoration(
                 hintText: l10n.pasteUriHint,
                 alignLabelWithHint: true,

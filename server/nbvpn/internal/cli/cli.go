@@ -541,6 +541,7 @@ func printTerminalQR(uri string) {
 	if err != nil {
 		if qr.IsTooWide(err) {
 			fmt.Fprintf(os.Stderr, "warning: %v\n", err)
+			fmt.Fprintln(os.Stderr, "Terminal QR skipped (too dense for ~48–56 columns). Use the PNG path above / --file.")
 			fmt.Println(qr.FallbackHint)
 			return
 		}

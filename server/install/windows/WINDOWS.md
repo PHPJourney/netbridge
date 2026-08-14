@@ -13,9 +13,25 @@ NetBridge VPN **node** on Windows Server (or Windows 10/11 lab). Linux install p
 Download from [GitHub Releases](https://github.com/PHPJourney/netbridge/releases). After Setup / install:
 
 ```powershell
+# Open a NEW PowerShell / cmd (PATH refresh). Then:
+where.exe nbvpn
 nbvpn show          # URI + file paths + QR PNG (no terminal QR on Windows by default)
 explorer $env:ProgramData\nbvpn   # ProgramData is often HIDDEN
+nbvpn status        # CLI status — NOT the same as a Windows Service named "nbvpn"
 ```
+
+### PATH vs WireGuard service (common confusion)
+
+| What you look for | What it actually is |
+|-------------------|---------------------|
+| `nbvpn` on PATH | CLI binary under `C:\Program Files\NetBridge\nbvpn.exe` (Setup / `install.ps1` add **Machine** PATH) |
+| `nbvpn status` | Prints tunnel/profile state; **not** a Service Control Manager name |
+| Windows Service | **`WireGuardTunnel$nbvpn`** — only after **WireGuard for Windows** is installed and `nbvpn install` / `start` succeeds |
+| “找不到服务进程” | Usually means WireGuard is missing (dry-run) **or** you searched for a service named `nbvpn` — there isn’t one |
+
+Client Setup (`NetBridge-windows-setup.exe`) does **not** need PATH (GUI app). Server Setup **must** put `nbvpn` on system PATH.
+
+If `nbvpn` is not found after Setup: close old terminals, open a **new** elevated prompt, run `where.exe nbvpn`. If still missing, check System → Environment Variables → Path for `C:\Program Files\NetBridge`.
 
 ## What works (MVP)
 
@@ -80,11 +96,14 @@ Or: `setup.bat` (same folder) as Administrator.
 
 `install.ps1` will:
 
-1. Copy `nbvpn.exe` → `C:\Program Files\NetBridge` (+ PATH)
-2. Enable IPv4 forwarding; **NetNat only if API supports it** (not 2012)
-3. Open firewall UDP 51820
-4. Run `nbvpn install` (creates data dir + peer exports even without WireGuard)
-5. Print a **dir verification** of `%ProgramData%\nbvpn`
+1. Copy `nbvpn.exe` → install dir (default `C:\Program Files\NetBridge`) and write **Machine** PATH + broadcast `WM_SETTINGCHANGE`
+2. Print `where.exe nbvpn` verification (open a **new** terminal if an old session still fails)
+3. Enable IPv4 forwarding; **NetNat only if API supports it** (not 2012)
+4. Open firewall UDP 51820
+5. Run `nbvpn install` (creates data dir + peer exports even without WireGuard)
+6. Print a **dir verification** of `%ProgramData%\nbvpn`
+
+Inno Setup also appends `{app}` to system PATH (`ChangesEnvironment=yes`) before/with `install.ps1`.
 
 ### Data directory (hidden)
 
@@ -106,7 +125,7 @@ Files after install: `server.json`, `nbvpn.conf`, `peers\<id>.nbvpn.json`, `.png
 |---------|----------|
 | `nbvpn show` | URI + paths + **PNG path**; **no** terminal block QR |
 | `nbvpn show --uri` | URI only |
-| `nbvpn show --qr` | Terminal QR (no ANSI colors by default; may still be wide) |
+| `nbvpn show --qr` | Terminal QR **opt-in**; still **clamped** (~48–56 cols); dense URIs → skip + recommend PNG |
 | Open `.png` | Preferred for phone scan |
 
 ## Cross-compile — Docker (Mac)
@@ -122,11 +141,12 @@ Local Setup.exe (Windows host with Inno Setup 6):
 .\server\install\windows\build-setup.ps1 -StageDir C:\stage
 ```
 
-## Manual tunnel
+## Manual tunnel / service name
 
 ```powershell
 wireguard.exe /installtunnelservice "$env:ProgramData\nbvpn\nbvpn.conf"
 sc.exe query WireGuardTunnel`$nbvpn
+# There is no Windows Service named "nbvpn". CLI: nbvpn status | start | stop
 ```
 
 ## Gaps vs Linux (honest)

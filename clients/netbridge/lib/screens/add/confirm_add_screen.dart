@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../layout/responsive.dart';
 import '../../profile/profile.dart';
 import '../../theme.dart';
 import '../../widgets/common_widgets.dart';
@@ -41,58 +42,60 @@ class _ConfirmAddScreenState extends State<ConfirmAddScreen> {
         ep == '0.0.0.0';
     return Scaffold(
       appBar: AppBar(title: Text(l10n.confirmAddTitle)),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          const SecretWarningCallout(),
-          if (endpointLooksBad) ...[
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: NbColors.warn.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: NbColors.warn.withValues(alpha: 0.5)),
-              ),
-              child: Text(
-                l10n.endpointLooksBad,
-                style: const TextStyle(
-                  color: NbColors.warmText,
-                  height: 1.4,
-                  fontSize: 13,
+      body: DesktopConstrainedBody(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SecretWarningCallout(),
+            if (endpointLooksBad) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: NbColors.warn.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: NbColors.warn.withValues(alpha: 0.5)),
+                ),
+                child: Text(
+                  l10n.endpointLooksBad,
+                  style: const TextStyle(
+                    color: NbColors.warmText,
+                    height: 1.4,
+                    fontSize: 13,
+                  ),
                 ),
               ),
+            ],
+            const SizedBox(height: 20),
+            TextField(
+              controller: _name,
+              decoration: InputDecoration(
+                labelText: l10n.localDisplayName,
+                helperText: l10n.localNameHelper,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _SummaryRow(label: l10n.labelNode, value: p.server.endpoint),
+            _SummaryRow(label: l10n.labelAddress, value: p.client.address.join(', ')),
+            _SummaryRow(label: l10n.labelDns, value: p.client.dns.join(', ')),
+            const SizedBox(height: 8),
+            Text(
+              l10n.confirmSecretHint,
+              style: const TextStyle(color: NbColors.mutedText, fontSize: 13),
+            ),
+            const SizedBox(height: 28),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(context).pop((
+                  profile: p,
+                  localName: _name.text.trim().isEmpty ? p.name : _name.text.trim(),
+                ));
+              },
+              child: Text(l10n.add),
             ),
           ],
-          const SizedBox(height: 20),
-          TextField(
-            controller: _name,
-            decoration: InputDecoration(
-              labelText: l10n.localDisplayName,
-              helperText: l10n.localNameHelper,
-            ),
-          ),
-          const SizedBox(height: 16),
-          _SummaryRow(label: l10n.labelNode, value: p.server.endpoint),
-          _SummaryRow(label: l10n.labelAddress, value: p.client.address.join(', ')),
-          _SummaryRow(label: l10n.labelDns, value: p.client.dns.join(', ')),
-          const SizedBox(height: 8),
-          Text(
-            l10n.confirmSecretHint,
-            style: const TextStyle(color: NbColors.mutedText, fontSize: 13),
-          ),
-          const SizedBox(height: 28),
-          FilledButton(
-            onPressed: () {
-              Navigator.of(context).pop((
-                profile: p,
-                localName: _name.text.trim().isEmpty ? p.name : _name.text.trim(),
-              ));
-            },
-            child: Text(l10n.add),
-          ),
-        ],
+        ),
       ),
     );
   }

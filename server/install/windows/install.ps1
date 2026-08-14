@@ -261,18 +261,79 @@ Build: ./server/nbvpn/scripts/build-windows-docker.sh win2012|win10
 
 $machinePath = [Environment]::GetEnvironmentVariable('Path', 'Machine')
 if (-not $machinePath) { $machinePath = '' }
-if ($machinePath -notlike "*$InstallDir*") {
+# Exact segment match (avoid false positives from substring -notlike)
+$pathParts = @($machinePath -split ';' | Where-Object { $_ -and $_.Trim().Length -gt 0 })
+$pathHasInstall = $false
+foreach ($part in $pathParts) {
+  if ([string]::Equals($part.TrimEnd('\'), $InstallDir.TrimEnd('\'), [StringComparison]::OrdinalIgnoreCase)) {
+    $pathHasInstall = $true
+    break
+  }
+}
+if (-not $pathHasInstall) {
   Write-Log "Adding $InstallDir to machine PATH"
   if ($machinePath.Length -gt 0) {
     [Environment]::SetEnvironmentVariable('Path', "$machinePath;$InstallDir", 'Machine')
   } else {
     [Environment]::SetEnvironmentVariable('Path', $InstallDir, 'Machine')
   }
+} else {
+  Write-Log "InstallDir already on machine PATH"
 }
 $env:Path = "$InstallDir;$env:Path"
 
+# Broadcast WM_SETTINGCHANGE so new Explorer / some apps see PATH immediately.
+# Existing open terminals still need a restart — tell the operator below.
+try {
+  if (-not ('Win32.NativeMethods' -as [type])) {
+    Add-Type -Namespace Win32 -Name NativeMethods -MemberDefinition @"
+[DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+public static extern IntPtr SendMessageTimeout(
+  IntPtr hWnd, uint Msg, UIntPtr wParam, string lParam,
+  uint fuFlags, uint uTimeout, out UIntPtr lpdwResult);
+"@
+  }
+  $HWND_BROADCAST = [IntPtr]0xffff
+  $WM_SETTINGCHANGE = 0x1a
+  $result = [UIntPtr]::Zero
+  [void][Win32.NativeMethods]::SendMessageTimeout(
+    $HWND_BROADCAST, $WM_SETTINGCHANGE, [UIntPtr]::Zero, 'Environment',
+    2, 5000, [ref]$result)
+  Write-Log "Broadcast WM_SETTINGCHANGE (Environment)"
+} catch {
+  Write-Warn "Could not broadcast environment change: $_"
+}
+
 & $TargetExe version
 if ($LASTEXITCODE -ne 0) { Write-Warn "nbvpn version returned non-zero" }
+
+Write-Host ""
+Write-Host "=== PATH verification ==="
+Write-Host "nbvpn.exe: $TargetExe"
+$whereOut = & where.exe nbvpn 2>$null
+if ($LASTEXITCODE -eq 0 -and $whereOut) {
+  Write-Log "where.exe nbvpn:"
+  $whereOut | ForEach-Object { Write-Host "  $_" }
+} else {
+  Write-Warn "where.exe nbvpn failed in THIS session — open a NEW Administrator terminal, then run: where.exe nbvpn"
+}
+Write-Host "Machine Path write applied this run: $(-not $pathHasInstall)"
+# Re-read after write
+$verifyPath = [Environment]::GetEnvironmentVariable('Path', 'Machine')
+$verified = $false
+if ($verifyPath) {
+  foreach ($part in @($verifyPath -split ';')) {
+    if ($part -and [string]::Equals($part.TrimEnd('\'), $InstallDir.TrimEnd('\'), [StringComparison]::OrdinalIgnoreCase)) {
+      $verified = $true
+      break
+    }
+  }
+}
+if ($verified) {
+  Write-Log "Verified: $InstallDir is on Machine PATH"
+} else {
+  Write-Warn "Machine PATH may not contain $InstallDir — check System Properties → Environment Variables"
+}
 
 # --- IP forward + NAT ---
 Write-Log "Enabling IPv4 forwarding"
@@ -377,11 +438,17 @@ if (Test-Path -LiteralPath $dataDir) {
 Write-Host ""
 Write-Host "=== Windows install finished ==="
 Write-Host "Binary: $TargetExe"
+Write-Host 'PATH: open a NEW terminal (or log off/on) if nbvpn is not found in an old window.'
 Write-Host "Show URI / files / PNG:  nbvpn show"
 Write-Host "  (terminal QR skipped on Windows by default; open the .png or use --uri)"
+Write-Host "CLI status (profiles / dry-run):  nbvpn status"
+Write-Host '  NOTE: nbvpn is a CLI — it is NOT a Windows Service by itself.'
+Write-Host '  The tunnel service is WireGuardTunnel$nbvpn (needs WireGuard for Windows).'
+Write-Host '  Without WireGuard: keys/profiles/PNG still exist; there is no WG service process.'
 Write-Host "Docs: server\install\windows\WINDOWS.md"
 Write-Host "Remember cloud ACL / security group: inbound UDP 51820"
 if ($wgMissing) {
   Write-Host ""
   Write-Host "*** WireGuard still missing — install it, then re-run for a live tunnel ***"
+  Write-Host "*** Do not look for a service named 'nbvpn' — install WireGuard, then: nbvpn install / start ***"
 }

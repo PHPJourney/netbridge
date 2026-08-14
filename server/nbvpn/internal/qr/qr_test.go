@@ -98,6 +98,39 @@ func TestRenderTerminal_tooWide(t *testing.T) {
 	}
 }
 
+func TestRenderTerminal_defaultClampRejectsDenseURI(t *testing.T) {
+	// Real nbvpn URIs are dense (~80+ modules). Default MaxTerminalCols must refuse them.
+	_, err := RenderTerminal(sampleURI)
+	if !IsTooWide(err) {
+		t.Fatalf("want TooWideError for sample URI under default clamp, got %v", err)
+	}
+	tw, ok := err.(*TooWideError)
+	if !ok {
+		t.Fatal("expected *TooWideError")
+	}
+	if tw.Max != MaxTerminalCols {
+		t.Fatalf("max=%d want %d", tw.Max, MaxTerminalCols)
+	}
+	if tw.Max < MinTerminalCols || tw.Max > MaxTerminalColsCap {
+		t.Fatalf("MaxTerminalCols %d outside 48–56 band", tw.Max)
+	}
+}
+
+func TestClampMaxCols(t *testing.T) {
+	if ClampMaxCols(0) != MaxTerminalCols {
+		t.Fatalf("0 → default")
+	}
+	if ClampMaxCols(40) != MinTerminalCols {
+		t.Fatalf("below band → %d", MinTerminalCols)
+	}
+	if ClampMaxCols(80) != MaxTerminalColsCap {
+		t.Fatalf("above band → %d", MaxTerminalColsCap)
+	}
+	if ClampMaxCols(52) != 52 {
+		t.Fatalf("in-band passthrough")
+	}
+}
+
 func TestModuleSize_includesBorder(t *testing.T) {
 	n, err := ModuleSize(sampleURI)
 	if err != nil {

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../l10n/app_localizations.dart';
+import '../layout/responsive.dart';
 import '../models/server_entry.dart';
 import '../profile/profile.dart';
 import '../state/app_controller.dart';
@@ -16,10 +17,19 @@ import 'add/add_method_screen.dart';
 import 'add/confirm_add_screen.dart';
 import 'settings_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.controller});
 
   final AppController controller;
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  String? _selectedId;
+
+  AppController get controller => widget.controller;
 
   Future<void> _openAdd(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
@@ -115,7 +125,19 @@ class HomeScreen extends StatelessWidget {
     );
     if (ok == true) {
       await controller.deleteServer(entry.id);
+      if (_selectedId == entry.id) {
+        setState(() => _selectedId = null);
+      }
     }
+  }
+
+  ServerEntry? _resolveSelected(AppController c) {
+    if (c.servers.isEmpty) return null;
+    final id = _selectedId ?? c.activeServerId ?? c.servers.first.id;
+    for (final s in c.servers) {
+      if (s.id == id) return s;
+    }
+    return c.servers.first;
   }
 
   @override
@@ -125,6 +147,7 @@ class HomeScreen extends StatelessWidget {
       listenable: controller,
       builder: (context, _) {
         final c = controller;
+        final desktop = isDesktopLayout(context);
         return Scaffold(
           appBar: AppBar(
             title: Text(l10n.appTitle),
@@ -160,29 +183,23 @@ class HomeScreen extends StatelessWidget {
                     ? const Center(child: CircularProgressIndicator())
                     : c.servers.isEmpty
                         ? EmptyServerState(onAdd: () => _openAdd(context))
-                        : ListView.separated(
-                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 88),
-                            itemCount: c.servers.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 10),
-                            itemBuilder: (context, i) {
-                              final s = c.servers[i];
-                              final isActive = c.activeServerId == s.id;
-                              final connected = isActive &&
-                                  c.status == VpnUiStatus.connected;
-                              final busy = isActive &&
-                                  (c.status == VpnUiStatus.connecting ||
-                                      c.status == VpnUiStatus.reconnecting);
-                              return _ServerTile(
-                                entry: s,
-                                connected: connected,
-                                busy: busy,
-                                onConnect: () => c.connect(s.id),
+                        : desktop
+                            ? _DesktopSplit(
+                                controller: c,
+                                selected: _resolveSelected(c),
+                                onSelect: (id) => setState(() => _selectedId = id),
+                                onConnect: (id) => c.connect(id),
                                 onDisconnect: c.disconnect,
-                                onRename: () => _rename(context, s),
-                                onDelete: () => _delete(context, s),
-                              );
-                            },
-                          ),
+                                onRename: (s) => _rename(context, s),
+                                onDelete: (s) => _delete(context, s),
+                              )
+                            : _MobileServerList(
+                                controller: c,
+                                onConnect: (id) => c.connect(id),
+                                onDisconnect: c.disconnect,
+                                onRename: (s) => _rename(context, s),
+                                onDelete: (s) => _delete(context, s),
+                              ),
               ),
             ],
           ),
@@ -201,6 +218,260 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
+class _MobileServerList extends StatelessWidget {
+  const _MobileServerList({
+    required this.controller,
+    required this.onConnect,
+    required this.onDisconnect,
+    required this.onRename,
+    required this.onDelete,
+  });
+
+  final AppController controller;
+  final ValueChanged<String> onConnect;
+  final VoidCallback onDisconnect;
+  final ValueChanged<ServerEntry> onRename;
+  final ValueChanged<ServerEntry> onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = controller;
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 88),
+      itemCount: c.servers.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (context, i) {
+        final s = c.servers[i];
+        final isActive = c.activeServerId == s.id;
+        final connected = isActive && c.status == VpnUiStatus.connected;
+        final busy = isActive &&
+            (c.status == VpnUiStatus.connecting ||
+                c.status == VpnUiStatus.reconnecting);
+        return _ServerTile(
+          entry: s,
+          connected: connected,
+          busy: busy,
+          selected: false,
+          onTap: null,
+          onConnect: () => onConnect(s.id),
+          onDisconnect: onDisconnect,
+          onRename: () => onRename(s),
+          onDelete: () => onDelete(s),
+        );
+      },
+    );
+  }
+}
+
+class _DesktopSplit extends StatelessWidget {
+  const _DesktopSplit({
+    required this.controller,
+    required this.selected,
+    required this.onSelect,
+    required this.onConnect,
+    required this.onDisconnect,
+    required this.onRename,
+    required this.onDelete,
+  });
+
+  final AppController controller;
+  final ServerEntry? selected;
+  final ValueChanged<String> onSelect;
+  final ValueChanged<String> onConnect;
+  final VoidCallback onDisconnect;
+  final ValueChanged<ServerEntry> onRename;
+  final ValueChanged<ServerEntry> onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = controller;
+    final l10n = AppLocalizations.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          width: kDesktopListPaneWidth,
+          child: Material(
+            color: NbColors.surface.withValues(alpha: 0.55),
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(20, 16, 12, 96),
+              itemCount: c.servers.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (context, i) {
+                final s = c.servers[i];
+                final isActive = c.activeServerId == s.id;
+                final connected =
+                    isActive && c.status == VpnUiStatus.connected;
+                final busy = isActive &&
+                    (c.status == VpnUiStatus.connecting ||
+                        c.status == VpnUiStatus.reconnecting);
+                final isSelected = selected?.id == s.id;
+                return _ServerTile(
+                  entry: s,
+                  connected: connected,
+                  busy: busy,
+                  selected: isSelected,
+                  compactActions: true,
+                  onTap: () => onSelect(s.id),
+                  onConnect: () => onConnect(s.id),
+                  onDisconnect: onDisconnect,
+                  onRename: () => onRename(s),
+                  onDelete: () => onDelete(s),
+                );
+              },
+            ),
+          ),
+        ),
+        const VerticalDivider(width: 1, color: NbColors.surfaceAlt),
+        Expanded(
+          child: selected == null
+              ? Center(
+                  child: Text(
+                    l10n.emptyTitle,
+                    style: const TextStyle(color: NbColors.mutedText),
+                  ),
+                )
+              : _DesktopDetailPane(
+                  entry: selected!,
+                  controller: c,
+                  onConnect: () => onConnect(selected!.id),
+                  onDisconnect: onDisconnect,
+                  onRename: () => onRename(selected!),
+                  onDelete: () => onDelete(selected!),
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DesktopDetailPane extends StatelessWidget {
+  const _DesktopDetailPane({
+    required this.entry,
+    required this.controller,
+    required this.onConnect,
+    required this.onDisconnect,
+    required this.onRename,
+    required this.onDelete,
+  });
+
+  final ServerEntry entry;
+  final AppController controller;
+  final VoidCallback onConnect;
+  final VoidCallback onDisconnect;
+  final VoidCallback onRename;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final c = controller;
+    final isActive = c.activeServerId == entry.id;
+    final connected = isActive && c.status == VpnUiStatus.connected;
+    final busy = isActive &&
+        (c.status == VpnUiStatus.connecting ||
+            c.status == VpnUiStatus.reconnecting);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(36, 28, 36, 96),
+      child: Align(
+        alignment: Alignment.topLeft,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                entry.localName,
+                style: const TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w700,
+                  color: NbColors.warmText,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                entry.profile.server.endpoint,
+                style: const TextStyle(
+                  color: NbColors.mutedText,
+                  fontSize: 15,
+                ),
+              ),
+              const SizedBox(height: 20),
+              _DetailRow(
+                label: l10n.labelAddress,
+                value: entry.profile.client.address.join(', '),
+              ),
+              _DetailRow(
+                label: l10n.labelDns,
+                value: entry.profile.client.dns.join(', '),
+              ),
+              const SizedBox(height: 28),
+              Row(
+                children: [
+                  if (connected || busy)
+                    OutlinedButton(
+                      onPressed: busy ? null : onDisconnect,
+                      child: Text(busy ? '…' : l10n.disconnect),
+                    )
+                  else
+                    FilledButton(
+                      onPressed: onConnect,
+                      child: Text(l10n.connect),
+                    ),
+                  const SizedBox(width: 12),
+                  OutlinedButton(
+                    onPressed: onRename,
+                    child: Text(l10n.rename),
+                  ),
+                  const SizedBox(width: 12),
+                  TextButton(
+                    onPressed: onDelete,
+                    style: TextButton.styleFrom(foregroundColor: NbColors.danger),
+                    child: Text(l10n.delete),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 72,
+            child: Text(
+              label,
+              style: const TextStyle(color: NbColors.mutedText, fontSize: 13),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(color: NbColors.warmText, fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ServerTile extends StatelessWidget {
   const _ServerTile({
     required this.entry,
@@ -210,11 +481,17 @@ class _ServerTile extends StatelessWidget {
     required this.onDisconnect,
     required this.onRename,
     required this.onDelete,
+    this.selected = false,
+    this.compactActions = false,
+    this.onTap,
   });
 
   final ServerEntry entry;
   final bool connected;
   final bool busy;
+  final bool selected;
+  final bool compactActions;
+  final VoidCallback? onTap;
   final VoidCallback onConnect;
   final VoidCallback onDisconnect;
   final VoidCallback onRename;
@@ -223,70 +500,92 @@ class _ServerTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final bg = selected ? NbColors.surfaceAlt : NbColors.surface;
     return Material(
-      color: NbColors.surface,
+      color: bg,
       borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
-        child: Row(
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: connected
-                    ? NbColors.ok
-                    : busy
-                        ? NbColors.warn
-                        : NbColors.mutedText,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            14,
+            12,
+            compactActions ? 4 : 8,
+            12,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: connected
+                      ? NbColors.ok
+                      : busy
+                          ? NbColors.warn
+                          : NbColors.mutedText,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    entry.localName,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                      color: NbColors.warmText,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      entry.localName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        color: NbColors.warmText,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    entry.profile.server.endpoint,
-                    style: const TextStyle(
-                      color: NbColors.mutedText,
-                      fontSize: 12.5,
+                    const SizedBox(height: 2),
+                    Text(
+                      entry.profile.server.endpoint,
+                      style: const TextStyle(
+                        color: NbColors.mutedText,
+                        fontSize: 12.5,
+                      ),
                     ),
+                  ],
+                ),
+              ),
+              if (!compactActions) ...[
+                if (connected || busy)
+                  OutlinedButton(
+                    onPressed: busy ? null : onDisconnect,
+                    child: Text(busy ? '…' : l10n.disconnect),
+                  )
+                else
+                  FilledButton(
+                    onPressed: onConnect,
+                    child: Text(l10n.connect),
                   ),
+              ],
+              PopupMenuButton<String>(
+                onSelected: (v) {
+                  if (v == 'connect') onConnect();
+                  if (v == 'disconnect') onDisconnect();
+                  if (v == 'rename') onRename();
+                  if (v == 'delete') onDelete();
+                },
+                itemBuilder: (_) => [
+                  if (compactActions && !(connected || busy))
+                    PopupMenuItem(value: 'connect', child: Text(l10n.connect)),
+                  if (compactActions && (connected || busy))
+                    PopupMenuItem(
+                      value: 'disconnect',
+                      enabled: !busy,
+                      child: Text(l10n.disconnect),
+                    ),
+                  PopupMenuItem(value: 'rename', child: Text(l10n.rename)),
+                  PopupMenuItem(value: 'delete', child: Text(l10n.delete)),
                 ],
               ),
-            ),
-            if (connected || busy)
-              OutlinedButton(
-                onPressed: busy ? null : onDisconnect,
-                child: Text(busy ? '…' : l10n.disconnect),
-              )
-            else
-              FilledButton(
-                onPressed: onConnect,
-                child: Text(l10n.connect),
-              ),
-            PopupMenuButton<String>(
-              onSelected: (v) {
-                if (v == 'rename') onRename();
-                if (v == 'delete') onDelete();
-              },
-              itemBuilder: (_) => [
-                PopupMenuItem(value: 'rename', child: Text(l10n.rename)),
-                PopupMenuItem(value: 'delete', child: Text(l10n.delete)),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -37,6 +37,8 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 WizardStyle=modern
 SetupLogging=yes
+; Tell Explorer / new processes to refresh PATH after install/uninstall.
+ChangesEnvironment=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -52,11 +54,31 @@ Name: "{group}\nbvpn CLI help"; Filename: "{cmd}"; Parameters: "/k ""{app}\nbvpn
 Name: "{group}\Open data folder"; Filename: "{win}\explorer.exe"; Parameters: "%ProgramData%\nbvpn"
 Name: "{group}\Uninstall NetBridge nbvpn"; Filename: "{uninstallexe}"
 
+; Always add install dir to *system* PATH so `nbvpn` resolves in a new terminal.
+[Registry]
+Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; \
+  ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"; \
+  Check: NeedsAddPath(ExpandConstant('{app}')); Flags: preservestringtype
+
 [Run]
 ; Run elevated install.ps1 after copying binary (firewall, NetNat best-effort, nbvpn install)
 Filename: "powershell.exe"; \
-  Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\install.ps1"""; \
-  StatusMsg: "Configuring nbvpn (firewall, data dir, first peer)…"; \
+  Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\install.ps1"" -InstallDir ""{app}"""; \
+  StatusMsg: "Configuring nbvpn (PATH, firewall, data dir, first peer)…"; \
   Flags: waituntilterminated
 
-; (no custom Pascal code)
+[Code]
+function NeedsAddPath(Param: string): Boolean;
+var
+  OrigPath: string;
+begin
+  if not RegQueryStringValue(HKEY_LOCAL_MACHINE,
+    'SYSTEM\CurrentControlSet\Control\Session Manager\Environment',
+    'Path', OrigPath) then
+  begin
+    Result := True;
+    exit;
+  end;
+  { Case-insensitive path segment check with trailing/leading separators }
+  Result := Pos(';' + UpperCase(Param) + ';', ';' + UpperCase(OrigPath) + ';') = 0;
+end;

@@ -26,8 +26,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
 
   FlutterWindow window(project);
   Win32Window::Point origin(10, 10);
-  Win32Window::Size size(1280, 720);
-  if (!window.Create(L"netbridge", origin, size)) {
+  // Default wide layout; min size enforced in WM_GETMINMAXINFO.
+  Win32Window::Size size(1100, 720);
+  if (!window.Create(L"网桥 VPN", origin, size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);
