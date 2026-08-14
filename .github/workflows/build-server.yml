@@ -28,7 +28,10 @@ jobs:
           go-version: "1.22.x"
           cache-dependency-path: server/nbvpn/go.sum
       - name: Test
-        run: go test ./...
+        env:
+          CGO_ENABLED: "0"
+        # Skip cmd/nbvpn-gui (Fyne needs CGO/OpenGL); all unit tests live under internal/
+        run: go test ./internal/...
       - name: Build
         env:
           CGO_ENABLED: "0"
@@ -122,7 +125,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: "1.20.14"
-          cache-dependency-path: server/nbvpn/go.sum
+          cache-dependency-path: server/nbvpn/go.sum.win2012
       - name: Build Server 2012 R2 binary
         env:
           CGO_ENABLED: "0"
@@ -133,11 +136,14 @@ jobs:
           mkdir -p dist
           if [[ -f go.mod.win2012 ]]; then
             cp go.mod.win2012 go.mod
+            if [[ -f go.sum.win2012 ]]; then
+              cp go.sum.win2012 go.sum
+            fi
           else
             sed -i 's/^go .*/go 1.20/' go.mod
             sed -i '/^toolchain /d' go.mod || true
           fi
-          go build -trimpath -ldflags="-s -w -X main.version=${GITHUB_REF_NAME}" \
+          go build -mod=readonly -trimpath -ldflags="-s -w -X main.version=${GITHUB_REF_NAME}" \
             -o dist/nbvpn-windows-amd64-win2012.exe .
           (cd dist && sha256sum nbvpn-windows-amd64-win2012.exe > nbvpn-windows-amd64-win2012.exe.sha256)
       - uses: actions/upload-artifact@v4
