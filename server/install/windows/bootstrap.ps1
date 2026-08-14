@@ -4,8 +4,9 @@
 
 .DESCRIPTION
   Detects OS, downloads the correct installer from GitHub Releases, and runs
-  elevated install. Prefer Setup.exe on Server 2016+ / Windows 10+; on
-  Server 2012 / 2012 R2 downloads win2012 exe + install.ps1.
+  elevated install. Prefer Setup.exe on Server 2016+ / Windows 10+ (Setup bundles
+  WireGuard MSI); on Server 2012 / 2012 R2 downloads win2012 exe + install.ps1
+  (official WG not auto-installed on 2012).
 
 .EXAMPLE
   irm https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/windows/bootstrap.ps1 | iex

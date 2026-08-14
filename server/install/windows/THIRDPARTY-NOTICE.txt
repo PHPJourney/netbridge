@@ -1,0 +1,13 @@
+NetBridge nbvpn — third-party components
+========================================
+
+WireGuard for Windows
+  Copyright (C) Jason A. Donenfeld. All Rights Reserved.
+  License: GNU General Public License, version 2
+  https://www.wireguard.com/
+  https://www.wireguard.com/install/
+
+The Windows Setup may bundle and silently install the official WireGuard
+for Windows MSI (pinned version; see wireguard-bundle.json). WireGuard is
+a separate product under GPLv2. NetBridge nbvpn CLI remains available
+alongside WireGuardTunnel$* Windows services.

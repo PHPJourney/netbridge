@@ -3,8 +3,9 @@
 ; Expects staging folder with:
 ;   nbvpn-windows-amd64.exe  (or set via /DSrcExe=...)
 ;   nbvpn-gui-windows-amd64.exe  (optional; DestName nbvpn-gui.exe)
-;   install.ps1
-;   WINDOWS.md
+;   install.ps1, Install-WireGuard.ps1, wireguard-bundle.json
+;   vendor\wireguard\wireguard-amd64-*.msi  (pinned; CI downloads)
+;   WINDOWS.md, THIRDPARTY-NOTICE.txt
 
 #ifndef MyAppVersion
   #define MyAppVersion "1.0.0"
@@ -31,7 +32,7 @@ AppPublisherURL=https://github.com/PHPJourney/netbridge
 DefaultDirName={autopf}\NetBridge
 DefaultGroupName=NetBridge
 DisableProgramGroupPage=yes
-LicenseFile=
+LicenseFile={#SrcDir}\THIRDPARTY-NOTICE.txt
 OutputDir={#OutputDir}
 OutputBaseFilename=NetBridge-nbvpn-Setup
 Compression=lzma
@@ -51,8 +52,13 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Source: "{#SrcDir}\{#SrcExe}"; DestDir: "{app}"; DestName: "nbvpn.exe"; Flags: ignoreversion
 Source: "{#SrcDir}\{#SrcGuiExe}"; DestDir: "{app}"; DestName: "nbvpn-gui.exe"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "{#SrcDir}\install.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#SrcDir}\Install-WireGuard.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#SrcDir}\wireguard-bundle.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SrcDir}\WINDOWS.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "{#SrcDir}\THIRDPARTY-NOTICE.txt"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "{#SrcDir}\setup.bat"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+; Bundled WireGuard for Windows MSI (optional at compile time — build-setup downloads it)
+Source: "{#SrcDir}\vendor\wireguard\*"; DestDir: "{app}\vendor\wireguard"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
 
 [Icons]
 Name: "{group}\NetBridge nbvpn GUI"; Filename: "{app}\nbvpn-gui.exe"; WorkingDir: "{app}"; Check: GuiExists
@@ -71,10 +77,10 @@ Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environmen
   Check: NeedsAddPath(ExpandConstant('{app}')); Flags: preservestringtype
 
 [Run]
-; Run elevated install.ps1 after copying binary (firewall, NetNat best-effort, nbvpn install)
+; install.ps1 detects/bundles WireGuard MSI under {app}\vendor\wireguard, then nbvpn install
 Filename: "powershell.exe"; \
   Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\install.ps1"" -InstallDir ""{app}"""; \
-  StatusMsg: "Configuring nbvpn (PATH, firewall, data dir, first peer)…"; \
+  StatusMsg: "Installing WireGuard (if needed) and configuring nbvpn…"; \
   Flags: waituntilterminated
 Filename: "{app}\nbvpn-gui.exe"; Description: "Launch NetBridge nbvpn GUI"; Flags: nowait postinstall skipifsilent; Check: GuiExists
 

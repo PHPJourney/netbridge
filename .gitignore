@@ -33,6 +33,7 @@ id_rsa.*
 
 # Large local build artifacts (prefer CI / Releases)
 /server/nbvpn/dist/
+/server/install/windows/vendor/
 /apps/store/dist/
 /clients/netbridge/dist/*.apk
 /clients/netbridge/dist/*.dmg

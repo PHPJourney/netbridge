@@ -49,19 +49,23 @@ sudo nbvpn install
 
 ## Install (Windows Server)
 
-See **`server/install/windows/WINDOWS.md`**. Short path (Administrator PowerShell):
+See **`server/install/windows/WINDOWS.md`**. Short path:
 
-1. Install [WireGuard for Windows](https://www.wireguard.com/install/)
-2. Place `nbvpn-windows-amd64.exe` or run from repo:
+1. Download **`NetBridge-nbvpn-Setup.exe`** (Run as Administrator) — installs **WireGuard for Windows** when missing (pinned MSI), then `nbvpn`
+2. Or advanced: place `nbvpn-windows-amd64.exe` next to scripts and run:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\server\install\windows\install.ps1
 nbvpn show
+nbvpn start
 ```
 
 Data dir default: `%ProgramData%\nbvpn` (often **hidden**). After `nbvpn show`, also check Desktop `nbvpn-peer-*.png`.
 
 Optional GUI (same install dir): `nbvpn-gui.exe` — start/stop/status + open QR; shells out to `nbvpn`.
+
+**Linux:** `install.sh` / family scripts already install `wireguard-tools` via apt or dnf/yum.
+
 ## Quick start
 
 ```bash

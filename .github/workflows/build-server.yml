@@ -130,11 +130,26 @@ jobs:
         shell: pwsh
         run: |
           Copy-Item -Force server\install\windows\install.ps1 stage\
+          Copy-Item -Force server\install\windows\Install-WireGuard.ps1 stage\
+          Copy-Item -Force server\install\windows\wireguard-bundle.json stage\
           Copy-Item -Force server\install\windows\WINDOWS.md stage\
+          Copy-Item -Force server\install\windows\THIRDPARTY-NOTICE.txt stage\
           Copy-Item -Force server\install\windows\setup.bat stage\
           Copy-Item -Force server\install\windows\nbvpn-setup.iss stage\
           Copy-Item -Force server\install\windows\build-setup.ps1 stage\
           Get-ChildItem stage
+      - name: Fetch pinned WireGuard MSI
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          . .\server\install\windows\Install-WireGuard.ps1
+          $pin = Get-Content .\server\install\windows\wireguard-bundle.json -Raw | ConvertFrom-Json
+          $destDir = 'stage\vendor\wireguard'
+          New-Item -ItemType Directory -Force -Path $destDir | Out-Null
+          $msi = Join-Path $destDir $pin.filename
+          Save-RemoteFileChecked -Uri $pin.url -OutFile $msi -ExpectedSha256 $pin.sha256
+          Copy-Item -Force .\server\install\windows\wireguard-bundle.json (Join-Path $destDir 'wireguard-bundle.json')
+          Get-ChildItem $destDir
       - name: Install Inno Setup
         shell: pwsh
         run: |

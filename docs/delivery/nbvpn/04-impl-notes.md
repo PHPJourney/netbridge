@@ -11,7 +11,7 @@
   - 入口：`server/install/install.sh`（检测发行版 → 分发）
   - deb 系：`deb-family.sh`、`debian.sh`、`ubuntu.sh`
   - rhel 系：`rhel-family.sh`、`centos.sh`、`rhel.sh`（Rocky/Alma 同系）
-  - **Windows Server MVP**：`server/install/windows/install.ps1` + `WINDOWS.md`；依赖 WireGuard for Windows
+  - **Windows Server MVP**：`server/install/windows/`（`NetBridge-nbvpn-Setup.exe` / `install.ps1` / `Install-WireGuard.ps1`）；**CI 捆绑固定版本 WireGuard MSI**（`wireguard-bundle.json`），已装则跳过；Server 2012 明确不装官方 WG
   - 公共：`_common.sh`（二进制查找 / `nbvpn install` / 提示）
 - **联调**：`smoke-verify.sh`；`VPS-SMOKE.md`；`FIREWALL.md`；试用：`TRY-CONNECT.md`
 - **Release**：`scripts/build-release.sh` → linux amd64/arm64 + **windows amd64**

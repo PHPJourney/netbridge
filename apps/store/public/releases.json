@@ -130,8 +130,8 @@
       "bootstrapUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/windows/bootstrap.ps1",
       "installCommand": "irm https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/windows/bootstrap.ps1 | iex",
       "status": "available",
-      "note": "Primary: Setup.exe（无需命令行）。高级：PowerShell bootstrap 一键或 install.ps1 + exe。Server 2012 R2 走 win2012。",
-      "noteEn": "Primary: Setup.exe (no CLI). Advanced: PowerShell bootstrap one-liner or install.ps1 + exe. Server 2012 R2 uses the win2012 path."
+      "note": "Primary: Setup.exe（自动捆绑/安装 WireGuard；已装则跳过）。高级：bootstrap / install.ps1。Server 2012 无官方 WG 真隧道。",
+      "noteEn": "Primary: Setup.exe (bundles/installs WireGuard; skips if present). Advanced: bootstrap / install.ps1. Server 2012: no official WG tunnel."
     }
   }
 }

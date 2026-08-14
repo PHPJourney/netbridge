@@ -12,7 +12,7 @@
 | 前端（下载落地页） | Vite 6 静态站（HTML/CSS/JS），目录 `apps/store/` — **仅 UI**，不存安装包 | T05；`apps/store/IMPL.md` |
 | 产物存储 / CDN | OpenList（柚子科技开源）`http://154.37.213.245:5244/store`；`releases.json` 填直链 | 用户确认；链接待上传后更新 |
 | 客户端 | Flutter 3.35（`clients/netbridge/`），Android/iOS/Windows/macOS | T04 实现；见 `clients/netbridge/IMPL.md` |
-| 服务端安装包 | `server/install/install.sh`（Linux）+ `server/install/windows/install.ps1`（Windows）；Go 二进制；WG via apt/dnf 或 WireGuard for Windows | T03 + Windows MVP |
+| 服务端安装包 | `server/install/install.sh`（Linux，apt/dnf 装 wireguard-tools）+ `server/install/windows/`（Setup.exe / install.ps1；**捆绑固定版本 WireGuard MSI**） | T03 + Windows MVP |
 | 数据 | 本地配置为主；无中心账号库 | 去中心化 |
 | 基础设施 | 用户自备 VPS / Windows Server；我方仅分发安装包 | 用户确认 |
 

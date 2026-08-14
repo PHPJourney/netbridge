@@ -1,0 +1,13 @@
+{
+  "product": "WireGuard for Windows",
+  "version": "1.1",
+  "arch": "amd64",
+  "filename": "wireguard-amd64-1.1.msi",
+  "url": "https://download.wireguard.com/windows-client/wireguard-amd64-1.1.msi",
+  "sha256": "6daa5d37a9e2950dfb8c48b95ab8e562cb2bad1c785d020f38f97bea4c6a5566",
+  "msiexecExtra": "DO_NOT_LAUNCH=1",
+  "license": "GPLv2",
+  "homepage": "https://www.wireguard.com/install/",
+  "minOs": "Windows 10 / Windows Server 2016+",
+  "notes": "Pinned official amd64 MSI (enterprise silent path). Skip auto-install if wireguard.exe already present. Server 2012/2012 R2: do not install this MSI — official WireGuard no longer supports those OS versions."
+}

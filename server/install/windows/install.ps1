@@ -14,11 +14,15 @@
   Prerequisites:
     - Windows Server 2019/2022 recommended; Server 2012 R2 needs Go 1.20-built exe
     - Administrator PowerShell (Windows PowerShell 4+ / 5.1)
-    - WireGuard for Windows: https://www.wireguard.com/install/
-      (optional for dry-run profile export; required for a real tunnel)
+    - WireGuard for Windows: auto-installed from pinned MSI on Win10+/Server 2016+
+      when missing (wireguard-bundle.json). Server 2012: official WG unsupported —
+      profiles only (dry-run). Use -SkipWireGuard to force dry-run.
 
 .PARAMETER SkipInstall
   Only place binary + networking prep; do not run `nbvpn install`.
+
+.PARAMETER SkipWireGuard
+  Do not auto-install WireGuard (keys/profiles only). Default: install if missing.
 
 .PARAMETER BinaryUrl
   Download nbvpn-windows-amd64.exe from this URL when no local binary is found.
@@ -32,6 +36,7 @@
 [CmdletBinding()]
 param(
   [switch]$SkipInstall,
+  [switch]$SkipWireGuard,
   [string]$BinaryUrl = $env:NBVPN_BINARY_URL,
   [string]$InstallDir = $(if ($env:INSTALL_BIN_DIR) { $env:INSTALL_BIN_DIR } else { 'C:\Program Files\NetBridge' }),
   [string]$Version = $(if ($env:NBVPN_VERSION) { $env:NBVPN_VERSION } else { '1.0.0' })
@@ -132,57 +137,69 @@ if ($RepoRoot) {
 Write-Log "NetBridge nbvpn Windows install (label $Version)"
 Write-Log "InstallDir: $InstallDir"
 
-# --- WireGuard tools (soft-fail) ---
+# --- WireGuard for Windows (auto-install pinned MSI when missing) ---
+$wgHelper = Join-SafePath $ScriptDir 'Install-WireGuard.ps1'
+if (-not $wgHelper -or -not (Test-Path -LiteralPath $wgHelper)) {
+  throw "Missing Install-WireGuard.ps1 next to install.ps1 ($ScriptDir)"
+}
+. $wgHelper
+
+$wgSearchRoots = @($ScriptDir)
+if ($InstallDir) { $wgSearchRoots += $InstallDir }
+$skipWg = $SkipWireGuard -or ($env:NBVPN_SKIP_WIREGUARD -eq '1')
+$wgResult = Ensure-WireGuardForWindows -SearchRoots $wgSearchRoots -AllowDownload -SkipInstall:$skipWg
+
 $wgMissing = $false
-$wgCmd = Get-Command wg.exe -ErrorAction SilentlyContinue
-$wireguardCmd = Get-Command wireguard.exe -ErrorAction SilentlyContinue
-$wireguardPath = Get-CommandPath $wireguardCmd
-$wgPath = Get-CommandPath $wgCmd
+$wgRebootSuggested = [bool]$wgResult.RebootSuggested
+$wireguardPath = $wgResult.Path
 
-if (-not $wireguardPath) {
-  $wgPaths = @(
-    (Join-SafePath ${env:ProgramFiles} 'WireGuard\wireguard.exe'),
-    (Join-SafePath ${env:ProgramFiles(x86)} 'WireGuard\wireguard.exe')
-  )
-  foreach ($p in $wgPaths) {
-    if ($p -and (Test-Path -LiteralPath $p)) {
-      $wireguardPath = $p
-      $parent = Split-Path -Parent -Path $p
-      if ($parent) { $env:Path = "$parent;$env:Path" }
-      break
-    }
-  }
-}
-
-if (-not $wgPath -and $wireguardPath) {
-  $wgParent = Split-Path -Parent -Path $wireguardPath
-  if ($wgParent) {
-    $wgCand = Join-SafePath $wgParent 'wg.exe'
-    if ($wgCand -and (Test-Path -LiteralPath $wgCand)) {
-      $env:Path = "$wgParent;$env:Path"
-      $wgCmd = Get-Command wg.exe -ErrorAction SilentlyContinue
-      $wgPath = Get-CommandPath $wgCmd
-      if (-not $wgPath) { $wgPath = $wgCand }
-    }
-  }
-}
-
-if (-not $wireguardPath) {
-  $wgMissing = $true
-  Write-Warn "WireGuard for Windows NOT FOUND — continuing in dry-run (keys/profiles only)."
-  Write-Host @"
+switch ($wgResult.Status) {
+  'Present' { Write-Log $wgResult.Message }
+  'Installed' { Write-Log $wgResult.Message }
+  'LegacyUnsupported' {
+    $wgMissing = $true
+    Write-Host @"
 
 ********************************************************************************
-  MUST install WireGuard before a real VPN tunnel:
-    https://download.wireguard.com/windows-client/wireguard-installer.exe
-    https://www.wireguard.com/install/
-  After WireGuard is installed, re-run this script (or: nbvpn install).
-  On Server 2012 R2, official WireGuard/Wintun support is limited — prefer 2019+.
+  Server 2012 / 2012 R2: official WireGuard for Windows is NOT supported.
+  Continuing with keys/profiles only (dry-run). Prefer Server 2016+ / Win10+.
+  Manual / historical builds: https://www.wireguard.com/install/
 ********************************************************************************
 
 "@
-} else {
-  Write-Log "Found wireguard: $wireguardPath"
+  }
+  'Skipped' {
+    $wgMissing = $true
+    Write-Warn $wgResult.Message
+  }
+  default {
+    # Present on modern OS after failed auto-install: hard-fail (one-click expectation)
+    if ($osInfo.IsLegacy) {
+      $wgMissing = $true
+      Write-Warn $wgResult.Message
+    } else {
+      throw @"
+WireGuard for Windows could not be installed automatically.
+
+$($wgResult.Message)
+
+Pinned MSI: see wireguard-bundle.json / https://download.wireguard.com/windows-client/
+Or: https://www.wireguard.com/install/
+Advanced dry-run only: re-run with -SkipWireGuard
+"@
+    }
+  }
+}
+
+if ($wireguardPath) {
+  $wgParent = Split-Path -Parent -Path $wireguardPath
+  if ($wgParent) {
+    $env:Path = "$wgParent;$env:Path"
+    $wgCand = Join-SafePath $wgParent 'wg.exe'
+    if ($wgCand -and (Test-Path -LiteralPath $wgCand)) {
+      Write-Log "Found wg.exe: $wgCand"
+    }
+  }
 }
 
 # --- Place nbvpn.exe ---
@@ -444,11 +461,18 @@ Write-Host "  (terminal QR skipped on Windows by default; open the .png or use -
 Write-Host "CLI status (profiles / dry-run):  nbvpn status"
 Write-Host '  NOTE: nbvpn is a CLI — it is NOT a Windows Service by itself.'
 Write-Host '  The tunnel service is WireGuardTunnel$nbvpn (needs WireGuard for Windows).'
-Write-Host '  Without WireGuard: keys/profiles/PNG still exist; there is no WG service process.'
+if (-not $wgMissing) {
+  Write-Host '  WireGuard is present — try: nbvpn start   (elevated; reboot once if MSI reported 3010)'
+}
 Write-Host "Docs: server\install\windows\WINDOWS.md"
 Write-Host "Remember cloud ACL / security group: inbound UDP 51820"
+if ($wgRebootSuggested) {
+  Write-Host ""
+  Write-Host "*** WireGuard MSI requested a reboot (exit 3010). Reboot, then: nbvpn start ***"
+}
 if ($wgMissing) {
   Write-Host ""
-  Write-Host "*** WireGuard still missing — install it, then re-run for a live tunnel ***"
-  Write-Host "*** Do not look for a service named 'nbvpn' — install WireGuard, then: nbvpn install / start ***"
+  Write-Host "*** WireGuard missing / unsupported on this OS — keys/profiles only (dry-run) ***"
+  Write-Host "*** On Win10+/Server 2016+: re-run Setup/install.ps1 (auto-installs pinned WG MSI) ***"
+  Write-Host "*** Do not look for a service named 'nbvpn' — tunnel is WireGuardTunnel`$nbvpn ***"
 }
