@@ -143,8 +143,13 @@ jobs:
         env:
           NBVPN_VERSION: ${{ github.ref_name }}
         run: |
-          & .\server\install\windows\build-setup.ps1 -StageDir (Resolve-Path stage) -OutDir (Resolve-Path stage\dist) -Version $env:NBVPN_VERSION
-          Get-ChildItem stage\dist
+          # OutDir may not exist yet — Resolve-Path fails on missing paths (exit 1).
+          # build-setup.ps1 creates OutDir; pass Join-Path so we never resolve a missing dir.
+          $stage = (Resolve-Path stage).Path
+          $out = Join-Path $stage 'dist'
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          & .\server\install\windows\build-setup.ps1 -StageDir $stage -OutDir $out -Version $env:NBVPN_VERSION
+          Get-ChildItem $out
       - uses: actions/upload-artifact@v4
         with:
           name: nbvpn-windows-setup
