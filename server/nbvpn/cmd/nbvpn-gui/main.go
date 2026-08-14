@@ -1,81 +1,414 @@
+// Package main is the NetBridge nbvpn native Windows manager (Fyne + system tray).
 package main
 
 import (
-	"embed"
-	"encoding/json"
+	"bytes"
+	_ "embed"
 	"fmt"
-	"io/fs"
-	"net"
-	"net/http"
+	"image"
+	"image/png"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
+	qrcode "github.com/skip2/go-qrcode"
 )
 
-//go:embed static/*
-var staticFS embed.FS
+//go:embed assets/icon.png
+var iconPNG []byte
 
 var version = "1.0.0"
 
 func main() {
+	a := app.NewWithID("com.netbridge.nbvpn-gui")
+	iconRes := fyne.NewStaticResource("icon.png", iconPNG)
+	a.SetIcon(iconRes)
+
+	w := a.NewWindow("NetBridge nbvpn")
+	w.Resize(fyne.NewSize(520, 680))
+	w.SetFixedSize(false)
+
 	nbvpnPath, err := findNbvpn()
 	if err != nil {
-		fatalBox("nbvpn-gui", "找不到 nbvpn.exe。\n请先安装 NetBridge nbvpn（Setup），或把 nbvpn-gui.exe 与 nbvpn.exe 放在同一目录。\n\n"+err.Error())
-		os.Exit(1)
+		w.SetContent(widget.NewLabel("缺少 nbvpn.exe：请与 nbvpn-gui.exe 放在同一目录，或先运行 Setup。\n" + err.Error()))
+		w.ShowAndRun()
+		return
 	}
 
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		fatalBox("nbvpn-gui", "无法监听本地端口: "+err.Error())
-		os.Exit(1)
-	}
-	addr := ln.Addr().String()
-	mux := http.NewServeMux()
-	api := &apiServer{nbvpn: nbvpnPath}
-	mux.HandleFunc("/api/status", api.handleStatus)
-	mux.HandleFunc("/api/start", api.handleStart)
-	mux.HandleFunc("/api/stop", api.handleStop)
-	mux.HandleFunc("/api/config", api.handleConfig)
-	mux.HandleFunc("/api/uri", api.handleURI)
-	mux.HandleFunc("/api/open-data", api.handleOpenData)
-	mux.HandleFunc("/api/open-qr", api.handleOpenQR)
-	mux.HandleFunc("/api/version", func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, map[string]string{
-			"gui":   version,
-			"nbvpn": nbvpnPath,
-			"goos":  runtime.GOOS,
-		})
+	ui := newUI(a, w, nbvpnPath)
+	w.SetContent(ui.root)
+
+	// Close button → hide to tray (do not quit; tunnel keeps running).
+	w.SetCloseIntercept(func() {
+		w.Hide()
 	})
 
-	sub, err := fs.Sub(staticFS, "static")
-	if err != nil {
-		fatalBox("nbvpn-gui", err.Error())
-		os.Exit(1)
-	}
-	mux.Handle("/", http.FileServer(http.FS(sub)))
+	setupSystemTray(a, w, ui, iconRes)
 
-	url := "http://" + addr + "/"
-	go func() {
-		time.Sleep(200 * time.Millisecond)
-		_ = openBrowser(url)
-	}()
-
-	fmt.Printf("nbvpn-gui %s\nnbvpn: %s\nUI: %s\n(Keep this window open while using the GUI.)\n", version, nbvpnPath, url)
-	if err := http.Serve(ln, mux); err != nil {
-		fmt.Fprintf(os.Stderr, "server error: %v\n", err)
-		os.Exit(1)
-	}
+	w.Show()
+	ui.refreshAll()
+	go ui.pollLoop()
+	w.ShowAndRun()
 }
 
-type apiServer struct {
+func setupSystemTray(a fyne.App, w fyne.Window, ui *uiState, icon fyne.Resource) {
+	desk, ok := a.(desktop.App)
+	if !ok {
+		return
+	}
+	desk.SetSystemTrayIcon(icon)
+
+	showItem := fyne.NewMenuItem("显示主窗口", func() {
+		fyne.Do(func() {
+			w.Show()
+			w.RequestFocus()
+		})
+	})
+	statusItem := fyne.NewMenuItem("状态: …", nil)
+	statusItem.Disabled = true
+
+	startItem := fyne.NewMenuItem("启动隧道", func() { ui.doStart() })
+	stopItem := fyne.NewMenuItem("停止隧道", func() { ui.doStop() })
+	quitItem := fyne.NewMenuItem("退出", func() {
+		a.Quit()
+	})
+
+	menu := fyne.NewMenu("NetBridge nbvpn",
+		showItem,
+		statusItem,
+		fyne.NewMenuItemSeparator(),
+		startItem,
+		stopItem,
+		fyne.NewMenuItemSeparator(),
+		quitItem,
+	)
+	desk.SetSystemTrayMenu(menu)
+	ui.trayStatusItem = statusItem
+	ui.trayMenu = menu
+	ui.trayApp = desk
+}
+
+type uiState struct {
 	nbvpn string
+	app   fyne.App
+	win   fyne.Window
+
+	statusBadge *widget.Label
+	statusRaw   *widget.Entry
+	actionMsg   *widget.Label
+	settingsMsg *widget.Label
+	uriEntry    *widget.Entry
+	qrImg       *canvas.Image
+	btnStart    *widget.Button
+	btnStop     *widget.Button
+
+	trayStatusItem *fyne.MenuItem
+	trayMenu       *fyne.Menu
+	trayApp        desktop.App
+	lastState      string
+	mu             sync.Mutex
+
+	root fyne.CanvasObject
 }
 
-func (a *apiServer) run(args ...string) (stdout, stderr string, err error) {
-	cmd := exec.Command(a.nbvpn, args...)
+func newUI(a fyne.App, w fyne.Window, nbvpnPath string) *uiState {
+	u := &uiState{nbvpn: nbvpnPath, app: a, win: w}
+
+	u.statusBadge = widget.NewLabel("状态: 未知")
+	u.statusBadge.TextStyle = fyne.TextStyle{Bold: true}
+	u.statusRaw = widget.NewMultiLineEntry()
+	u.statusRaw.SetMinRowsVisible(6)
+	u.statusRaw.Wrapping = fyne.TextWrapWord
+	u.statusRaw.Disable()
+
+	u.actionMsg = widget.NewLabel("")
+	u.settingsMsg = widget.NewLabel("关闭窗口会隐藏到托盘，隧道不会因此停止。右键托盘选「退出」才结束程序。")
+	u.uriEntry = widget.NewMultiLineEntry()
+	u.uriEntry.SetMinRowsVisible(3)
+	u.uriEntry.Wrapping = fyne.TextWrapBreak
+	u.uriEntry.Disable()
+
+	u.qrImg = canvas.NewImageFromImage(nil)
+	u.qrImg.FillMode = canvas.ImageFillContain
+	u.qrImg.SetMinSize(fyne.NewSize(220, 220))
+
+	btnRefresh := widget.NewButtonWithIcon("刷新", theme.ViewRefreshIcon(), func() { u.refreshAll() })
+	u.btnStart = widget.NewButtonWithIcon("启动", theme.MediaPlayIcon(), func() { u.doStart() })
+	u.btnStop = widget.NewButtonWithIcon("停止", theme.MediaStopIcon(), func() { u.doStop() })
+	u.btnStart.Importance = widget.HighImportance
+	u.btnStop.Importance = widget.DangerImportance
+
+	btnOpenData := widget.NewButton("打开数据目录", func() { u.openDataDir() })
+	btnCopyURI := widget.NewButton("复制 URI", func() { u.copyURI() })
+	btnHelp := widget.NewButton("说明", func() { u.showHelp() })
+	btnReloadQR := widget.NewButton("刷新二维码", func() { u.reloadQR() })
+
+	header := container.NewVBox(
+		widget.NewLabelWithStyle("NetBridge nbvpn", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+		widget.NewLabel("Windows 节点管理（原生窗口；底层调用 nbvpn CLI）"),
+	)
+
+	statusBox := container.NewBorder(
+		container.NewHBox(u.statusBadge, layout.NewSpacer(), btnRefresh),
+		nil, nil, nil,
+		u.statusRaw,
+	)
+
+	controlBox := container.NewVBox(
+		container.NewHBox(u.btnStart, u.btnStop),
+		u.actionMsg,
+	)
+
+	qrBox := container.NewBorder(
+		widget.NewLabel("Peer 二维码（窗口内显示）"),
+		btnReloadQR,
+		nil, nil,
+		container.NewCenter(u.qrImg),
+	)
+
+	settingsBox := container.NewVBox(
+		container.NewHBox(btnOpenData, btnCopyURI, btnHelp),
+		u.settingsMsg,
+		widget.NewLabel("nbvpn: URI"),
+		u.uriEntry,
+	)
+
+	u.root = container.NewBorder(
+		header,
+		widget.NewLabel("GUI "+version+" · "+nbvpnPath),
+		nil, nil,
+		container.NewVBox(
+			widget.NewCard("", "状态", statusBox),
+			widget.NewCard("", "启停", controlBox),
+			widget.NewCard("", "二维码", qrBox),
+			widget.NewCard("", "设置", settingsBox),
+		),
+	)
+	return u
+}
+
+func (u *uiState) pollLoop() {
+	t := time.NewTicker(8 * time.Second)
+	defer t.Stop()
+	for range t.C {
+		u.refreshStatus()
+	}
+}
+
+func (u *uiState) refreshAll() {
+	u.refreshStatus()
+	u.reloadQR()
+	u.loadURI()
+}
+
+func (u *uiState) setBusy(busy bool) {
+	if busy {
+		u.btnStart.Disable()
+		u.btnStop.Disable()
+	} else {
+		u.btnStart.Enable()
+		u.btnStop.Enable()
+	}
+}
+
+func (u *uiState) refreshStatus() {
+	out, errOut, err := u.run("status")
+	raw := strings.TrimSpace(out)
+	if raw == "" {
+		raw = strings.TrimSpace(errOut)
+	}
+	st := parseStatus(out + "\n" + errOut)
+	label := map[string]string{
+		"running": "状态: 运行中",
+		"stopped": "状态: 已停止",
+		"unknown": "状态: 未知",
+	}[st]
+	if label == "" {
+		label = "状态: 未知"
+	}
+	u.mu.Lock()
+	u.lastState = st
+	u.mu.Unlock()
+
+	fyne.Do(func() {
+		u.statusBadge.SetText(label)
+		u.statusRaw.SetText(raw)
+		if err != nil && strings.TrimSpace(errOut) != "" && raw == "" {
+			u.statusRaw.SetText(err.Error() + "\n" + errOut)
+		}
+		if u.trayStatusItem != nil {
+			u.trayStatusItem.Label = label
+			if u.trayApp != nil && u.trayMenu != nil {
+				u.trayApp.SetSystemTrayMenu(u.trayMenu)
+			}
+		}
+	})
+}
+
+func (u *uiState) doStart() {
+	fyne.Do(func() {
+		u.setBusy(true)
+		u.actionMsg.SetText("正在启动…")
+	})
+	go func() {
+		out, errOut, err := u.run("start")
+		msg := strings.TrimSpace(out + "\n" + errOut)
+		fyne.Do(func() {
+			u.setBusy(false)
+			if err != nil {
+				u.actionMsg.SetText("启动失败: " + errString(err) + " " + msg)
+			} else {
+				u.actionMsg.SetText("已启动: " + msg)
+			}
+			u.refreshStatus()
+		})
+	}()
+}
+
+func (u *uiState) doStop() {
+	fyne.Do(func() {
+		u.setBusy(true)
+		u.actionMsg.SetText("正在停止…")
+	})
+	go func() {
+		out, errOut, err := u.run("stop")
+		msg := strings.TrimSpace(out + "\n" + errOut)
+		stOut, _, _ := u.run("status")
+		st := parseStatus(stOut)
+		fyne.Do(func() {
+			u.setBusy(false)
+			if err != nil {
+				u.actionMsg.SetText("停止调用结束: " + errString(err) + " " + msg + " | status=" + st)
+			} else if st == "running" {
+				u.actionMsg.SetText("停止已执行但仍显示运行中，请以管理员重试。 " + msg)
+			} else {
+				u.actionMsg.SetText("已停止（status=" + st + "）")
+			}
+			u.refreshStatus()
+		})
+	}()
+}
+
+func (u *uiState) openDataDir() {
+	dir := dataDir()
+	if err := revealPath(dir); err != nil {
+		u.settingsMsg.SetText("打开失败: " + err.Error())
+		return
+	}
+	u.settingsMsg.SetText("已打开: " + dir)
+}
+
+func (u *uiState) copyURI() {
+	uri, err := u.fetchURI()
+	if err != nil {
+		u.settingsMsg.SetText("无法获取 URI: " + err.Error())
+		return
+	}
+	u.app.Clipboard().SetContent(uri)
+	u.uriEntry.SetText(uri)
+	u.settingsMsg.SetText("已复制 nbvpn: URI（含私钥，勿公开分享）")
+}
+
+func (u *uiState) loadURI() {
+	uri, err := u.fetchURI()
+	fyne.Do(func() {
+		if err != nil {
+			u.uriEntry.SetText("")
+			return
+		}
+		u.uriEntry.SetText(uri)
+	})
+}
+
+func (u *uiState) fetchURI() (string, error) {
+	out, errOut, err := u.run("show", "--uri")
+	uri := strings.TrimSpace(out)
+	if err != nil {
+		return "", fmt.Errorf("%w (%s)", err, strings.TrimSpace(errOut))
+	}
+	if !strings.HasPrefix(uri, "nbvpn:") {
+		return "", fmt.Errorf("unexpected uri output")
+	}
+	return uri, nil
+}
+
+func (u *uiState) reloadQR() {
+	go func() {
+		img, src, err := u.loadQRImage()
+		fyne.Do(func() {
+			if err != nil {
+				u.qrImg.Image = nil
+				u.qrImg.Refresh()
+				u.settingsMsg.SetText("二维码: " + err.Error())
+				return
+			}
+			u.qrImg.Image = img
+			u.qrImg.Refresh()
+			u.settingsMsg.SetText("二维码来源: " + src + "（关窗进托盘，隧道继续）")
+		})
+	}()
+}
+
+func (u *uiState) loadQRImage() (image.Image, string, error) {
+	out, _, err := u.run("show", "--file")
+	if err == nil {
+		for _, line := range strings.Split(out, "\n") {
+			line = strings.TrimSpace(line)
+			if strings.HasSuffix(strings.ToLower(line), ".png") {
+				b, rerr := os.ReadFile(line)
+				if rerr == nil {
+					img, derr := png.Decode(bytes.NewReader(b))
+					if derr == nil {
+						return img, line, nil
+					}
+				}
+			}
+		}
+	}
+	uri, uerr := u.fetchURI()
+	if uerr != nil {
+		return nil, "", fmt.Errorf("no PNG and no URI: %v / %v", err, uerr)
+	}
+	pngBytes, err := qrcode.Encode(uri, qrcode.Medium, 256)
+	if err != nil {
+		return nil, "", err
+	}
+	img, err := png.Decode(bytes.NewReader(pngBytes))
+	if err != nil {
+		return nil, "", err
+	}
+	return img, "memory URI", nil
+}
+
+func (u *uiState) showHelp() {
+	msg := `NetBridge nbvpn GUI
+
+• 启动 / 停止：调用同目录 nbvpn.exe（隐藏控制台），管理 WireGuardTunnel$nbvpn
+• 关闭窗口：隐藏到系统托盘，不退出；已启动的隧道继续运行
+• 托盘：显示主窗口 / 启停 / 退出（退出才结束进程）
+• 二维码：优先读取 peer PNG，否则由 URI 内存生成
+• CLI 仍可用：nbvpn status / start / stop / show
+
+数据目录: ` + dataDir()
+	dialog.ShowInformation("说明", msg, u.win)
+}
+
+func (u *uiState) run(args ...string) (stdout, stderr string, err error) {
+	cmd := exec.Command(u.nbvpn, args...)
+	hideConsole(cmd)
 	var outBuf, errBuf strings.Builder
 	cmd.Stdout = &outBuf
 	cmd.Stderr = &errBuf
@@ -83,109 +416,17 @@ func (a *apiServer) run(args ...string) (stdout, stderr string, err error) {
 	return outBuf.String(), errBuf.String(), err
 }
 
-func (a *apiServer) handleStatus(w http.ResponseWriter, r *http.Request) {
-	out, errOut, err := a.run("status")
-	st := parseStatus(out + "\n" + errOut)
-	writeJSON(w, map[string]any{
-		"ok":      err == nil,
-		"state":   st,
-		"raw":     strings.TrimSpace(out),
-		"stderr":  strings.TrimSpace(errOut),
-		"error":   errString(err),
-	})
-}
-
-func (a *apiServer) handleStart(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "POST required", http.StatusMethodNotAllowed)
-		return
-	}
-	out, errOut, err := a.run("start")
-	writeJSON(w, map[string]any{
-		"ok":     err == nil,
-		"output": strings.TrimSpace(out + "\n" + errOut),
-		"error":  errString(err),
-	})
-}
-
-func (a *apiServer) handleStop(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "POST required", http.StatusMethodNotAllowed)
-		return
-	}
-	out, errOut, err := a.run("stop")
-	writeJSON(w, map[string]any{
-		"ok":     err == nil,
-		"output": strings.TrimSpace(out + "\n" + errOut),
-		"error":  errString(err),
-	})
-}
-
-func (a *apiServer) handleConfig(w http.ResponseWriter, r *http.Request) {
-	out, errOut, err := a.run("config")
-	writeJSON(w, map[string]any{
-		"ok":     err == nil,
-		"output": strings.TrimSpace(out),
-		"stderr": strings.TrimSpace(errOut),
-		"error":  errString(err),
-	})
-}
-
-func (a *apiServer) handleURI(w http.ResponseWriter, r *http.Request) {
-	out, errOut, err := a.run("show", "--uri")
-	uri := strings.TrimSpace(out)
-	writeJSON(w, map[string]any{
-		"ok":     err == nil && strings.HasPrefix(uri, "nbvpn:"),
-		"uri":    uri,
-		"stderr": strings.TrimSpace(errOut),
-		"error":  errString(err),
-	})
-}
-
-func (a *apiServer) handleOpenData(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "POST required", http.StatusMethodNotAllowed)
-		return
-	}
-	dir := dataDir()
-	err := revealPath(dir)
-	writeJSON(w, map[string]any{"ok": err == nil, "path": dir, "error": errString(err)})
-}
-
-func (a *apiServer) handleOpenQR(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "POST required", http.StatusMethodNotAllowed)
-		return
-	}
-	out, errOut, err := a.run("show", "--file")
-	if err != nil {
-		writeJSON(w, map[string]any{"ok": false, "error": errString(err), "stderr": strings.TrimSpace(errOut)})
-		return
-	}
-	png := ""
-	for _, line := range strings.Split(out, "\n") {
-		line = strings.TrimSpace(line)
-		if strings.HasSuffix(strings.ToLower(line), ".png") {
-			png = line
-		}
-	}
-	if png == "" {
-		writeJSON(w, map[string]any{"ok": false, "error": "no PNG path in nbvpn show --file", "raw": out})
-		return
-	}
-	openErr := openFile(png)
-	writeJSON(w, map[string]any{"ok": openErr == nil, "path": png, "error": errString(openErr)})
-}
-
 func parseStatus(raw string) string {
 	low := strings.ToLower(raw)
+	// Order matters: "not running" contains "running"
 	switch {
+	case strings.Contains(low, "not running"), strings.Contains(low, "not installed"),
+		strings.Contains(low, "stopped"), strings.Contains(low, "inactive"):
+		return "stopped"
 	case strings.Contains(low, "running"):
 		return "running"
 	case strings.Contains(low, "dry-run"):
 		return "unknown"
-	case strings.Contains(low, "not installed"), strings.Contains(low, "not running"), strings.Contains(low, "stopped"):
-		return "stopped"
 	default:
 		if strings.TrimSpace(raw) == "" {
 			return "unknown"
@@ -234,29 +475,11 @@ func findNbvpn() (string, error) {
 	return path, nil
 }
 
-func writeJSON(w http.ResponseWriter, v any) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
-	_ = enc.Encode(v)
-}
-
 func errString(err error) string {
 	if err == nil {
 		return ""
 	}
 	return err.Error()
-}
-
-func openBrowser(url string) error {
-	switch runtime.GOOS {
-	case "windows":
-		return exec.Command("cmd", "/c", "start", "", url).Start()
-	case "darwin":
-		return exec.Command("open", url).Start()
-	default:
-		return exec.Command("xdg-open", url).Start()
-	}
 }
 
 func revealPath(path string) error {
@@ -267,30 +490,4 @@ func revealPath(path string) error {
 		return exec.Command("open", path).Start()
 	}
 	return exec.Command("xdg-open", path).Start()
-}
-
-func openFile(path string) error {
-	if runtime.GOOS == "windows" {
-		// Highlight in Explorer + open with default viewer
-		_ = exec.Command("explorer", "/select,"+path).Start()
-		return exec.Command("cmd", "/c", "start", "", path).Start()
-	}
-	if runtime.GOOS == "darwin" {
-		return exec.Command("open", path).Start()
-	}
-	return exec.Command("xdg-open", path).Start()
-}
-
-func fatalBox(title, msg string) {
-	fmt.Fprintf(os.Stderr, "%s: %s\n", title, msg)
-	if runtime.GOOS == "windows" {
-		// Avoid needing extra deps: PowerShell MessageBox
-		ps := fmt.Sprintf(`Add-Type -AssemblyName PresentationFramework; [System.Windows.MessageBox]::Show(%s, %s) | Out-Null`,
-			psQuote(msg), psQuote(title))
-		_ = exec.Command("powershell", "-NoProfile", "-Command", ps).Run()
-	}
-}
-
-func psQuote(s string) string {
-	return "'" + strings.ReplaceAll(s, "'", "''") + "'"
 }

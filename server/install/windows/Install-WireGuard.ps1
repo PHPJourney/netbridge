@@ -147,19 +147,25 @@ function Install-WireGuardMsiSilent {
   if (-not (Test-Path -LiteralPath $MsiPath)) {
     throw "MSI not found: $MsiPath"
   }
-  Write-Host "==> Silent install: msiexec /i `"$MsiPath`" $ExtraProps /qn"
-  $args = @('/i', $MsiPath)
+  $logDir = Join-Path $env:ProgramData 'nbvpn'
+  if (-not (Test-Path -LiteralPath $logDir)) {
+    New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+  }
+  $msiLog = Join-Path $logDir 'wireguard-msiexec.log'
+  Write-Host "==> Silent install: msiexec /i `"$MsiPath`" $ExtraProps /qn /norestart /l*v `"$msiLog`""
+  $argList = @('/i', $MsiPath)
   if ($ExtraProps) {
     foreach ($tok in ($ExtraProps -split '\s+')) {
-      if ($tok) { $args += $tok }
+      if ($tok) { $argList += $tok }
     }
   }
-  $args += '/qn'
-  $p = Start-Process -FilePath 'msiexec.exe' -ArgumentList $args -Wait -PassThru
+  $argList += @('/qn', '/norestart', '/l*v', $msiLog)
+  # Use -Wait so Setup / install.ps1 does not continue before MSI finishes.
+  $p = Start-Process -FilePath 'msiexec.exe' -ArgumentList $argList -Wait -PassThru -WindowStyle Hidden
   if ($null -eq $p) { throw 'msiexec failed to start' }
   # 0 = success; 3010 = success reboot required
   if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) {
-    throw ("msiexec exited {0} installing WireGuard MSI" -f $p.ExitCode)
+    throw ("msiexec exited {0} installing WireGuard MSI (log: {1})" -f $p.ExitCode, $msiLog)
   }
   if ($p.ExitCode -eq 3010) {
     Write-Warning 'WireGuard MSI reports reboot required (3010). A reboot may be needed before the tunnel driver loads.'

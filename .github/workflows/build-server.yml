@@ -58,7 +58,7 @@ jobs:
         with:
           go-version: "1.22.x"
           cache-dependency-path: server/nbvpn/go.sum
-      - name: Build Win10+
+      - name: Build Win10+ CLI
         env:
           CGO_ENABLED: "0"
           GOOS: windows
@@ -67,16 +67,47 @@ jobs:
           mkdir -p dist
           go build -trimpath -ldflags="-s -w -X main.version=${GITHUB_REF_NAME}" \
             -o dist/nbvpn-windows-amd64.exe .
-          go build -trimpath -ldflags="-s -w -X main.version=${GITHUB_REF_NAME}" \
-            -o dist/nbvpn-gui-windows-amd64.exe ./cmd/nbvpn-gui
           (cd dist && sha256sum nbvpn-windows-amd64.exe > nbvpn-windows-amd64.exe.sha256)
-          (cd dist && sha256sum nbvpn-gui-windows-amd64.exe > nbvpn-gui-windows-amd64.exe.sha256)
       - uses: actions/upload-artifact@v4
         with:
           name: nbvpn-windows-amd64
           path: |
             server/nbvpn/dist/nbvpn-windows-amd64.exe
             server/nbvpn/dist/nbvpn-windows-amd64.exe.sha256
+
+  windows-gui:
+    name: windows-gui (Fyne native)
+    runs-on: windows-2022
+    defaults:
+      run:
+        working-directory: server/nbvpn
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.x"
+          cache-dependency-path: server/nbvpn/go.sum
+      - name: Install MinGW (CGO for Fyne)
+        shell: pwsh
+        run: choco install mingw -y --no-progress
+      - name: Build nbvpn-gui (windowsgui + tray)
+        shell: pwsh
+        env:
+          CGO_ENABLED: "1"
+        run: |
+          $env:PATH = "C:\ProgramData\mingw64\mingw64\bin;C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin;$env:PATH"
+          Get-Command gcc | Format-List
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          go build -trimpath -ldflags="-s -w -H windowsgui -X main.version=$env:GITHUB_REF_NAME" `
+            -o dist/nbvpn-gui-windows-amd64.exe ./cmd/nbvpn-gui
+          Get-FileHash dist\nbvpn-gui-windows-amd64.exe -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash.ToLower())  nbvpn-gui-windows-amd64.exe" } |
+            Set-Content dist\nbvpn-gui-windows-amd64.exe.sha256
+          Get-ChildItem dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nbvpn-windows-gui
+          path: |
             server/nbvpn/dist/nbvpn-gui-windows-amd64.exe
             server/nbvpn/dist/nbvpn-gui-windows-amd64.exe.sha256
 
@@ -118,7 +149,7 @@ jobs:
 
   windows-setup:
     name: Windows Setup.exe (Inno)
-    needs: [windows-win10]
+    needs: [windows-win10, windows-gui]
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
@@ -126,7 +157,11 @@ jobs:
         with:
           name: nbvpn-windows-amd64
           path: stage
-      - name: Stage install scripts
+      - uses: actions/download-artifact@v4
+        with:
+          name: nbvpn-windows-gui
+          path: stage
+      - name: Stage install scripts + icon
         shell: pwsh
         run: |
           Copy-Item -Force server\install\windows\install.ps1 stage\
@@ -137,8 +172,11 @@ jobs:
           Copy-Item -Force server\install\windows\setup.bat stage\
           Copy-Item -Force server\install\windows\nbvpn-setup.iss stage\
           Copy-Item -Force server\install\windows\build-setup.ps1 stage\
+          Copy-Item -Force server\install\windows\netbridge.ico stage\
+          if (-not (Test-Path stage\nbvpn-gui-windows-amd64.exe)) { throw 'missing nbvpn-gui-windows-amd64.exe' }
+          if (-not (Test-Path stage\nbvpn-windows-amd64.exe)) { throw 'missing nbvpn-windows-amd64.exe' }
           Get-ChildItem stage
-      - name: Fetch pinned WireGuard MSI
+      - name: Fetch pinned WireGuard MSI (required)
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -149,6 +187,7 @@ jobs:
           $msi = Join-Path $destDir $pin.filename
           Save-RemoteFileChecked -Uri $pin.url -OutFile $msi -ExpectedSha256 $pin.sha256
           Copy-Item -Force .\server\install\windows\wireguard-bundle.json (Join-Path $destDir 'wireguard-bundle.json')
+          if (-not (Test-Path $msi)) { throw "MSI missing after download: $msi" }
           Get-ChildItem $destDir
       - name: Install Inno Setup
         shell: pwsh
@@ -163,13 +202,14 @@ jobs:
         env:
           NBVPN_VERSION: ${{ github.ref_name }}
         run: |
-          # OutDir may not exist yet — Resolve-Path fails on missing paths (exit 1).
-          # build-setup.ps1 creates OutDir; pass Join-Path so we never resolve a missing dir.
           $stage = (Resolve-Path stage).Path
           $out = Join-Path $stage 'dist'
           New-Item -ItemType Directory -Force -Path $out | Out-Null
           & .\server\install\windows\build-setup.ps1 -StageDir $stage -OutDir $out -Version $env:NBVPN_VERSION
           Get-ChildItem $out
+          # Verify Setup embeds MSI: Inno compile already requires vendor\wireguard\*
+          $setup = Join-Path $out 'NetBridge-nbvpn-Setup.exe'
+          if (-not (Test-Path $setup)) { throw "Setup missing: $setup" }
       - uses: actions/upload-artifact@v4
         with:
           name: nbvpn-windows-setup
@@ -180,7 +220,7 @@ jobs:
 
   package:
     name: package-server-zip
-    needs: [linux, windows-win10, windows-win2012, windows-setup]
+    needs: [linux, windows-win10, windows-win2012, windows-gui, windows-setup]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

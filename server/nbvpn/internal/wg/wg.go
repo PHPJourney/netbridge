@@ -395,6 +395,7 @@ func StatusText(st *state.ServerState) string {
 	running := false
 	if runtime.GOOS == "windows" {
 		cmd := exec.Command("sc.exe", "query", winTunnelServiceName())
+		hideConsoleWindow(cmd)
 		out, err := cmd.CombinedOutput()
 		if err == nil {
 			line := strings.ToLower(string(out))
@@ -440,6 +441,7 @@ func StatusText(st *state.ServerState) string {
 
 func run(name string, args ...string) error {
 	cmd := exec.Command(name, args...)
+	hideConsoleWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%s %s: %v (%s)", name, strings.Join(args, " "), err, strings.TrimSpace(string(out)))

@@ -7,7 +7,7 @@
 - 冻结契约: 是（2026-08-14；Profile/URI 不变）
 - 阻塞: DEF-01 OpenList **真**直链仍待上传（清单见 OPENLIST-UPLOAD.md）；DEF-02 Apple Team/NE；DEF-04 正式签名包 / Windows 客户端 exe；云安全组 UDP 51820；Win2012 真机 install 未完成（WG/Wintun 存疑）
 - 已解除: DEF-03 无 Linux VPS — Debian 12 `netbridge-vps` 已冒烟；Q-04 已改为纳入 Windows Server
-- 最近变更: Windows Setup **捆绑/静默安装**固定版本 WireGuard MSI（已装则跳过；2012 明确跳过）— 2026-08-14
+- 最近变更: Windows **Fyne 原生 GUI + 托盘**；Setup **强制捆绑 WG MSI**（修 v0.1.2 软跳过）；客户端 Windows 托盘（切换节点/连接/退出）；需打 **v0.1.3** tag 才进 Release — 2026-08-14
 - Windows 测试机: `154.36.178.124`（2012 R2）；SSH 不可用；WinRM 5985 NTLM 可用；别名 `netbridge-win2012` **未建**（无 OpenSSH）
 - 证据路径:
   - docs/delivery/nbvpn/OPENLIST-UPLOAD.md

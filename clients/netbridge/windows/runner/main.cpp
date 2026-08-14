@@ -32,7 +32,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   if (!window.Create(L"\u7f51\u6865 VPN", origin, size)) {
     return EXIT_FAILURE;
   }
-  window.SetQuitOnClose(true);
+  // Dart window_manager + tray handle close → hide; native must not quit.
+  window.SetQuitOnClose(false);
 
   ::MSG msg;
   while (::GetMessage(&msg, nullptr, 0, 0)) {

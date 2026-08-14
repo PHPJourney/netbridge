@@ -62,7 +62,7 @@ nbvpn start
 
 Data dir default: `%ProgramData%\nbvpn` (often **hidden**). After `nbvpn show`, also check Desktop `nbvpn-peer-*.png`.
 
-Optional GUI (same install dir): `nbvpn-gui.exe` — start/stop/status + open QR; shells out to `nbvpn`.
+Optional GUI (same install dir): `nbvpn-gui.exe` — **native Fyne window** (in-window QR, tray hide-on-close); shells out to `nbvpn`.
 
 **Linux:** `install.sh` / family scripts already install `wireguard-tools` via apt or dnf/yum.
 

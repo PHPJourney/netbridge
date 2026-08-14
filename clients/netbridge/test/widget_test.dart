@@ -61,8 +61,10 @@ void main() {
   });
 
   testWidgets('app builds', (tester) async {
-    // Smoke: NetBridgeApp constructs (bootstrap may hit storage).
-    await tester.pumpWidget(const NetBridgeApp());
+    final controller = AppController(tunnel: StubVpnTunnel());
+    controller.loading = false;
+    controller.servers = [];
+    await tester.pumpWidget(NetBridgeApp(controller: controller));
     await tester.pump();
     // System locale may be en or zh; title is one of the two.
     expect(

@@ -100,6 +100,33 @@ if (-not $SkipWireGuardDownload -and (Test-Path -LiteralPath $pinPath)) {
   Write-Warning "Skipping WireGuard MSI fetch — Setup will download at install time if online"
 }
 
+# Hard requirement: Setup must ship at least one .msi (clean-machine offline path).
+$msiFiles = @()
+if (Test-Path -LiteralPath $wgVendor) {
+  $msiFiles = @(Get-ChildItem -LiteralPath $wgVendor -Filter '*.msi' -ErrorAction SilentlyContinue)
+}
+if (-not $msiFiles -or $msiFiles.Count -eq 0) {
+  throw @"
+No WireGuard MSI under $wgVendor.
+Refusing to build Setup without a bundled MSI (v0.1.2 soft-skip caused clean machines to miss WG when download failed or user continued past errors).
+Re-run without -SkipWireGuardDownload, or place the pinned MSI from wireguard-bundle.json into vendor\wireguard\.
+"@
+}
+Write-Host "==> Bundled WireGuard MSI present: $($msiFiles[0].FullName)"
+
+# Stage Setup / shortcut icon when available
+$icoCandidates = @(
+  (Join-Path $Here '..\..\nbvpn\assets\branding\netbridge.ico'),
+  (Join-Path $StageDir 'netbridge.ico')
+)
+foreach ($ico in $icoCandidates) {
+  if ($ico -and (Test-Path -LiteralPath $ico)) {
+    Copy-Item -Force -LiteralPath $ico -Destination (Join-Path $StageDir 'netbridge.ico')
+    Write-Host "==> Staged Setup icon: $ico"
+    break
+  }
+}
+
 function Find-ISCC {
   $candidates = @(
     ${env:ISCC},

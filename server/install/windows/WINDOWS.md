@@ -63,9 +63,9 @@ After a successful WG install you should be able to run `nbvpn start` in a **new
 
 | Capability | Status |
 |------------|--------|
-| `NetBridge-nbvpn-Setup.exe` (Inno) | Yes (CI windows-2022 + Inno Setup 6; includes `nbvpn-gui.exe` + pinned WG MSI) |
-| Cross-compile `nbvpn-windows-amd64.exe` (Win10+) | Yes |
-| Cross-compile `nbvpn-gui-windows-amd64.exe` | Yes (local browser UI; shells out to `nbvpn`) |
+| `NetBridge-nbvpn-Setup.exe` (Inno) | Yes (CI windows-2022 + Inno; **requires** bundled WG MSI + `nbvpn-gui.exe`) |
+| Cross-compile `nbvpn-windows-amd64.exe` (Win10+) | Yes (linux CI, CGO=0) |
+| Native `nbvpn-gui-windows-amd64.exe` | Yes (**Fyne** window + tray; built on windows-2022 with CGO; shells out to `nbvpn`) |
 | Cross-compile `nbvpn-windows-amd64-win2012.exe` | Yes (**Go 1.20**; GUI not required on 2012) |
 | `nbvpn install` / `show` (URI + PNG + `.nbvpn.json` + `.conf`) | Yes — even without WireGuard (dry-run / 2012) |
 | Terminal QR in console | **Skipped by default on Windows** (`nbvpn show --qr` opt-in; no ANSI unless forced) |
@@ -166,10 +166,10 @@ Files after install: `server.json`, `nbvpn.conf`, `peers\<id>.nbvpn.json`, `.png
 
 | Tool | Role |
 |------|------|
-| **`nbvpn-gui.exe`** | Local browser UI: **Start / Stop / Status**, open data dir, open peer QR, copy URI, show `nbvpn config` |
+| **`nbvpn-gui.exe`** | **Native Windows window** (Fyne): status, Start/Stop, in-window QR, copy URI, open data dir. **Close → system tray** (tunnel keeps running). Tray: show / start / stop / exit |
 | **`nbvpn.exe`** | Full CLI (unchanged) — install, peer, config set endpoint, etc. |
 
-Setup installs both under `C:\Program Files\NetBridge\` and adds a Start Menu shortcut **NetBridge nbvpn GUI**.
+Both carry the NetBridge icon (embedded `.syso`). Setup Start Menu / desktop shortcuts point at `nbvpn-gui.exe`.
 
 ```powershell
 # After Setup (new terminal):
@@ -177,7 +177,13 @@ nbvpn-gui          # or Start Menu → NetBridge nbvpn GUI
 nbvpn status       # CLI still works
 ```
 
-GUI shells out to the installed `nbvpn.exe` (same directory / PATH) — no second copy of tunnel logic.
+GUI shells out to the installed `nbvpn.exe` with a **hidden console** (no black cmd flash). Stop must leave `nbvpn status` as not running.
+
+### WireGuard install reliability (v0.1.3+)
+
+**Root cause of “Setup didn’t install WG” on earlier builds:** Inno used `skipifsourcedoesntexist` for `vendor\wireguard\*`, so a Setup could ship **without** the MSI; install-time download could fail on locked-down hosts; and `[Run] install.ps1` non-zero exit only **warned** (user could Continue). Not primarily a “2012 branch” issue unless the host was actually 2012.
+
+**Now:** CI/`build-setup.ps1` **refuse to build** without a pinned `.msi`; Inno **requires** `vendor\wireguard\*`; `install.ps1` runs in `CurStepChanged` and **aborts Setup** on failure; msiexec is waited with a log under `%ProgramData%\nbvpn\wireguard-msiexec.log`. Already-installed `wireguard.exe` → skip.
 
 ## Show / QR on Windows
 

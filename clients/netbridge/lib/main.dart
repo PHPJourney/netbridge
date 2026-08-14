@@ -1,36 +1,47 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+import 'desktop/desktop_tray.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/home_screen.dart';
 import 'services/settings_store.dart';
 import 'state/app_controller.dart';
 import 'theme.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const NetBridgeApp());
+  final controller = AppController();
+  await controller.bootstrap();
+
+  DesktopTrayController? tray;
+  if (!kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.windows ||
+          defaultTargetPlatform == TargetPlatform.linux ||
+          defaultTargetPlatform == TargetPlatform.macOS)) {
+    tray = DesktopTrayController(controller);
+    await tray.init();
+  }
+
+  runApp(NetBridgeApp(controller: controller, tray: tray));
 }
 
 class NetBridgeApp extends StatefulWidget {
-  const NetBridgeApp({super.key});
+  const NetBridgeApp({super.key, required this.controller, this.tray});
+
+  final AppController controller;
+  final DesktopTrayController? tray;
 
   @override
   State<NetBridgeApp> createState() => _NetBridgeAppState();
 }
 
 class _NetBridgeAppState extends State<NetBridgeApp> {
-  late final AppController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AppController();
-    _controller.bootstrap();
-  }
+  AppController get _controller => widget.controller;
 
   @override
   void dispose() {
+    widget.tray?.dispose();
     _controller.dispose();
     super.dispose();
   }

@@ -7,11 +7,11 @@
 | 层 | 技术 | 依据（文件或用户确认） |
 |----|------|------------------------|
 | 隧道协议 | WireGuard | 用户确认 |
-| 服务端 CLI | Go（`github.com/netbridge/nbvpn`），命令名 `nbvpn`；Windows 可选本地 GUI `nbvpn-gui`（`cmd/nbvpn-gui`，调 CLI） | T03 实现；`server/nbvpn/` |
+| 服务端 CLI | Go（`github.com/netbridge/nbvpn`），命令名 `nbvpn`；Windows 原生 GUI `nbvpn-gui`（Fyne + 托盘，`cmd/nbvpn-gui`，调 CLI） | T03 实现；`server/nbvpn/` |
 | 连接信息 URI | `nbvpn:1?<base64url(JSON)>`（Profile v1） | `03-contract.md` 冻结 |
 | 前端（下载落地页） | Vite 6 静态站（HTML/CSS/JS），目录 `apps/store/` — **仅 UI**，不存安装包 | T05；`apps/store/IMPL.md` |
 | 产物存储 / CDN | OpenList（柚子科技开源）`http://154.37.213.245:5244/store`；`releases.json` 填直链 | 用户确认；链接待上传后更新 |
-| 客户端 | Flutter 3.35（`clients/netbridge/`），Android/iOS/Windows/macOS | T04 实现；见 `clients/netbridge/IMPL.md` |
+| 客户端 | Flutter 3.35（`clients/netbridge/`），Android/iOS/Windows/macOS；Windows **关窗进托盘**（`window_manager` + `tray_manager`，可切换节点） | T04 实现；见 `clients/netbridge/IMPL.md` |
 | 服务端安装包 | `server/install/install.sh`（Linux，apt/dnf 装 wireguard-tools）+ `server/install/windows/`（Setup.exe / install.ps1；**捆绑固定版本 WireGuard MSI**） | T03 + Windows MVP |
 | 数据 | 本地配置为主；无中心账号库 | 去中心化 |
 | 基础设施 | 用户自备 VPS / Windows Server；我方仅分发安装包 | 用户确认 |
@@ -60,3 +60,4 @@
 | 2026-08-14 | 客户端：Flutter `clients/netbridge/` 四端 | frontend T04 |
 | 2026-08-14 | 分发：落地页 UI=`apps/store`；产物=OpenList `…:5244/store` | 用户确认 |
 | 2026-08-14 | Windows Server：`install.ps1` + `nbvpn-windows-amd64.exe` | 用户确认纳入 |
+| 2026-08-14 | Windows GUI：Fyne 原生窗 + 托盘；Setup 强制捆绑 WG MSI；客户端托盘切换节点 | 用户反馈 v0.1.2 |
