@@ -69,7 +69,7 @@ const dict = {
       "到 <a href=\"#servers\">部署服务端</a>：Linux 复制一键命令以 root / <code>sudo</code> 执行；Windows 优先下载 Setup.exe 并以管理员运行（高级折叠内有 PowerShell 一键）。安装完成后会配置首个客户端 peer，并尽量启用服务。",
     "help.install.winTitle": "Windows 服务端 MVP",
     "help.install.winBody":
-      "在 <a href=\"#servers\">部署服务端</a> 的 Windows 卡片：大多数用户只下载 <strong>Setup.exe</strong>，右键「以管理员身份运行」。无 GUI / Server 2012 展开「高级」用 PowerShell 一键（<code>bootstrap.ps1</code>）或手动链接。请安装 <a href=\"https://www.wireguard.com/install/\" rel=\"noopener noreferrer\">WireGuard for Windows</a> 后再开真隧道。数据目录：<code>explorer %ProgramData%\\nbvpn</code>。详见 <code>WINDOWS.md</code>。",
+      "在 <a href=\"#servers\">部署服务端</a> 的 Windows 卡片：大多数用户只下载 <strong>Setup.exe</strong>，右键「以管理员身份运行」。安装后可用开始菜单 <strong>NetBridge nbvpn GUI</strong>（启停/状态）或 CLI <code>nbvpn</code>。无 GUI / Server 2012 展开「高级」用 PowerShell 一键（<code>bootstrap.ps1</code>）或手动链接。请安装 <a href=\"https://www.wireguard.com/install/\" rel=\"noopener noreferrer\">WireGuard for Windows</a> 后再开真隧道。<code>nbvpn show</code> 会把 QR 复制到桌面（ProgramData 默认隐藏）。详见 <code>WINDOWS.md</code>。",
     "help.commands.title": "nbvpn 常用命令",
     "help.commands.intro": "安装完成后，在服务器终端执行（多数环境需 <code>sudo</code>）：",
     "help.commands.d1": "首次安装 / 修复配置，生成节点与首个客户端配置并尽量启用服务。",
@@ -239,7 +239,7 @@ const dict = {
       "Go to <a href=\"#servers\">Deploy server</a>: on Linux copy the one-liner and run as root / <code>sudo</code>; on Windows download Setup.exe and run as Administrator (advanced fold has a PowerShell one-liner). Install configures the first client peer and tries to enable the service.",
     "help.install.winTitle": "Windows server MVP",
     "help.install.winBody":
-      "On the Windows card under <a href=\"#servers\">Deploy server</a>: most users only download <strong>Setup.exe</strong> and run as Administrator. Headless / Server 2012: expand Advanced for the PowerShell one-liner (<code>bootstrap.ps1</code>) or manual links. Install <a href=\"https://www.wireguard.com/install/\" rel=\"noopener noreferrer\">WireGuard for Windows</a> before a real tunnel. Data: <code>explorer %ProgramData%\\nbvpn</code>. See <code>WINDOWS.md</code>.",
+      "On the Windows card under <a href=\"#servers\">Deploy server</a>: most users only download <strong>Setup.exe</strong> and run as Administrator. After install use Start Menu <strong>NetBridge nbvpn GUI</strong> (start/stop/status) or CLI <code>nbvpn</code>. Headless / Server 2012: expand Advanced for the PowerShell one-liner (<code>bootstrap.ps1</code>) or manual links. Install <a href=\"https://www.wireguard.com/install/\" rel=\"noopener noreferrer\">WireGuard for Windows</a> before a real tunnel. <code>nbvpn show</code> also copies the QR to the Desktop (ProgramData is hidden). See <code>WINDOWS.md</code>.",
     "help.commands.title": "Common nbvpn commands",
     "help.commands.intro":
       "After install, run these in a server shell (most environments need <code>sudo</code>):",

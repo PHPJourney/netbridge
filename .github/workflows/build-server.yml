@@ -67,13 +67,18 @@ jobs:
           mkdir -p dist
           go build -trimpath -ldflags="-s -w -X main.version=${GITHUB_REF_NAME}" \
             -o dist/nbvpn-windows-amd64.exe .
+          go build -trimpath -ldflags="-s -w -X main.version=${GITHUB_REF_NAME}" \
+            -o dist/nbvpn-gui-windows-amd64.exe ./cmd/nbvpn-gui
           (cd dist && sha256sum nbvpn-windows-amd64.exe > nbvpn-windows-amd64.exe.sha256)
+          (cd dist && sha256sum nbvpn-gui-windows-amd64.exe > nbvpn-gui-windows-amd64.exe.sha256)
       - uses: actions/upload-artifact@v4
         with:
           name: nbvpn-windows-amd64
           path: |
             server/nbvpn/dist/nbvpn-windows-amd64.exe
             server/nbvpn/dist/nbvpn-windows-amd64.exe.sha256
+            server/nbvpn/dist/nbvpn-gui-windows-amd64.exe
+            server/nbvpn/dist/nbvpn-gui-windows-amd64.exe.sha256
 
   windows-win2012:
     name: windows-amd64-win2012 (Go 1.20)

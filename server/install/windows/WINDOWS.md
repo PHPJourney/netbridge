@@ -47,9 +47,10 @@ If `nbvpn` is not found after Setup: close old terminals, open a **new** elevate
 
 | Capability | Status |
 |------------|--------|
-| `NetBridge-nbvpn-Setup.exe` (Inno) | Yes (CI windows-2022 + Inno Setup 6) |
+| `NetBridge-nbvpn-Setup.exe` (Inno) | Yes (CI windows-2022 + Inno Setup 6; includes `nbvpn-gui.exe` when built) |
 | Cross-compile `nbvpn-windows-amd64.exe` (Win10+) | Yes |
-| Cross-compile `nbvpn-windows-amd64-win2012.exe` | Yes (**Go 1.20**) |
+| Cross-compile `nbvpn-gui-windows-amd64.exe` | Yes (local browser UI; shells out to `nbvpn`) |
+| Cross-compile `nbvpn-windows-amd64-win2012.exe` | Yes (**Go 1.20**; GUI not required on 2012) |
 | `nbvpn install` / `show` (URI + PNG + `.nbvpn.json` + `.conf`) | Yes — **even without WireGuard** (dry-run) |
 | Terminal QR in console | **Skipped by default on Windows** (`nbvpn show --qr` opt-in; no ANSI unless forced) |
 | Tunnel via **WireGuard for Windows** | Yes when WireGuard is installed |
@@ -119,7 +120,7 @@ Inno Setup also appends `{app}` to system PATH (`ChangesEnvironment=yes`) before
 
 Default: `%ProgramData%\nbvpn` (override: `NBVPN_DATA_DIR`).
 
-**ProgramData is a hidden folder.** If Explorer “cannot find” it:
+**ProgramData is a hidden folder.** If Explorer “cannot find” it under `C:\`:
 
 ```powershell
 explorer C:\ProgramData\nbvpn
@@ -127,16 +128,39 @@ explorer C:\ProgramData\nbvpn
 dir $env:ProgramData\nbvpn\peers
 ```
 
+After `nbvpn show` / `show --qr`, nbvpn also:
+
+- Prints a conspicuous **Wrote QR PNG** block + `explorer /select,"…"` hint
+- Tries to open/reveal the PNG
+- Copies to **Desktop** (`nbvpn-peer-*.png`) and `%PUBLIC%\Documents\nbvpn\` (non-hidden)
+
 Files after install: `server.json`, `nbvpn.conf`, `peers\<id>.nbvpn.json`, `.png`, `.conf`.
+
+## GUI + CLI (both supported)
+
+| Tool | Role |
+|------|------|
+| **`nbvpn-gui.exe`** | Local browser UI: **Start / Stop / Status**, open data dir, open peer QR, copy URI, show `nbvpn config` |
+| **`nbvpn.exe`** | Full CLI (unchanged) — install, peer, config set endpoint, etc. |
+
+Setup installs both under `C:\Program Files\NetBridge\` and adds a Start Menu shortcut **NetBridge nbvpn GUI**.
+
+```powershell
+# After Setup (new terminal):
+nbvpn-gui          # or Start Menu → NetBridge nbvpn GUI
+nbvpn status       # CLI still works
+```
+
+GUI shells out to the installed `nbvpn.exe` (same directory / PATH) — no second copy of tunnel logic.
 
 ## Show / QR on Windows
 
 | Command | Behavior |
 |---------|----------|
-| `nbvpn show` | URI + paths + **PNG path**; **no** terminal block QR |
+| `nbvpn show` | URI + paths + **PNG** (Desktop copy + reveal on Windows); **no** terminal block QR |
 | `nbvpn show --uri` | URI only |
 | `nbvpn show --qr` | Terminal QR **opt-in**; still **clamped** (~48–56 cols); dense URIs → skip + recommend PNG |
-| Open `.png` | Preferred for phone scan |
+| Open `.png` | Preferred for phone scan (Desktop copy or ProgramData) |
 
 ## Cross-compile — Docker (Mac)
 

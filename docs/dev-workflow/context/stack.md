@@ -7,7 +7,7 @@
 | 层 | 技术 | 依据（文件或用户确认） |
 |----|------|------------------------|
 | 隧道协议 | WireGuard | 用户确认 |
-| 服务端 CLI | Go（`github.com/netbridge/nbvpn`），命令名 `nbvpn` | T03 实现；`server/nbvpn/` |
+| 服务端 CLI | Go（`github.com/netbridge/nbvpn`），命令名 `nbvpn`；Windows 可选本地 GUI `nbvpn-gui`（`cmd/nbvpn-gui`，调 CLI） | T03 实现；`server/nbvpn/` |
 | 连接信息 URI | `nbvpn:1?<base64url(JSON)>`（Profile v1） | `03-contract.md` 冻结 |
 | 前端（下载落地页） | Vite 6 静态站（HTML/CSS/JS），目录 `apps/store/` — **仅 UI**，不存安装包 | T05；`apps/store/IMPL.md` |
 | 产物存储 / CDN | OpenList（柚子科技开源）`http://154.37.213.245:5244/store`；`releases.json` 填直链 | 用户确认；链接待上传后更新 |
@@ -26,7 +26,7 @@
 | 前端应用（Store 落地页 UI） | `apps/store/`（非文件存储） |
 | 产物清单回填脚本 | `scripts/fill-releases-after-upload.md`、`scripts/update-releases-urls.sh` |
 | 四端客户端 | `clients/netbridge/` |
-| 服务端安装/CLI | `server/nbvpn/`（CLI）、`server/install/install.sh`（Linux）、`server/install/windows/`（Windows） |
+| 服务端安装/CLI | `server/nbvpn/`（CLI）、`server/nbvpn/cmd/nbvpn-gui`（Windows 管理 UI）、`server/install/install.sh`（Linux）、`server/install/windows/`（Windows） |
 | 共享契约（连接信息 schema） | `docs/delivery/nbvpn/03-contract.md`（NbVpnProfile v1） |
 | 服务端状态目录 | Linux `/var/lib/nbvpn`；Windows `%ProgramData%\nbvpn`（`NBVPN_DATA_DIR` 可覆盖） |
 | 测试 | `cd server/nbvpn && go test ./...` |

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NetBridge nbvpn</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a2332;
+      --text: #e8eef7;
+      --muted: #8b9bb4;
+      --accent: #3d9cf0;
+      --ok: #3ecf8e;
+      --warn: #e6a23c;
+      --bad: #e85d5d;
+      --border: #2a3a52;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: radial-gradient(1200px 600px at 10% -10%, #1e3a5f 0%, transparent 55%),
+                  radial-gradient(900px 500px at 100% 0%, #143028 0%, transparent 50%),
+                  var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      padding: 1.5rem 1.75rem 0.5rem;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.55rem;
+      font-weight: 650;
+      letter-spacing: 0.02em;
+    }
+    header p {
+      margin: 0.35rem 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+    main {
+      padding: 1rem 1.75rem 2rem;
+      display: grid;
+      gap: 1rem;
+      max-width: 720px;
+    }
+    section {
+      background: color-mix(in srgb, var(--panel) 92%, transparent);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.15rem;
+    }
+    section h2 {
+      margin: 0 0 0.75rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      align-items: center;
+    }
+    button {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: #243247;
+      color: var(--text);
+      padding: 0.55rem 1rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+    button:hover { border-color: var(--accent); }
+    button.primary {
+      background: var(--accent);
+      border-color: transparent;
+      color: #061018;
+      font-weight: 600;
+    }
+    button.danger {
+      background: #3a1f24;
+      border-color: #6a3038;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      border: 1px solid var(--border);
+      background: #121a26;
+    }
+    .badge .dot {
+      width: 0.55rem;
+      height: 0.55rem;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+    .badge.running .dot { background: var(--ok); }
+    .badge.stopped .dot { background: var(--bad); }
+    .badge.unknown .dot { background: var(--warn); }
+    pre {
+      margin: 0.75rem 0 0;
+      padding: 0.75rem;
+      background: #0c1118;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 0.8rem;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 240px;
+      overflow: auto;
+      color: #c5d0e0;
+    }
+    .msg {
+      margin-top: 0.6rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+      min-height: 1.2em;
+    }
+    .msg.err { color: var(--bad); }
+    .msg.ok { color: var(--ok); }
+    footer {
+      padding: 0 1.75rem 1.5rem;
+      color: var(--muted);
+      font-size: 0.8rem;
+      max-width: 720px;
+    }
+    code { font-family: Consolas, "SF Mono", monospace; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>NetBridge nbvpn</h1>
+    <p>Windows 节点图形管理（底层仍调用 <code>nbvpn</code> CLI；CLI 保留）</p>
+  </header>
+  <main>
+    <section>
+      <h2>状态</h2>
+      <div class="row">
+        <span id="badge" class="badge unknown"><span class="dot"></span><span id="stateLabel">未知</span></span>
+        <button type="button" id="btnRefresh">刷新</button>
+      </div>
+      <pre id="statusRaw">加载中…</pre>
+      <div class="msg" id="statusMsg"></div>
+    </section>
+
+    <section>
+      <h2>启停</h2>
+      <div class="row">
+        <button type="button" class="primary" id="btnStart">启动</button>
+        <button type="button" class="danger" id="btnStop">停止</button>
+      </div>
+      <div class="msg" id="actionMsg"></div>
+    </section>
+
+    <section>
+      <h2>设置 / 连接信息</h2>
+      <div class="row">
+        <button type="button" id="btnConfig">显示配置</button>
+        <button type="button" id="btnOpenData">打开配置目录</button>
+        <button type="button" id="btnOpenQR">打开 Peer QR</button>
+        <button type="button" id="btnCopyURI">复制 nbvpn: URI</button>
+      </div>
+      <pre id="configRaw" hidden></pre>
+      <div class="msg" id="settingsMsg"></div>
+    </section>
+  </main>
+  <footer id="footer">GUI 通过本机回环访问；关闭黑色控制台窗口即退出。</footer>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const stateText = { running: "运行中", stopped: "已停止", unknown: "未知" };
+
+    async function api(path, opts) {
+      const res = await fetch(path, opts);
+      return res.json();
+    }
+
+    function setBadge(state) {
+      const b = $("badge");
+      b.className = "badge " + (state || "unknown");
+      $("stateLabel").textContent = stateText[state] || stateText.unknown;
+    }
+
+    async function refreshStatus() {
+      $("statusMsg").textContent = "";
+      try {
+        const j = await api("/api/status");
+        setBadge(j.state);
+        $("statusRaw").textContent = j.raw || j.stderr || "(empty)";
+        if (!j.ok && j.error) {
+          $("statusMsg").className = "msg err";
+          $("statusMsg").textContent = j.error;
+        }
+      } catch (e) {
+        setBadge("unknown");
+        $("statusMsg").className = "msg err";
+        $("statusMsg").textContent = String(e);
+      }
+    }
+
+    async function doAction(path, label) {
+      $("actionMsg").className = "msg";
+      $("actionMsg").textContent = label + "…";
+      try {
+        const j = await api(path, { method: "POST" });
+        $("actionMsg").className = j.ok ? "msg ok" : "msg err";
+        $("actionMsg").textContent = j.output || j.error || (j.ok ? "OK" : "失败");
+        await refreshStatus();
+      } catch (e) {
+        $("actionMsg").className = "msg err";
+        $("actionMsg").textContent = String(e);
+      }
+    }
+
+    $("btnRefresh").onclick = refreshStatus;
+    $("btnStart").onclick = () => doAction("/api/start", "启动");
+    $("btnStop").onclick = () => doAction("/api/stop", "停止");
+
+    $("btnConfig").onclick = async () => {
+      const j = await api("/api/config");
+      $("configRaw").hidden = false;
+      $("configRaw").textContent = j.output || j.error || "";
+      $("settingsMsg").className = j.ok ? "msg ok" : "msg err";
+      $("settingsMsg").textContent = j.ok ? "已加载 nbvpn config（修改 endpoint 请用 CLI：nbvpn config set endpoint …）" : (j.error || "失败");
+    };
+
+    $("btnOpenData").onclick = async () => {
+      const j = await api("/api/open-data", { method: "POST" });
+      $("settingsMsg").className = j.ok ? "msg ok" : "msg err";
+      $("settingsMsg").textContent = j.ok
+        ? "已打开: " + j.path + "（ProgramData 可能隐藏；也可用桌面上的 nbvpn-peer-*.png）"
+        : (j.error || "失败");
+    };
+
+    $("btnOpenQR").onclick = async () => {
+      const j = await api("/api/open-qr", { method: "POST" });
+      $("settingsMsg").className = j.ok ? "msg ok" : "msg err";
+      $("settingsMsg").textContent = j.ok ? "已打开 QR: " + j.path : (j.error || "失败");
+    };
+
+    $("btnCopyURI").onclick = async () => {
+      const j = await api("/api/uri");
+      if (!j.ok || !j.uri) {
+        $("settingsMsg").className = "msg err";
+        $("settingsMsg").textContent = j.error || "无法获取 URI";
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(j.uri);
+        $("settingsMsg").className = "msg ok";
+        $("settingsMsg").textContent = "已复制 nbvpn: URI（含私钥，勿公开分享）";
+      } catch (_) {
+        $("configRaw").hidden = false;
+        $("configRaw").textContent = j.uri;
+        $("settingsMsg").className = "msg ok";
+        $("settingsMsg").textContent = "无法写剪贴板，URI 已显示在下方，请手动复制";
+      }
+    };
+
+    api("/api/version").then((j) => {
+      $("footer").textContent = "GUI " + j.gui + " · " + j.nbvpn + " · 关闭控制台即退出";
+    }).catch(() => {});
+
+    refreshStatus();
+    setInterval(refreshStatus, 8000);
+  </script>
+</body>
+</html>

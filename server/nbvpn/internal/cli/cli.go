@@ -452,9 +452,16 @@ func showPeer(s *state.Store, st *state.ServerState, p *state.PeerRecord, mode s
 		return err
 	}
 	pngPath := s.PeerQRPath(p.ID)
+	var pngWriteErr error
+	var pngAnnounce qr.AfterWriteResult
 	if err := qr.WritePNG(uri, pngPath); err != nil {
-		fmt.Fprintf(os.Stderr, "warning: could not write QR PNG: %v\n", err)
+		pngWriteErr = err
 		pngPath = ""
+		fmt.Fprintf(os.Stderr, "ERROR: could not write QR PNG to %s: %v\n", s.PeerQRPath(p.ID), err)
+		fmt.Fprintln(os.Stderr, "ERROR: 无法写入二维码 PNG（路径不可写或磁盘错误）。请检查权限 / NBVPN_DATA_DIR。")
+	} else if mode == showModeAll || mode == showModeQR {
+		// Interactive modes: copy to Desktop + reveal. Machine modes (--uri/--file) stay quiet.
+		pngAnnounce = qr.AfterWrite(pngPath)
 	}
 
 	if mode == showModeAll {
@@ -477,11 +484,12 @@ func showPeer(s *state.Store, st *state.ServerState, p *state.PeerRecord, mode s
 		if pngPath != "" {
 			fmt.Println()
 			fmt.Println("--- QR PNG (preferred on Windows / narrow consoles) ---")
-			fmt.Println(pngPath)
 			fmt.Println("(filename uses peer id; PNG pixels encode the full URI above)")
-			if runtime.GOOS == "windows" {
-				fmt.Println("Open this PNG in Explorer (or Photos) and scan with the NetBridge client.")
-			}
+			qr.PrintAfterWrite(os.Stdout, pngPath, pngAnnounce)
+		} else if pngWriteErr != nil {
+			fmt.Println()
+			fmt.Println("--- QR PNG FAILED ---")
+			fmt.Printf("error: %v\n", pngWriteErr)
 		}
 		if wantTerminalQR(false) {
 			fmt.Println()
@@ -510,6 +518,8 @@ func showPeer(s *state.Store, st *state.ServerState, p *state.PeerRecord, mode s
 		if pngPath != "" {
 			fmt.Println(pngPath)
 			fmt.Fprintln(os.Stderr, "(PNG encodes full nbvpn: URI, not the numeric peer id in the filename)")
+		} else if pngWriteErr != nil {
+			return fmt.Errorf("QR PNG write failed: %w", pngWriteErr)
 		}
 	case showModeConf:
 		fmt.Println(confPath)
@@ -519,6 +529,9 @@ func showPeer(s *state.Store, st *state.ServerState, p *state.PeerRecord, mode s
 		fmt.Fprintf(os.Stderr, "payload prefix: %s…\n", qrPayloadPrefix(uri))
 		if pngPath != "" {
 			fmt.Println(pngPath)
+			qr.PrintAfterWrite(os.Stderr, pngPath, pngAnnounce)
+		} else if pngWriteErr != nil {
+			return fmt.Errorf("QR PNG write failed: %w", pngWriteErr)
 		}
 		printTerminalQR(uri)
 	}

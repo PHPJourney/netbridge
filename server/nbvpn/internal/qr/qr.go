@@ -34,8 +34,7 @@ const (
 const FallbackHint = "Prefer the QR PNG (or --uri / --file) when the terminal QR is skipped, wraps, or is too dense to scan. Peer numeric id / PNG filename is NOT the QR payload — payload is always the full nbvpn:1?… URI."
 
 // WindowsDefaultHint is printed when terminal QR is skipped on Windows (default).
-const WindowsDefaultHint = "Windows: terminal QR skipped (old PowerShell may wrap / show raw ANSI). Open the QR PNG above, or paste the URI. Opt-in: nbvpn show --qr (still clamped to max width)"
-
+const WindowsDefaultHint = "Windows: terminal QR skipped by default (narrow/old consoles). Use the QR PNG block above (Desktop copy + explorer /select), or: nbvpn show --uri. Opt-in terminal QR: nbvpn show --qr"
 // ColorEnabled reports whether ANSI color escapes should be emitted.
 // Disabled on Windows unless FORCE_COLOR=1 or NBVPN_FORCE_ANSI=1; always off if NO_COLOR is set.
 func ColorEnabled() bool {

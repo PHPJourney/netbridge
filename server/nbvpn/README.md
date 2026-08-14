@@ -59,7 +59,9 @@ powershell -ExecutionPolicy Bypass -File .\server\install\windows\install.ps1
 nbvpn show
 ```
 
-Data dir default: `%ProgramData%\nbvpn`.
+Data dir default: `%ProgramData%\nbvpn` (often **hidden**). After `nbvpn show`, also check Desktop `nbvpn-peer-*.png`.
+
+Optional GUI (same install dir): `nbvpn-gui.exe` — start/stop/status + open QR; shells out to `nbvpn`.
 ## Quick start
 
 ```bash
