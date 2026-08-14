@@ -16,6 +16,12 @@
 - **Root cause:** Fyne/CGO MinGW build dynamically linked runtime DLLs (`libgcc` / `libstdc++` / `libwinpthread`) → SxS / 14001 on clean hosts.
 - **Fix:** CI static-links MinGW CRT (`CGO_LDFLAGS` + `-extldflags=-static`); `objdump` gate; Setup **no longer** auto-launches GUI post-install.
 
+### Client tray right-click + single instance
+
+- **Tray:** Windows `tray_manager` does not auto-show menu after `setContextMenu`; right-click now calls `popUpContextMenu`.
+- **Flutter client single instance:** `windows_single_instance` — second launch shows/focuses existing window (incl. tray-hidden) then exits.
+- **`nbvpn-gui` single instance:** named mutex + `FindWindow` restore/focus.
+
 ## Tag
 
 Push does **not** create a tag. Create **`v0.1.4`** when you want Release artifacts / store sha update.

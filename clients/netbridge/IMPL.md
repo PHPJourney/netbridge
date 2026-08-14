@@ -15,7 +15,8 @@ Flutter 单仓四端（Android / iOS / Windows / macOS）客户端，产品名 *
 - 凭据：`flutter_secure_storage`；Kill Switch / 语言偏好：`shared_preferences`（Kill Switch 默认开）  
 - 品牌链接：`lib/config/brand_links.dart`（官方站 / 用户协议 / 隐私政策；默认对齐 store `meta` OpenList，**生产须替换为正式 URL**）  
 - 文案：`flutter gen-l10n`（`lib/l10n/app_zh.arb` + `app_en.arb`）；设置内「跟随系统 / 中文 / English」
-- **Windows / 桌面托盘**：`lib/desktop/desktop_tray.dart` — 关窗隐藏到托盘（VPN 保持）；右键：显示主窗口、切换已保存节点、连接/断开、退出
+- **Windows / 桌面托盘**：`lib/desktop/desktop_tray.dart` — 关窗隐藏到托盘（VPN 保持）；右键显式 `popUpContextMenu`：显示主窗口、切换已保存节点、连接/断开、退出
+- **Windows 单实例**：`windows_single_instance`（`lib/main.dart`）— 二次启动激活已有窗口（含托盘隐藏）后退出新进程
 
 ## 本地命令
 

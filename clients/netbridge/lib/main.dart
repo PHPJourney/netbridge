@@ -1,6 +1,10 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:window_manager/window_manager.dart';
+import 'package:windows_single_instance/windows_single_instance.dart';
 
 import 'desktop/desktop_tray.dart';
 import 'l10n/app_localizations.dart';
@@ -9,8 +13,24 @@ import 'services/settings_store.dart';
 import 'state/app_controller.dart';
 import 'theme.dart';
 
-Future<void> main() async {
+Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Windows: second launch activates existing instance (incl. tray-hidden) then exits.
+  if (!kIsWeb && Platform.isWindows) {
+    await WindowsSingleInstance.ensureSingleInstance(
+      args,
+      'netbridge_vpn_client',
+      bringWindowToFront: true,
+      onSecondWindow: (_) async {
+        try {
+          await windowManager.show();
+          await windowManager.focus();
+        } catch (_) {}
+      },
+    );
+  }
+
   final controller = AppController();
   await controller.bootstrap();
 

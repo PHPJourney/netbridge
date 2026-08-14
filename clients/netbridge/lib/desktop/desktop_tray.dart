@@ -144,7 +144,11 @@ class DesktopTrayController with WindowListener, TrayListener {
 
   @override
   void onTrayIconRightMouseDown() {
-    // Right click shows context menu via tray_manager defaults on Windows.
+    // tray_manager on Windows/macOS only fires the event; menu must be popped
+    // explicitly (setContextMenu alone does not show on right-click).
+    if (Platform.isWindows || Platform.isMacOS) {
+      trayManager.popUpContextMenu();
+    }
   }
 
   @override

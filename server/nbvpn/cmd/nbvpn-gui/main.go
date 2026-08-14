@@ -33,6 +33,14 @@ var iconPNG []byte
 var version = "1.0.0"
 
 func main() {
+	releaseMutex, ok := ensureSingleInstance()
+	if !ok {
+		return
+	}
+	if releaseMutex != nil {
+		defer releaseMutex()
+	}
+
 	a := app.NewWithID("com.netbridge.nbvpn-gui")
 	iconRes := fyne.NewStaticResource("icon.png", iconPNG)
 	a.SetIcon(iconRes)
