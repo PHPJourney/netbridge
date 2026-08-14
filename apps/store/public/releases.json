@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-14T18:55:00Z",
+  "updatedAt": "2026-08-14T10:57:05Z",
   "meta": {
     "landingPage": "GitHub Pages (apps/store)",
     "artifactStorage": "GitHub Releases (primary); OpenList optional mirror",
@@ -9,8 +9,8 @@
     "openlistBase": "http://154.37.213.245:5244",
     "openlistBrowse": "http://154.37.213.245:5244/store",
     "downloadUrlHint": "Primary: GitHub Releases latest/download/<filename>. OpenList remains an optional mirror — see docs/delivery/nbvpn/OPENLIST-UPLOAD.md",
-    "status": "github_releases_placeholder",
-    "note": "URLs point at GitHub Releases latest/download placeholders until the first v* tag publishes artifacts. CI: build-server.yml + build-clients.yml (Android + Windows clients; macOS/iOS distribution skipped). Store UI on GitHub Pages. macOS = local source run only — no DMG/app.zip in Releases.",
+    "status": "github_releases_published",
+    "note": "v0.1.0 published on GitHub Releases. Clients: Android APK + Windows portable zip. macOS/iOS not distributed (local source / signing deferred). Server: linux amd64/arm64, windows amd64 + win2012, nbvpn-server-v0.1.0.zip.",
     "officialSite": "https://phpjourney.github.io/netbridge/",
     "termsUrl": "./terms.html",
     "privacyUrl": "./privacy.html",
@@ -25,17 +25,19 @@
         "nameEn": "TM Open Platform",
         "url": "#"
       }
-    ]
+    ],
+    "releaseTag": "v0.1.0",
+    "releaseUrl": "https://github.com/PHPJourney/netbridge/releases/tag/v0.1.0"
   },
   "clients": {
     "windows": {
       "label": "Windows",
-      "version": "latest",
-      "sha256": "pending-first-release",
-      "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-windows.exe",
-      "filename": "NetBridge-windows.exe",
-      "status": "ci_placeholder",
-      "note": "Built on windows-latest (Flutter). Also NetBridge-windows-portable.zip. Requires Win10+; not for Server 2012."
+      "version": "0.1.0",
+      "sha256": "a0ab1257e5fe8952fe084e185a0e3a55f04df4f5d0a7376fec0bff4f0ba70703",
+      "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-windows-portable.zip",
+      "filename": "NetBridge-windows-portable.zip",
+      "status": "available",
+      "note": "Use portable zip (exe + DLLs). Also NetBridge-windows.exe alone is insufficient. Win10+."
     },
     "macos": {
       "label": "macOS",
@@ -49,72 +51,72 @@
     },
     "android": {
       "label": "Android",
-      "version": "latest",
-      "sha256": "pending-first-release",
+      "version": "0.1.0",
+      "sha256": "0bce61cd4a622051275010415c6e7037416d9361cb87b519a51c0d6bb9f47c01",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-android-arm64.apk",
       "filename": "NetBridge-android-arm64.apk",
-      "status": "ci_placeholder",
-      "note": "R8 release arm64; optional NetBridge-android-armeabi-v7a.apk in same Release."
+      "status": "available",
+      "note": "R8 release arm64. Also NetBridge-android-armeabi-v7a.apk / NetBridge-android.apk in same Release."
     },
     "ios": {
       "label": "iOS",
-      "version": "latest",
-      "sha256": "pending-first-release",
-      "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/IOS-CI-SKIP.txt",
-      "filename": "IOS-CI-SKIP.txt",
+      "version": "—",
+      "sha256": "",
+      "url": "",
+      "filename": "",
       "status": "skipped_signing",
-      "note": "CI skips signed IPA (no Apple certs). Signing later. Not a installable download."
+      "note": "CI skips signed IPA (no Apple certs). Not an installable download."
     }
   },
   "servers": {
     "debian": {
       "label": "Debian",
-      "version": "latest",
-      "sha256": "pending-first-release",
+      "version": "0.1.0",
+      "sha256": "3b131838d3d4a35a161a036045e8f40e7caad1030e76a64a58fefee836442ec7",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-linux-amd64",
       "filename": "nbvpn-linux-amd64",
       "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/debian.sh",
       "installCommand": "curl -fsSL https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/debian.sh | sudo bash",
-      "status": "ci_placeholder",
+      "status": "available",
       "note": "One-liner pulls the install script from GitHub raw. Binary from Releases (set NBVPN_BINARY_URL if needed)."
     },
     "ubuntu": {
       "label": "Ubuntu",
-      "version": "latest",
-      "sha256": "pending-first-release",
+      "version": "0.1.0",
+      "sha256": "3b131838d3d4a35a161a036045e8f40e7caad1030e76a64a58fefee836442ec7",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-linux-amd64",
       "filename": "nbvpn-linux-amd64",
       "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/ubuntu.sh",
       "installCommand": "curl -fsSL https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/ubuntu.sh | sudo bash",
-      "status": "ci_placeholder",
+      "status": "available",
       "note": "Shares nbvpn-linux-amd64 with Debian. One-liner includes companion script URL."
     },
     "centos": {
       "label": "CentOS",
-      "version": "latest",
-      "sha256": "pending-first-release",
+      "version": "0.1.0",
+      "sha256": "3b131838d3d4a35a161a036045e8f40e7caad1030e76a64a58fefee836442ec7",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-linux-amd64",
       "filename": "nbvpn-linux-amd64",
       "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/centos.sh",
       "installCommand": "curl -fsSL https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/centos.sh | sudo bash",
-      "status": "ci_placeholder",
+      "status": "available",
       "note": "Rocky/Alma via rhel-family. One-liner includes companion script URL."
     },
     "rhel": {
       "label": "RHEL",
-      "version": "latest",
-      "sha256": "pending-first-release",
+      "version": "0.1.0",
+      "sha256": "3b131838d3d4a35a161a036045e8f40e7caad1030e76a64a58fefee836442ec7",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-linux-amd64",
       "filename": "nbvpn-linux-amd64",
       "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/rhel.sh",
       "installCommand": "curl -fsSL https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/rhel.sh | sudo bash",
-      "status": "ci_placeholder",
-      "note": "Shares linux-amd64; arm64 artifact: nbvpn-linux-arm64. One-liner includes companion script URL."
+      "status": "available",
+      "note": "linux-amd64 primary; also nbvpn-linux-arm64 and nbvpn-server-v0.1.0.zip in Release."
     },
     "windows": {
       "label": "Windows Server",
-      "version": "latest",
-      "sha256": "pending-first-release",
+      "version": "0.1.0",
+      "sha256": "42fa4125ac06c8adbccab1a26d9ebbf1c169af9cd2acc9bfd8cc247ef24036d7",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-windows-amd64.exe",
       "filename": "nbvpn-windows-amd64.exe",
       "win2012Url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-windows-amd64-win2012.exe",
@@ -122,8 +124,8 @@
       "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/windows/install.ps1",
       "docsUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/windows/WINDOWS.md",
       "installCommand": "powershell -ExecutionPolicy Bypass -File .\\install.ps1",
-      "status": "ci_placeholder",
-      "note": "Download install.ps1 and the matching exe into the same folder, then run the PowerShell command. Win10+/Server 2016+: nbvpn-windows-amd64.exe. Server 2012 R2: nbvpn-windows-amd64-win2012.exe (Go 1.20). Exe comes from GitHub Releases (raw cannot serve binaries well)."
+      "status": "available",
+      "note": "Win10+/Server 2016+: nbvpn-windows-amd64.exe. Server 2012 R2: nbvpn-windows-amd64-win2012.exe. Bundle: nbvpn-server-v0.1.0.zip"
     }
   }
 }
