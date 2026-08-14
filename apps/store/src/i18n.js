@@ -106,7 +106,7 @@ const dict = {
     "responsibility.title": "责任与去中心化",
     "responsibility.copy":
       "节点部署在您的服务器上。出口网络与合法使用责任由您自行承担。本产品不提供公共 VPN 节点。",
-    "footer.meta": "版本与校验和见 <a href=\"/releases.json\">releases.json</a>。下载后请核对 SHA256。",
+    "footer.meta": "版本与校验和见 <a href=\"./releases.json\">releases.json</a>。下载后请核对 SHA256。",
     "footer.note": "无登录 · 无官方节点列表 · 配置由你导入",
     "footer.partners": "合作伙伴",
     "footer.terms": "用户协议",
@@ -270,7 +270,7 @@ const dict = {
     "responsibility.copy":
       "The node runs on your server. You own egress and lawful-use responsibility. This product does not provide public VPN nodes.",
     "footer.meta":
-      "Versions and checksums live in <a href=\"/releases.json\">releases.json</a>. Verify SHA256 after download.",
+      "Versions and checksums live in <a href=\"./releases.json\">releases.json</a>. Verify SHA256 after download.",
     "footer.note": "No login · no official node list · you import the config",
     "footer.partners": "Partners",
     "footer.terms": "Terms of use",

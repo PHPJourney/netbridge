@@ -106,8 +106,8 @@ async function loadReleases() {
  * Keys: officialSite, termsUrl, privacyUrl, partners[{name,nameEn?,url}]
  */
 function applyMeta(meta) {
-  const termsUrl = meta.termsUrl || "/terms.html";
-  const privacyUrl = meta.privacyUrl || "/privacy.html";
+  const termsUrl = meta.termsUrl || `${import.meta.env.BASE_URL}terms.html`;
+  const privacyUrl = meta.privacyUrl || `${import.meta.env.BASE_URL}privacy.html`;
 
   document.querySelectorAll("[data-terms-link]").forEach((el) => {
     el.setAttribute("href", termsUrl);
