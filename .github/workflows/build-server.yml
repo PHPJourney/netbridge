@@ -1,0 +1,154 @@
+name: Build Server
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    name: linux-${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        goarch: [amd64, arm64]
+    defaults:
+      run:
+        working-directory: server/nbvpn
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.x"
+          cache-dependency-path: server/nbvpn/go.sum
+      - name: Test
+        run: go test ./...
+      - name: Build
+        env:
+          CGO_ENABLED: "0"
+          GOOS: linux
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          mkdir -p dist
+          go build -trimpath -ldflags="-s -w -X main.version=${GITHUB_REF_NAME}" \
+            -o "dist/nbvpn-linux-${{ matrix.goarch }}" .
+          (cd dist && sha256sum "nbvpn-linux-${{ matrix.goarch }}" > "nbvpn-linux-${{ matrix.goarch }}.sha256")
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nbvpn-linux-${{ matrix.goarch }}
+          path: |
+            server/nbvpn/dist/nbvpn-linux-${{ matrix.goarch }}
+            server/nbvpn/dist/nbvpn-linux-${{ matrix.goarch }}.sha256
+
+  windows-win10:
+    name: windows-amd64 (Win10+)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server/nbvpn
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.x"
+          cache-dependency-path: server/nbvpn/go.sum
+      - name: Build Win10+
+        env:
+          CGO_ENABLED: "0"
+          GOOS: windows
+          GOARCH: amd64
+        run: |
+          mkdir -p dist
+          go build -trimpath -ldflags="-s -w -X main.version=${GITHUB_REF_NAME}" \
+            -o dist/nbvpn-windows-amd64.exe .
+          (cd dist && sha256sum nbvpn-windows-amd64.exe > nbvpn-windows-amd64.exe.sha256)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nbvpn-windows-amd64
+          path: |
+            server/nbvpn/dist/nbvpn-windows-amd64.exe
+            server/nbvpn/dist/nbvpn-windows-amd64.exe.sha256
+
+  windows-win2012:
+    name: windows-amd64-win2012 (Go 1.20)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server/nbvpn
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.20.14"
+          cache-dependency-path: server/nbvpn/go.sum
+      - name: Build Server 2012 R2 binary
+        env:
+          CGO_ENABLED: "0"
+          GOOS: windows
+          GOARCH: amd64
+          GOTOOLCHAIN: local
+        run: |
+          mkdir -p dist
+          if [[ -f go.mod.win2012 ]]; then
+            cp go.mod.win2012 go.mod
+          else
+            sed -i 's/^go .*/go 1.20/' go.mod
+            sed -i '/^toolchain /d' go.mod || true
+          fi
+          go build -trimpath -ldflags="-s -w -X main.version=${GITHUB_REF_NAME}" \
+            -o dist/nbvpn-windows-amd64-win2012.exe .
+          (cd dist && sha256sum nbvpn-windows-amd64-win2012.exe > nbvpn-windows-amd64-win2012.exe.sha256)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nbvpn-windows-amd64-win2012
+          path: |
+            server/nbvpn/dist/nbvpn-windows-amd64-win2012.exe
+            server/nbvpn/dist/nbvpn-windows-amd64-win2012.exe.sha256
+
+  package:
+    name: package-server-zip
+    needs: [linux, windows-win10, windows-win2012]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: nbvpn-*
+          merge-multiple: true
+      - name: Assemble zip
+        run: |
+          set -euo pipefail
+          OUT=dist-server
+          mkdir -p "$OUT/bin" "$OUT/install/windows" release-upload
+          find artifacts -type f \( -name 'nbvpn-*' \) -exec cp -f {} "$OUT/bin/" \;
+          cp -a server/install/*.sh "$OUT/install/" 2>/dev/null || true
+          cp -a server/install/*.md "$OUT/install/" 2>/dev/null || true
+          cp -a server/install/windows/* "$OUT/install/windows/"
+          (
+            cd "$OUT"
+            sha256sum bin/* > SHA256SUMS.txt
+            zip -r "../nbvpn-server-${GITHUB_REF_NAME}.zip" .
+          )
+          cp -f nbvpn-server-*.zip release-upload/
+          cp -f "$OUT"/bin/* release-upload/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nbvpn-server-bundle
+          path: |
+            nbvpn-server-*.zip
+            release-upload/
+      - name: Create GitHub Release (tags only)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-upload/*
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

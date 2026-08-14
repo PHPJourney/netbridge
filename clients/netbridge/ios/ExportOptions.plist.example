@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Copy to ios/ExportOptions.plist and set teamID.
+  Prefer ad-hoc / development for sideload (NOT app-store).
+
+  export APPLE_TEAM_ID=XXXXXXXXXX
+  cp ios/ExportOptions.plist.example ios/ExportOptions.plist
+  # edit teamID below to match APPLE_TEAM_ID
+  ./scripts/package-all.sh
+-->
+<plist version="1.0">
+<dict>
+	<key>method</key>
+	<string>ad-hoc</string>
+	<!-- alternatives: development | enterprise | app-store-connect -->
+	<key>teamID</key>
+	<string>APPLE_TEAM_ID_HERE</string>
+	<key>compileBitcode</key>
+	<false/>
+	<key>stripSwiftSymbols</key>
+	<true/>
+	<key>signingStyle</key>
+	<string>manual</string>
+	<!-- After creating profiles in developer.apple.com, you may add:
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>com.netbridge.netbridge</key>
+		<string>NetBridge AdHoc</string>
+		<key>com.netbridge.netbridge.WGExtension</key>
+		<string>NetBridge WGExtension AdHoc</string>
+	</dict>
+	-->
+</dict>
+</plist>

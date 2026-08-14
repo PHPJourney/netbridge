@@ -1,0 +1,5 @@
+android: OK NetBridge-android-arm64.apk (debug-signed release, R8 slim, arm64)
+macos: OK NetBridge-macOS.dmg (ad-hoc sign, NOT App Store / NOT notarized)
+ios: STUB NetBridge-iOS.ipa (UNSIGNED — cannot install on non-dev devices; need APPLE_TEAM_ID)
+windows: SKIPPED on Darwin — need Win10+/VS2022 (Server 2012 R2 lab cannot build); see WINDOWS-BUILD.md
+icon: applied flutter_launcher_icons from netbridge_icon_1024.png (= icon-privacy-store-try.png)

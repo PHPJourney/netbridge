@@ -1,0 +1,122 @@
+{
+  "@@locale": "en",
+  "appTitle": "NetBridge VPN",
+  "settings": "Settings",
+  "settingsTitle": "Settings",
+  "killSwitch": "Kill Switch",
+  "killSwitchSubtitleReal": "When on, the app will try to block traffic leaks if the VPN drops (depends on the OS; full blocking varies by platform).",
+  "killSwitchSubtitleStub": "Stub tunnel only — Kill Switch preference is saved but does not block traffic.",
+  "tunnelCapability": "Tunnel capability",
+  "tunnelStubSuffix": "(Stub ≠ production-ready)",
+  "cantConnectTitle": "Can't reach a node?",
+  "cantConnectBody": "Check endpoint, UDP 51820 (host firewall + cloud security group), and re-import with a fresh nbvpn show.",
+  "language": "Language",
+  "languageSystem": "System",
+  "languageChinese": "中文",
+  "languageEnglish": "English",
+  "aboutSection": "About",
+  "versionLabel": "Version {version}",
+  "@versionLabel": {
+    "placeholders": {
+      "version": {"type": "String"}
+    }
+  },
+  "officialWebsite": "Official website",
+  "termsOfService": "Terms of Service",
+  "privacyPolicy": "Privacy Policy",
+  "responsibilityOneLiner": "Decentralized self-hosted nodes — no official VPN servers, no account required.",
+  "partnersTitle": "Partners",
+  "partnersBody": "Optional mention: TradeMind / TM Open Platform.",
+  "aboutDetails": "About & responsibility",
+  "aboutDetailsSubtitle": "Decentralization and user responsibility",
+  "aboutDialogTitle": "About NetBridge VPN",
+  "aboutBody": "NetBridge VPN is a decentralized self-hosted node tool. This product does not provide public VPN nodes and does not require login.\n\nNodes run on your servers. You are responsible for egress network use and lawful use.\n\nConnection info (URI / QR / config) is an access secret — do not publish it.\n\nSelf-hosted import:\n1. Server: nbvpn show --uri (or scan /var/lib/nbvpn/peers/*.png)\n2. App: paste URI / scan / import .nbvpn.json\n3. If it fails: allow UDP 51820 on cloud SG + host firewall; endpoint must be public\n\nPlatform notes:\n• Android: real WireGuard (system VPN consent)\n• iOS/macOS: Stub tunnel without Apple Team / Extension signing — not production VPN\n• Windows: admin often required; Kill Switch is not WFP-level yet",
+  "close": "Close",
+  "versionFooter": "Version {version} · no account · no built-in servers",
+  "@versionFooter": {
+    "placeholders": {
+      "version": {"type": "String"}
+    }
+  },
+  "openLinkFailed": "Could not open link",
+  "emptyTitle": "No servers yet",
+  "emptyBody": "Add a node by pasting a URI, importing a config file, or scanning a QR code. The app never auto-connects to any official node.",
+  "addServer": "Add server",
+  "alreadyAdded": "Already added \"{name}\"",
+  "@alreadyAdded": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "added": "Added",
+  "rename": "Rename",
+  "localDisplayName": "Local display name",
+  "cancel": "Cancel",
+  "save": "Save",
+  "deleteServer": "Delete server",
+  "deleteConfirmConnected": "You will need to re-import to connect again. This server is active and will disconnect first. Delete \"{name}\"?",
+  "@deleteConfirmConnected": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "deleteConfirm": "You will need to re-import to connect again. Delete \"{name}\"?",
+  "@deleteConfirm": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "delete": "Delete",
+  "copiedError": "Error copied",
+  "connect": "Connect",
+  "disconnect": "Disconnect",
+  "statusDisconnected": "Disconnected",
+  "statusConnecting": "Connecting",
+  "statusConnected": "Connected",
+  "statusReconnecting": "Reconnecting",
+  "statusError": "Connection error",
+  "statusConnectedDetail": "Connected · {name}",
+  "@statusConnectedDetail": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "statusConnectingDetail": "Connecting to {name}…",
+  "@statusConnectingDetail": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "statusReconnectingDetail": "Network interrupted, reconnecting…",
+  "statusErrorFallback": "Connection failed",
+  "copyError": "Copy error",
+  "retry": "Retry",
+  "addMethodTitle": "Add server",
+  "chooseImportMethod": "Choose import method",
+  "noOfficialNodes": "Does not connect to any official node. You import config from your own server.",
+  "pasteUri": "Paste URI",
+  "pasteUriSubtitle": "Paste an nbvpn:1?… link",
+  "importFile": "Import file",
+  "importFileSubtitle": "Choose a .nbvpn.json config file",
+  "scanQr": "Scan QR code",
+  "scanQrSubtitleMobile": "Camera / gallery / paste URI on this screen",
+  "scanQrSubtitleDesktop": "On desktop, paste a URI or import a file instead",
+  "usePasteUriInstead": "Use paste URI instead",
+  "cannotReadFile": "Could not read file contents",
+  "secretWarning": "Connection info contains access secrets. Only take it from servers you trust. URI / QR / config equal a key — do not share publicly.",
+  "longPressCopy": "Long-press to select and copy",
+  "reenter": "Re-enter",
+  "pasteUriTitle": "Paste URI",
+  "pasteUriHint": "nbvpn:1?… or full .nbvpn.json text",
+  "pasteUriHelper": "Ignores WARNING lines, quotes, newlines, and code fences; JSON paste also works",
+  "pasteFromClipboard": "Paste from clipboard",
+  "validateContinue": "Validate & continue",
+  "confirmAddTitle": "Confirm add",
+  "endpointLooksBad": "Endpoint looks unreachable (empty or 0.0.0.0). On the server run nbvpn config set endpoint <public IP or domain>, then re-export the URI.",
+  "localNameHelper": "Stored on this device only; not written back to the server",
+  "labelNode": "Node",
+  "labelAddress": "Address",
+  "labelDns": "DNS",
+  "confirmSecretHint": "Connection info contains access secrets. Only take it from servers you trust.",
+  "add": "Add"
+}

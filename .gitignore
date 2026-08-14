@@ -1,0 +1,47 @@
+# Dependencies & tool caches
+**/node_modules/
+**/.dart_tool/
+**/.flutter-plugins/
+**/.flutter-plugins-dependencies
+**/.pub-cache/
+**/.pub/
+**/build/
+**/.gradle/
+**/.idea/
+**/*.iml
+.DS_Store
+*.log
+.vscode/
+.cursor/
+
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.mobileprovision
+id_rsa
+id_rsa.*
+*_ed25519
+*_ed25519.pub
+!*.pub.example
+
+# Local Go binary (module root)
+/server/nbvpn/nbvpn
+/server/nbvpn/nbvpn.exe
+
+# Large local build artifacts (prefer CI / Releases)
+/server/nbvpn/dist/
+/apps/store/dist/
+/clients/netbridge/dist/*.apk
+/clients/netbridge/dist/*.dmg
+/clients/netbridge/dist/*.ipa
+/clients/netbridge/dist/*.exe
+/clients/netbridge/dist/*.zip
+/clients/netbridge/dist/*.sha256
+/clients/netbridge/dist/NetBridge-macOS.app/
+
+# Android local
+**/local.properties
+**/captures/

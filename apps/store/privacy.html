@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="网桥 VPN 隐私政策" data-i18n-meta="privacy.title" />
+    <title data-i18n-meta="privacy.title">隐私政策</title>
+    <link rel="icon" type="image/png" href="./favicon.png" />
+    <link rel="icon" href="./favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body class="legal-page">
+    <header class="site-header">
+      <div class="shell header-inner">
+        <a class="brand-mark" href="./" data-i18n-aria="brand.home" aria-label="网桥 VPN 首页">
+          <img
+            class="brand-glyph"
+            src="./logo.png"
+            width="36"
+            height="36"
+            alt=""
+            aria-hidden="true"
+          />
+          <span class="brand-text" data-i18n="brand.name">网桥 VPN</span>
+        </a>
+        <div class="header-tools">
+          <button
+            class="lang-toggle"
+            type="button"
+            data-lang-toggle
+            aria-label="切换到 English"
+          >
+            English
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main id="main" class="section legal-main">
+      <div class="shell legal-shell">
+        <p class="legal-back">
+          <a href="./" data-i18n="legal.back">返回下载站</a>
+        </p>
+        <h1 data-i18n="privacy.title">隐私政策</h1>
+        <p class="legal-lead" data-i18n="privacy.lead">网桥 VPN 下载站尽量少收集信息。</p>
+        <div class="legal-copy">
+          <p data-i18n="privacy.p1">
+            本静态下载站不要求注册或登录，不运营账号体系，也不提供「一键连公共服务器」。
+          </p>
+          <p data-i18n="privacy.p2">
+            版本与下载链接来自公开的 releases.json；安装包由您从配置的存储（如 OpenList）获取。密钥与隧道配置仅在您的服务器与客户端之间生成与使用。
+          </p>
+          <p data-i18n="privacy.p3">
+            语言偏好仅保存在您浏览器的 localStorage（键名 nbvpn-store-lang），不会上传到本站服务器。
+          </p>
+          <p data-i18n="privacy.p4">
+            本页为摘要占位；正式隐私政策可由运营方替换。官方站点见 meta.officialSite。
+          </p>
+        </div>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="shell footer-inner">
+        <p class="footer-brand" data-i18n="brand.name">网桥 VPN</p>
+        <nav class="footer-legal" data-i18n-aria="footer.legal" aria-label="法律信息">
+          <a href="./terms.html" data-terms-link data-i18n="footer.terms">用户协议</a>
+          <span class="footer-legal-sep" aria-hidden="true">·</span>
+          <a href="./privacy.html" data-privacy-link data-i18n="footer.privacy">隐私政策</a>
+        </nav>
+      </div>
+    </footer>
+
+    <script type="module" src="./src/legal.js"></script>
+  </body>
+</html>

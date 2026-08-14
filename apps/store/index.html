@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="网桥 VPN — 自建节点，自行掌控。无官方服务器，配置由你导入。"
+      data-i18n-meta="meta.description"
+    />
+    <title data-i18n-meta="meta.title">网桥 VPN — 自建节点，自行掌控</title>
+    <link rel="icon" type="image/png" href="./favicon.png" />
+    <link rel="icon" href="./favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main" data-i18n="skip">跳到主要内容</a>
+
+    <header class="site-header" id="top">
+      <div class="shell header-inner">
+        <a
+          class="brand-mark"
+          href="#top"
+          data-i18n-aria="brand.home"
+          aria-label="网桥 VPN 首页"
+        >
+          <img
+            class="brand-glyph"
+            src="./logo.png"
+            width="36"
+            height="36"
+            alt=""
+            aria-hidden="true"
+          />
+          <span class="brand-text" data-i18n="brand.name">网桥 VPN</span>
+        </a>
+
+        <div class="header-tools">
+          <button
+            class="lang-toggle"
+            type="button"
+            data-lang-toggle
+            aria-label="切换到 English"
+          >
+            English
+          </button>
+
+          <button
+            class="nav-toggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="site-nav"
+            data-nav-toggle
+          >
+            <span class="sr-only" data-i18n="nav.menu">菜单</span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <nav class="site-nav" id="site-nav" data-site-nav>
+          <a href="#steps" data-i18n="nav.steps">使用步骤</a>
+          <a href="#clients" data-i18n="nav.clients">客户端</a>
+          <a href="#servers" data-i18n="nav.servers">服务端</a>
+          <a href="#help" data-i18n="nav.help">使用帮助</a>
+          <a href="#responsibility" data-i18n="nav.responsibility">责任说明</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero hero-watermark" aria-labelledby="hero-brand">
+        <div class="hero-atmosphere" aria-hidden="true">
+          <div class="hero-grid"></div>
+          <div class="hero-bridge"></div>
+          <div class="hero-glow hero-glow--a"></div>
+          <div class="hero-glow hero-glow--b"></div>
+          <img
+            class="hero-watermark-mark"
+            src="./icon-privacy-store-try.png"
+            alt=""
+            width="1024"
+            height="1024"
+            decoding="async"
+          />
+        </div>
+
+        <div class="shell hero-content">
+          <p class="hero-brand" id="hero-brand" data-i18n="hero.brand">网桥 VPN</p>
+          <h1 class="hero-headline" data-i18n="hero.headline">自建节点，自行掌控。</h1>
+          <p class="hero-support" data-i18n="hero.support">无官方服务器，配置由你导入。</p>
+          <div class="hero-ctas">
+            <a class="btn btn-primary" href="#clients" data-i18n="hero.ctaClients"
+              >下载客户端</a
+            >
+            <a class="btn btn-secondary" href="#servers" data-i18n="hero.ctaServers"
+              >部署服务端</a
+            >
+          </div>
+        </div>
+      </section>
+
+      <section class="section steps" id="steps" aria-labelledby="steps-title">
+        <div class="shell">
+          <div class="section-head">
+            <h2 id="steps-title" data-i18n="steps.title">三步开始</h2>
+            <p data-i18n="steps.lead">安装节点 → 拿到连接信息 → 客户端添加，无需账号。</p>
+          </div>
+
+          <ol class="step-strip">
+            <li class="step-item" data-reveal>
+              <span class="step-index">01</span>
+              <p data-i18n="steps.1">
+                在 store 下载并安装服务端（Debian / Ubuntu / CentOS / RHEL）
+              </p>
+            </li>
+            <li class="step-item" data-reveal>
+              <span class="step-index">02</span>
+              <p data-i18n-html="steps.2">
+                服务器执行安装后运行 <code>nbvpn show</code>，复制 URI 或扫终端二维码
+              </p>
+            </li>
+            <li class="step-item" data-reveal>
+              <span class="step-index">03</span>
+              <p data-i18n="steps.3">打开客户端添加服务器并连接</p>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="section clients" id="clients" aria-labelledby="clients-title">
+        <div class="shell">
+          <div class="section-head">
+            <h2 id="clients-title" data-i18n="clients.title">下载客户端</h2>
+            <p data-i18n="clients.lead">
+              Windows、macOS、Android、iOS。版本与 SHA256 来自发布清单。
+            </p>
+          </div>
+
+          <div
+            class="platform-grid"
+            id="client-grid"
+            data-client-grid
+            aria-live="polite"
+          >
+            <div class="skeleton-card" aria-hidden="true"></div>
+            <div class="skeleton-card" aria-hidden="true"></div>
+            <div class="skeleton-card" aria-hidden="true"></div>
+            <div class="skeleton-card" aria-hidden="true"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section servers" id="servers" aria-labelledby="servers-title">
+        <div class="shell">
+          <div class="section-head">
+            <h2 id="servers-title" data-i18n="servers.title">部署服务端</h2>
+            <p data-i18n="servers.lead">
+              Linux 四系与 Windows Server 安装入口。Rocky / Alma 使用 CentOS / RHEL 同一系说明。
+            </p>
+          </div>
+
+          <aside class="secret-callout" role="note">
+            <strong data-i18n="servers.secretTitle">密钥提示</strong>
+            <p data-i18n-html="servers.secretBody">
+              <code>nbvpn show</code>
+              给出的 URI / 二维码 / 配置文件等同于密钥，请勿公开发布。
+            </p>
+          </aside>
+
+          <div
+            class="distro-grid"
+            id="server-grid"
+            data-server-grid
+            aria-live="polite"
+          >
+            <div class="skeleton-card skeleton-card--wide" aria-hidden="true"></div>
+            <div class="skeleton-card skeleton-card--wide" aria-hidden="true"></div>
+            <div class="skeleton-card skeleton-card--wide" aria-hidden="true"></div>
+            <div class="skeleton-card skeleton-card--wide" aria-hidden="true"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section help" id="help" aria-labelledby="help-title">
+        <div class="shell">
+          <div class="section-head">
+            <h2 id="help-title" data-i18n="help.title">使用帮助</h2>
+            <p data-i18n="help.lead">
+              从零搭好节点到客户端连上：按下面顺序做即可，无需注册账号。
+            </p>
+          </div>
+
+          <nav class="help-toc" aria-label="帮助目录" data-i18n-aria="help.title">
+            <a href="#help-what" data-i18n="help.toc.what">是什么</a>
+            <a href="#help-flow" data-i18n="help.toc.flow">三步流程</a>
+            <a href="#help-install" data-i18n="help.toc.install">安装服务端</a>
+            <a href="#help-commands" data-i18n="help.toc.commands">常用命令</a>
+            <a href="#help-import" data-i18n="help.toc.import">导入客户端</a>
+            <a href="#help-network" data-i18n="help.toc.network">端口与网络</a>
+            <a href="#help-duty" data-i18n="help.toc.duty">责任说明</a>
+          </nav>
+
+          <article class="help-block" id="help-what">
+            <h3 data-i18n="help.what.title">网桥 VPN 是什么</h3>
+            <p data-i18n-html="help.what.p1">
+              网桥 VPN（NetBridge）是<strong>去中心化</strong>的自建 VPN：节点跑在<strong
+                >您自己的服务器</strong
+              >上，用 WireGuard 隧道把手机/电脑接到该节点。
+            </p>
+            <ul class="help-list">
+              <li data-i18n-html="help.what.li1">
+                <strong>没有官方公共节点</strong>——本站不提供「一键连公共服务器」。
+              </li>
+              <li data-i18n-html="help.what.li2">
+                <strong>没有账号体系</strong>——不注册、不登录；连接信息由您在服务器上生成并导入客户端。
+              </li>
+              <li data-i18n-html="help.what.li3">
+                下载页只提供客户端与服务端安装入口；密钥与配置始终由您掌控。
+              </li>
+            </ul>
+          </article>
+
+          <article class="help-block" id="help-flow">
+            <h3 data-i18n="help.flow.title">三步流程（必读）</h3>
+            <ol class="help-steps">
+              <li data-i18n-html="help.flow.li1">
+                <strong>装服务端</strong>：在本页
+                <a href="#servers">部署服务端</a>
+                选 Debian / Ubuntu / CentOS / RHEL，按一键命令安装。
+              </li>
+              <li data-i18n-html="help.flow.li2">
+                <strong>拿连接信息</strong>：服务器上执行
+                <code>sudo nbvpn show</code>
+                ，得到 URI、终端二维码或配置文件（等同密钥，勿公开发布）。
+              </li>
+              <li data-i18n-html="help.flow.li3">
+                <strong>客户端添加并连接</strong>：在手机/电脑安装
+                <a href="#clients">客户端</a>
+                ，用 URI / 扫码 / 文件导入后连接。
+              </li>
+            </ol>
+            <p class="help-note" data-i18n="help.flow.note">
+              页顶「使用步骤」是同一流程的摘要；本区有更细的安装与排错说明。
+            </p>
+          </article>
+
+          <article class="help-block" id="help-install">
+            <h3 data-i18n="help.install.title">安装服务端</h3>
+            <p data-i18n="help.install.intro">当前正式支持的服务端系统：</p>
+            <ul class="help-list">
+              <li data-i18n-html="help.install.li1">
+                <strong>Debian</strong> / <strong>Ubuntu</strong>（deb 系一键脚本）
+              </li>
+              <li data-i18n-html="help.install.li2">
+                <strong>CentOS</strong> / <strong>RHEL</strong>（含 Rocky / Alma 等同系）
+              </li>
+              <li data-i18n-html="help.install.li3">
+                <strong>Windows Server</strong>（PowerShell <code>install.ps1</code> + WireGuard
+                for Windows）
+              </li>
+            </ul>
+            <p data-i18n-html="help.install.body">
+              到
+              <a href="#servers">部署服务端</a>
+              复制对应系统的安装命令：Linux 在有公网 IP 的云主机上以 root /
+              <code>sudo</code> 执行；Windows 在管理员 PowerShell 中执行。安装完成后会配置首个客户端
+              peer，并尽量启用服务。
+            </p>
+            <aside class="help-callout" role="note">
+              <strong data-i18n="help.install.winTitle">Windows 服务端 MVP</strong>
+              <p data-i18n-html="help.install.winBody">
+                已提供 <code>nbvpn-windows-amd64.exe</code> 与
+                <code>server/install/windows/install.ps1</code>。请先安装
+                <a href="https://www.wireguard.com/install/" rel="noopener noreferrer"
+                  >WireGuard for Windows</a
+                >。 客户端出网 NAT 依赖 <code>New-NetNat</code> / RRAS，详见仓库
+                <code>WINDOWS.md</code>；与 Linux iptables 完整对等仍可能需额外配置。
+              </p>
+            </aside>
+          </article>
+
+          <article class="help-block" id="help-commands" data-help-commands>
+            <h3 data-i18n="help.commands.title">nbvpn 常用命令</h3>
+            <p data-i18n-html="help.commands.intro">
+              安装完成后，在服务器终端执行（多数环境需 <code>sudo</code>）：
+            </p>
+            <div class="help-cmd-list">
+              <div class="command-row">
+                <code data-copy-source>sudo nbvpn install</code>
+                <button class="btn btn-ghost copy-btn" type="button" data-copy data-i18n="dl.copy">
+                  复制
+                </button>
+              </div>
+              <p class="help-cmd-desc" data-i18n="help.commands.d1">
+                首次安装 / 修复配置，生成节点与首个客户端配置并尽量启用服务。
+              </p>
+
+              <div class="command-row">
+                <code data-copy-source>sudo nbvpn show</code>
+                <button class="btn btn-ghost copy-btn" type="button" data-copy data-i18n="dl.copy">
+                  复制
+                </button>
+              </div>
+              <p class="help-cmd-desc" data-i18n-html="help.commands.d2">
+                显示连接信息（默认 URI + 二维码 + 文件）。也可用
+                <code>nbvpn show --uri</code> /
+                <code>--qr</code> /
+                <code>--file</code>。
+              </p>
+
+              <div class="command-row">
+                <code data-copy-source>sudo nbvpn status</code>
+                <button class="btn btn-ghost copy-btn" type="button" data-copy data-i18n="dl.copy">
+                  复制
+                </button>
+              </div>
+              <p class="help-cmd-desc" data-i18n="help.commands.d3">查看服务 / 隧道是否在运行。</p>
+
+              <div class="command-row">
+                <code data-copy-source>sudo nbvpn start</code>
+                <button class="btn btn-ghost copy-btn" type="button" data-copy data-i18n="dl.copy">
+                  复制
+                </button>
+              </div>
+              <p class="help-cmd-desc" data-i18n="help.commands.d4">启动 WireGuard 服务。</p>
+
+              <div class="command-row">
+                <code data-copy-source>sudo nbvpn stop</code>
+                <button class="btn btn-ghost copy-btn" type="button" data-copy data-i18n="dl.copy">
+                  复制
+                </button>
+              </div>
+              <p class="help-cmd-desc" data-i18n="help.commands.d5">停止服务。</p>
+
+              <div class="command-row">
+                <code data-copy-source>sudo nbvpn peer add</code>
+                <button class="btn btn-ghost copy-btn" type="button" data-copy data-i18n="dl.copy">
+                  复制
+                </button>
+              </div>
+              <p class="help-cmd-desc" data-i18n-html="help.commands.d6">
+                为另一台设备再加一个客户端；可带名字，例如
+                <code>sudo nbvpn peer add phone</code>。添加后会再次展示该 peer 的 URI / 二维码 /
+                文件。
+              </p>
+            </div>
+            <p class="help-note" data-i18n-html="help.commands.note">
+              若公网 IP 检测失败，客户端连不上时请设置入口：
+              <code>sudo nbvpn config set endpoint &lt;公网IP或域名&gt;</code>
+              （可选端口，默认见下节）。
+            </p>
+          </article>
+
+          <article class="help-block" id="help-import">
+            <h3 data-i18n="help.import.title">客户端如何导入</h3>
+            <p data-i18n="help.import.intro">在电脑或手机安装网桥 VPN 客户端后，任选一种方式添加服务器：</p>
+            <ul class="help-list">
+              <li data-i18n-html="help.import.li1">
+                <strong>URI</strong>：在服务器执行
+                <code>sudo nbvpn show --uri</code>
+                ，把整段 URI 粘贴到客户端「添加服务器」。
+              </li>
+              <li data-i18n-html="help.import.li2">
+                <strong>二维码</strong>：执行
+                <code>sudo nbvpn show</code>
+                （或
+                <code>--qr</code>
+                ），用手机客户端扫描终端里的二维码（桌面端若无相机，请改用 URI / 文件）。
+              </li>
+              <li data-i18n-html="help.import.li3">
+                <strong>配置文件</strong>：用
+                <code>nbvpn show --file</code>
+                得到的
+                <code>.nbvpn.json</code>
+                （或客户端支持的导入文件）拷到设备后选择「从文件导入」。
+              </li>
+            </ul>
+            <aside class="secret-callout" role="note">
+              <strong data-i18n="help.import.secretTitle">密钥警告</strong>
+              <p data-i18n="help.import.secretBody">
+                URI、二维码、配置文件都含客户端私钥，等同于密码。不要发到公开群、截图到社交网络，也不要提交到代码仓库。
+              </p>
+            </aside>
+          </article>
+
+          <article class="help-block" id="help-network">
+            <h3 data-i18n="help.network.title">端口、防火墙与 NAT</h3>
+            <ul class="help-list">
+              <li data-i18n-html="help.network.li1">
+                默认监听 <strong>UDP 51820</strong>。请在<strong>主机防火墙</strong>与<strong
+                  >云厂商安全组</strong
+                >同时放行该端口（只开 UDP，不要只开 TCP）。
+              </li>
+              <li data-i18n-html="help.network.li2">
+                安装脚本会尽量开启 <strong>IP 转发（ip_forward）</strong> 与
+                <strong>MASQUERADE（NAT）</strong>，让客户端流量经节点出口。若服务器已启用
+                ufw，还需按安装完成后的终端提示放行转发规则。
+              </li>
+              <li data-i18n-html="help.network.li3">
+                连不上时优先检查：安全组是否放行 UDP 51820 →
+                <code>nbvpn status</code>
+                是否在跑 →
+                <code>nbvpn show</code>
+                里的 endpoint 是否为真实可达的公网地址。
+              </li>
+            </ul>
+          </article>
+
+          <article class="help-block" id="help-duty">
+            <h3 data-i18n="help.duty.title">责任说明</h3>
+            <p data-i18n-html="help.duty.body">
+              节点部署在<strong>您的服务器</strong>上。出口网络行为与合法合规使用，责任由您自行承担。本产品<strong
+                >不提供</strong
+              >公共 VPN 节点，也不代管您的流量。更多摘要见
+              <a href="#responsibility">责任与去中心化</a>。
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section
+        class="section responsibility"
+        id="responsibility"
+        aria-labelledby="responsibility-title"
+      >
+        <div class="shell">
+          <div class="section-head">
+            <h2 id="responsibility-title" data-i18n="responsibility.title">责任与去中心化</h2>
+          </div>
+          <p class="responsibility-copy" data-i18n="responsibility.copy">
+            节点部署在您的服务器上。出口网络与合法使用责任由您自行承担。本产品不提供公共 VPN 节点。
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="shell footer-inner">
+        <p class="footer-brand" data-i18n="brand.name">网桥 VPN</p>
+        <p class="footer-meta" data-i18n-html="footer.meta">
+          版本与校验和见
+          <a href="./releases.json">releases.json</a>
+          。下载后请核对 SHA256。
+        </p>
+        <p class="footer-note" data-i18n="footer.note">无登录 · 无官方节点列表 · 配置由你导入</p>
+
+        <div class="footer-partners" data-partners>
+          <p class="footer-partners-label" data-i18n="footer.partners">合作伙伴</p>
+          <ul class="partner-row" data-partner-list>
+            <!-- filled from releases.json meta.partners[] (or defaults) -->
+          </ul>
+        </div>
+
+        <nav class="footer-legal" aria-label="法律信息" data-i18n-aria="footer.legal">
+          <a href="./terms.html" data-terms-link data-i18n="footer.terms">用户协议</a>
+          <span class="footer-legal-sep" aria-hidden="true">·</span>
+          <a href="./privacy.html" data-privacy-link data-i18n="footer.privacy">隐私政策</a>
+        </nav>
+      </div>
+    </footer>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

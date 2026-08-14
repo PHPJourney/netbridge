@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="网桥 VPN 用户协议" data-i18n-meta="terms.title" />
+    <title data-i18n-meta="terms.title">用户协议</title>
+    <link rel="icon" type="image/png" href="./favicon.png" />
+    <link rel="icon" href="./favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body class="legal-page">
+    <header class="site-header">
+      <div class="shell header-inner">
+        <a class="brand-mark" href="./" data-i18n-aria="brand.home" aria-label="网桥 VPN 首页">
+          <img
+            class="brand-glyph"
+            src="./logo.png"
+            width="36"
+            height="36"
+            alt=""
+            aria-hidden="true"
+          />
+          <span class="brand-text" data-i18n="brand.name">网桥 VPN</span>
+        </a>
+        <div class="header-tools">
+          <button
+            class="lang-toggle"
+            type="button"
+            data-lang-toggle
+            aria-label="切换到 English"
+          >
+            English
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main id="main" class="section legal-main">
+      <div class="shell legal-shell">
+        <p class="legal-back">
+          <a href="./" data-i18n="legal.back">返回下载站</a>
+        </p>
+        <h1 data-i18n="terms.title">用户协议</h1>
+        <p class="legal-lead" data-i18n="terms.lead">
+          使用网桥 VPN（NetBridge）即表示您理解并同意以下条款摘要。
+        </p>
+        <div class="legal-copy">
+          <p data-i18n="terms.p1">
+            网桥 VPN 是去中心化的自建 VPN 工具：节点部署在您自己的服务器上，本站不提供公共节点，也不代管您的流量。
+          </p>
+          <p data-i18n="terms.p2">
+            您须自行确保对服务器、网络出口及所传输内容的合法合规使用。因不当使用产生的责任由您自行承担。
+          </p>
+          <p data-i18n="terms.p3">
+            连接信息（URI、二维码、配置文件）含密钥材料，请妥善保管，勿公开发布。
+          </p>
+          <p data-i18n="terms.p4">
+            本页为摘要占位；正式法律文本可由运营方替换。联系与官方站点见 releases.json 中的
+            meta.officialSite。
+          </p>
+        </div>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="shell footer-inner">
+        <p class="footer-brand" data-i18n="brand.name">网桥 VPN</p>
+        <nav class="footer-legal" data-i18n-aria="footer.legal" aria-label="法律信息">
+          <a href="./terms.html" data-terms-link data-i18n="footer.terms">用户协议</a>
+          <span class="footer-legal-sep" aria-hidden="true">·</span>
+          <a href="./privacy.html" data-privacy-link data-i18n="footer.privacy">隐私政策</a>
+        </nav>
+      </div>
+    </footer>
+
+    <script type="module" src="./src/legal.js"></script>
+  </body>
+</html>

@@ -1,0 +1,168 @@
+name: Build Clients
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  FLUTTER_VERSION: "3.35.1"
+
+jobs:
+  android:
+    name: Android APK (R8)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: clients/netbridge
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter gen-l10n
+      - name: Build release APKs (split ABI, R8)
+        run: flutter build apk --release --split-per-abi
+      - name: Stage artifacts
+        run: |
+          mkdir -p dist
+          ARM64=build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+          V7A=build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+          cp -f "$ARM64" dist/NetBridge-android-arm64.apk
+          cp -f "$ARM64" dist/NetBridge-android.apk
+          sha256sum dist/NetBridge-android-arm64.apk | tee dist/NetBridge-android-arm64.apk.sha256
+          if [[ -f "$V7A" ]]; then
+            cp -f "$V7A" dist/NetBridge-android-armeabi-v7a.apk
+            sha256sum dist/NetBridge-android-armeabi-v7a.apk | tee dist/NetBridge-android-armeabi-v7a.apk.sha256
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: client-android
+          path: clients/netbridge/dist/NetBridge-android*.apk*
+
+  windows:
+    name: Windows exe
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: clients/netbridge
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter config --enable-windows-desktop
+      - run: flutter pub get
+      - run: flutter gen-l10n
+      - name: Build Windows release
+        run: flutter build windows --release
+      - name: Stage exe
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          $exe = Get-ChildItem -Path build\windows\x64\runner\Release -Filter *.exe -Recurse | Select-Object -First 1
+          if (-not $exe) { throw "No Windows exe found" }
+          Copy-Item $exe.FullName dist\NetBridge-windows.exe -Force
+          # portable zip of Release folder
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath dist\NetBridge-windows-portable.zip -Force
+          Get-FileHash dist\NetBridge-windows.exe -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash.ToLower())  NetBridge-windows.exe" } |
+            Set-Content dist\NetBridge-windows.exe.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: client-windows
+          path: |
+            clients/netbridge/dist/NetBridge-windows.exe
+            clients/netbridge/dist/NetBridge-windows.exe.sha256
+            clients/netbridge/dist/NetBridge-windows-portable.zip
+
+  macos:
+    name: macOS app zip (unsigned / ad-hoc)
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: clients/netbridge
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter config --enable-macos-desktop
+      - run: flutter pub get
+      - run: flutter gen-l10n
+      - name: Build macOS (no Developer ID / notarization)
+        run: |
+          flutter build macos --release
+          mkdir -p dist
+          APP=$(find build/macos/Build/Products/Release -maxdepth 1 -name '*.app' | head -1)
+          test -n "$APP"
+          # ad-hoc codesign is fine; do not notarize / Developer ID
+          codesign --force --deep -s - "$APP" || true
+          ditto -c -k --sequesterRsrc --keepParent "$APP" dist/NetBridge-macOS.app.zip
+          shasum -a 256 dist/NetBridge-macOS.app.zip | tee dist/NetBridge-macOS.app.zip.sha256
+          echo "unsigned/ad-hoc; notarization skipped" > dist/NetBridge-macOS.codesign.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: client-macos
+          path: |
+            clients/netbridge/dist/NetBridge-macOS.app.zip
+            clients/netbridge/dist/NetBridge-macOS.app.zip.sha256
+            clients/netbridge/dist/NetBridge-macOS.codesign.txt
+
+  ios-note:
+    name: iOS (skipped — no signing)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skip IPA
+        run: |
+          echo "iOS IPA signing deferred (no Apple certs in CI)."
+          echo "Build unsigned/stub locally later; do not block client pipeline."
+          mkdir -p note
+          cat > note/IOS-CI-SKIP.txt <<'TXT'
+          NetBridge iOS: CI does not produce a signed IPA.
+          Signing / notarization / TestFlight will be handled later.
+          Use local package-all.sh with APPLE_TEAM_ID when ready.
+          TXT
+      - uses: actions/upload-artifact@v4
+        with:
+          name: client-ios-skip-note
+          path: note/IOS-CI-SKIP.txt
+
+  release-clients:
+    name: Attach client artifacts to Release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [android, windows, macos, ios-note]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: clients-out
+          pattern: client-*
+          merge-multiple: true
+      - name: Flatten
+        run: |
+          mkdir -p upload
+          find clients-out -type f -exec cp -f {} upload/ \;
+          ls -la upload
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: upload/*
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
