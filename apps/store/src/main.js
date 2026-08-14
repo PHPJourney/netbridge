@@ -251,50 +251,43 @@ function serverBlock(key, item) {
   const pending = item.status === "pending_upload" || !hasAnyDownload;
   const isWindows = key === "windows";
 
+  if (isWindows) {
+    return windowsServerBlock({
+      label,
+      version,
+      sha,
+      cmd,
+      setupUrl,
+      url,
+      win2012Url,
+      installScriptUrl,
+      docsUrl,
+      note,
+      pending,
+    });
+  }
+
   const actions = [];
+  const secondaryLinks = [];
   if (pending) {
     actions.push(
       `<span class="btn btn-ghost is-disabled" aria-disabled="true">${escapeHtml(t("dl.uploadPending"))}</span>`
     );
   } else {
-    if (isWindows && setupUrl) {
-      actions.push(
-        `<a class="btn btn-ghost" href="${escapeAttr(setupUrl)}" download>${escapeHtml(t("dl.downloadWinSetup"))}</a>`
-      );
-    }
     if (url) {
-      const pkgLabel = isWindows
-        ? t("dl.downloadWinExe")
-        : item.filename
-          ? `${t("dl.download")} ${item.filename}`
-          : t("dl.downloadPkg");
+      const pkgLabel = item.filename
+        ? `${t("dl.download")} ${item.filename}`
+        : t("dl.downloadPkg");
       actions.push(
-        `<a class="btn btn-ghost" href="${escapeAttr(url)}" download>${escapeHtml(pkgLabel)}</a>`
-      );
-    }
-    if (win2012Url) {
-      actions.push(
-        `<a class="btn btn-ghost" href="${escapeAttr(win2012Url)}" download>${escapeHtml(t("dl.downloadWin2012Exe"))}</a>`
+        `<a class="btn btn-ghost btn-compact" href="${escapeAttr(url)}" download>${escapeHtml(pkgLabel)}</a>`
       );
     }
     if (installScriptUrl) {
-      const scriptLabel = isWindows
-        ? t("dl.downloadInstallPs1")
-        : t("dl.downloadInstallScript");
-      actions.push(
-        `<a class="btn btn-ghost" href="${escapeAttr(installScriptUrl)}" download>${escapeHtml(scriptLabel)}</a>`
-      );
-    }
-    if (docsUrl) {
-      actions.push(
-        `<a class="btn btn-ghost" href="${escapeAttr(docsUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(t("dl.downloadDocs"))}</a>`
+      secondaryLinks.push(
+        `<a class="text-link" href="${escapeAttr(installScriptUrl)}" download>${escapeHtml(t("dl.downloadInstallScript"))}</a>`
       );
     }
   }
-
-  const sameFolderHint = isWindows
-    ? `<p class="distro-hint">${escapeHtml(t("dl.windowsSetupPrimary"))}<br>${escapeHtml(t("dl.windowsSameFolder"))}</p>`
-    : "";
 
   return `
     <article class="distro-block" data-distro="${escapeAttr(key)}">
@@ -305,10 +298,90 @@ function serverBlock(key, item) {
         <code data-copy-source>${escapeHtml(cmd)}</code>
         <button class="btn btn-ghost copy-btn" type="button" data-copy ${pending ? "disabled" : ""}>${escapeHtml(t("dl.copy"))}</button>
       </div>
-      ${sameFolderHint}
-      <div class="card-actions">
+      ${
+        actions.length
+          ? `<div class="card-actions">
         ${actions.join("\n        ")}
+      </div>`
+          : ""
+      }
+      ${
+        secondaryLinks.length
+          ? `<p class="card-secondary-links">${secondaryLinks.join(" · ")}</p>`
+          : ""
+      }
+      ${note ? `<p class="distro-note">${escapeHtml(note)}</p>` : ""}
+    </article>
+  `;
+}
+
+/**
+ * Windows Server card: Setup.exe primary; PowerShell one-liner + manual links under Advanced.
+ */
+function windowsServerBlock({
+  label,
+  version,
+  sha,
+  cmd,
+  setupUrl,
+  url,
+  win2012Url,
+  installScriptUrl,
+  docsUrl,
+  note,
+  pending,
+}) {
+  let primaryHtml;
+  if (pending || !setupUrl) {
+    primaryHtml = `<span class="btn btn-primary btn-block is-disabled" aria-disabled="true">${escapeHtml(t("dl.uploadPending"))}</span>`;
+  } else {
+    primaryHtml = `<a class="btn btn-primary btn-block" href="${escapeAttr(setupUrl)}" download>${escapeHtml(t("dl.downloadWinSetup"))}</a>`;
+  }
+
+  const advLinks = [];
+  if (installScriptUrl) {
+    advLinks.push(
+      `<a class="text-link" href="${escapeAttr(installScriptUrl)}" download>${escapeHtml(t("dl.linkInstallPs1"))}</a>`
+    );
+  }
+  if (win2012Url) {
+    advLinks.push(
+      `<a class="text-link" href="${escapeAttr(win2012Url)}" download>${escapeHtml(t("dl.linkWin2012Exe"))}</a>`
+    );
+  }
+  if (url) {
+    advLinks.push(
+      `<a class="text-link" href="${escapeAttr(url)}" download>${escapeHtml(t("dl.linkWinExe"))}</a>`
+    );
+  }
+  if (docsUrl) {
+    advLinks.push(
+      `<a class="text-link" href="${escapeAttr(docsUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(t("dl.linkWindowsMd"))}</a>`
+    );
+  }
+
+  return `
+    <article class="distro-block distro-block--windows" data-distro="windows">
+      <h3>${escapeHtml(label)}</h3>
+      <p class="distro-meta">${escapeHtml(t("dl.version"))} ${escapeHtml(version)}</p>
+      <p class="checksum-line">SHA256 ${escapeHtml(sha)}</p>
+      <div class="card-actions card-actions--primary">
+        ${primaryHtml}
       </div>
+      <p class="distro-hint">${escapeHtml(t("dl.windowsSetupHint"))}</p>
+      <details class="distro-advanced">
+        <summary>${escapeHtml(t("dl.windowsAdvanced"))}</summary>
+        <p class="distro-advanced-lead">${escapeHtml(t("dl.windowsBootstrapHint"))}</p>
+        <div class="command-row">
+          <code data-copy-source>${escapeHtml(cmd)}</code>
+          <button class="btn btn-ghost copy-btn" type="button" data-copy ${pending ? "disabled" : ""}>${escapeHtml(t("dl.copy"))}</button>
+        </div>
+        ${
+          advLinks.length
+            ? `<p class="card-secondary-links">${advLinks.join(" · ")}</p>`
+            : ""
+        }
+      </details>
       ${note ? `<p class="distro-note">${escapeHtml(note)}</p>` : ""}
     </article>
   `;

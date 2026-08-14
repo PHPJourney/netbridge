@@ -263,27 +263,27 @@
                 <strong>CentOS</strong> / <strong>RHEL</strong>（含 Rocky / Alma 等同系）
               </li>
               <li data-i18n-html="help.install.li3">
-                <strong>Windows Server</strong>（PowerShell <code>install.ps1</code> + WireGuard
-                for Windows）
+                <strong>Windows Server</strong>（推荐下载 <code>Setup.exe</code>；高级可用 PowerShell 一键 /
+                <code>install.ps1</code>）
               </li>
             </ul>
             <p data-i18n-html="help.install.body">
               到
               <a href="#servers">部署服务端</a>
-              复制对应系统的安装命令：Linux 在有公网 IP 的云主机上以 root /
-              <code>sudo</code> 执行；Windows 在管理员 PowerShell 中执行。安装完成后会配置首个客户端
-              peer，并尽量启用服务。
+              ：Linux 复制一键命令以 root /
+              <code>sudo</code> 执行；Windows 优先下载 Setup.exe 并以管理员运行（高级折叠内有 PowerShell
+              一键）。安装完成后会配置首个客户端 peer，并尽量启用服务。
             </p>
             <aside class="help-callout" role="note">
               <strong data-i18n="help.install.winTitle">Windows 服务端 MVP</strong>
               <p data-i18n-html="help.install.winBody">
-                在 <a href="#servers">部署服务端</a> 的 Windows 卡片分别下载
-                <code>install.ps1</code> 与 <code>nbvpn-windows-amd64.exe</code>（2012 R2 用
-                win2012 产物），放进同一文件夹后执行安装命令。请先安装
+                在 <a href="#servers">部署服务端</a> 的 Windows 卡片：大多数用户只下载
+                <strong>Setup.exe</strong>，右键「以管理员身份运行」。无 GUI / Server 2012 展开「高级」用
+                PowerShell 一键（<code>bootstrap.ps1</code>）或手动链接。请安装
                 <a href="https://www.wireguard.com/install/" rel="noopener noreferrer"
                   >WireGuard for Windows</a
-                >。客户端出网 NAT 依赖 <code>New-NetNat</code> / RRAS，详见
-                <code>WINDOWS.md</code>；与 Linux iptables 完整对等仍可能需额外配置。
+                >。数据目录：<code>explorer %ProgramData%\nbvpn</code>。详见
+                <code>WINDOWS.md</code>。
               </p>
             </aside>
           </article>

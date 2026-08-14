@@ -6,9 +6,19 @@ NetBridge VPN **node** on Windows Server (or Windows 10/11 lab). Linux install p
 
 | Artifact | When |
 |----------|------|
-| **`NetBridge-nbvpn-Setup.exe`** | **Primary** — Inno Setup installer (Program Files + elevated `install.ps1`) |
-| `install.ps1` + `nbvpn-windows-amd64*.exe` | Advanced / Server 2012 lab / scripting |
+| **`NetBridge-nbvpn-Setup.exe`** | **Primary** — download and Run as Administrator (no CLI) |
+| `bootstrap.ps1` one-liner | Advanced / headless — like Linux `curl \| bash` |
+| `install.ps1` + `nbvpn-windows-amd64*.exe` | Manual advanced / scripting |
 | `nbvpn-windows-amd64-win2012.exe` | Server **2012 / 2012 R2** only (Go 1.20 binary) |
+
+### Store UX
+
+1. **Most users:** download Setup.exe → right-click → Run as administrator.
+2. **Advanced:** PowerShell one-liner (auto-elevates; picks Setup vs 2012 path):
+
+```powershell
+irm https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/windows/bootstrap.ps1 | iex
+```
 
 Download from [GitHub Releases](https://github.com/PHPJourney/netbridge/releases). After Setup / install:
 

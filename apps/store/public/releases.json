@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-14T10:57:05Z",
+  "updatedAt": "2026-08-14T12:00:00Z",
   "meta": {
     "landingPage": "GitHub Pages (apps/store)",
     "artifactStorage": "GitHub Releases (primary); OpenList optional mirror",
@@ -127,9 +127,11 @@
       "win2012Filename": "nbvpn-windows-amd64-win2012.exe",
       "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/windows/install.ps1",
       "docsUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/windows/WINDOWS.md",
-      "installCommand": "Run NetBridge-nbvpn-Setup.exe as Administrator  (advanced: .\\install.ps1)",
+      "bootstrapUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/windows/bootstrap.ps1",
+      "installCommand": "irm https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/windows/bootstrap.ps1 | iex",
       "status": "available",
-      "note": "Primary: NetBridge-nbvpn-Setup.exe. Advanced: install.ps1 + exe. Server 2012 R2: win2012 exe. SHA256 refresh on next tag."
+      "note": "Primary: Setup.exe（无需命令行）。高级：PowerShell bootstrap 一键或 install.ps1 + exe。Server 2012 R2 走 win2012。SHA256 下个 tag 刷新。",
+      "noteEn": "Primary: Setup.exe (no CLI). Advanced: PowerShell bootstrap one-liner or install.ps1 + exe. Server 2012 R2 uses the win2012 path. SHA256 refresh on next tag."
     }
   }
 }
