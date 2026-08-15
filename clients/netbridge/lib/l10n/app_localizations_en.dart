@@ -35,6 +35,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tunnelStubSuffix => '(Stub ≠ production-ready)';
 
   @override
+  String get tunnelAppleLinkedNote =>
+      'WGExtension is embedded. Debug builds can sign with a Personal Team; real Packet Tunnel / distribution need a paid Apple Developer account (NE), provisioning, and WireGuardKit. Personal Team cannot activate NE. Notarization is typically required before sharing builds.';
+
+  @override
   String get cantConnectTitle => 'Can\'t reach a node?';
 
   @override
@@ -91,7 +95,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aboutBody =>
-      'NetBridge VPN is a decentralized self-hosted node tool. This product does not provide public VPN nodes and does not require login.\n\nNodes run on your servers. You are responsible for egress network use and lawful use.\n\nConnection info (URI / QR / config) is an access secret — do not publish it.\n\nSelf-hosted import:\n1. Server: nbvpn show --uri (or scan /var/lib/nbvpn/peers/*.png)\n2. App: paste URI / scan / import .nbvpn.json\n3. If it fails: allow UDP 51820 on cloud SG + host firewall; endpoint must be public\n\nPlatform notes:\n• Android: real WireGuard (system VPN consent)\n• iOS/macOS: Stub tunnel without Apple Team / Extension signing — not production VPN\n• Windows: admin often required; Kill Switch is not WFP-level yet';
+      'NetBridge VPN is a decentralized self-hosted node tool. This product does not provide public VPN nodes and does not require login.\n\nNodes run on your servers. You are responsible for egress network use and lawful use.\n\nConnection info (URI / QR / config) is an access secret — do not publish it.\n\nSelf-hosted import:\n1. Server: nbvpn show --uri (or scan /var/lib/nbvpn/peers/*.png)\n2. App: paste URI / scan / import .nbvpn.json\n3. If it fails: allow UDP 51820 on cloud SG + host firewall; endpoint must be public\n\nPlatform notes:\n• Android: real WireGuard (system VPN consent)\n• iOS/macOS: WGExtension is embedded; real tunnels need a paid Apple Developer account (Network Extension + App Group + signing). A Personal Team often builds but cannot activate Packet Tunnel. Sharing builds also needs notarization / proper distribution.\n• Windows: admin often required; Kill Switch is not WFP-level yet';
 
   @override
   String get close => 'Close';

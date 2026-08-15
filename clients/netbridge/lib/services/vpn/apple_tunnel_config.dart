@@ -16,11 +16,12 @@ class AppleTunnelConfig {
   /// Host app bundle id (Flutter default).
   static const String hostBundleIdentifier = 'com.netbridge.netbridge';
 
-  /// Flip to `true` only after:
-  /// 1) WGExtension target exists and is embedded in Runner
-  /// 2) Network Extension + App Group entitlements signed for your Team
-  /// 3) (for production tunnel) WireGuardKit linked into WGExtension
+  /// Set `true` when WGExtension is embedded in Runner (Xcode Embed Foundation
+  /// Extensions) with matching bundle id / App Group. WireGuardKit is linked
+  /// into the extension target. **Signing still requires a Team that can use
+  /// Network Extension** (paid Apple Developer Program). Personal Team often
+  /// builds but cannot activate Packet Tunnel — see IMPL.md.
   ///
   /// While `false`, iOS/macOS use [StubVpnTunnel] so UI remains usable.
-  static const bool extensionTargetLinked = false;
+  static const bool extensionTargetLinked = true;
 }

@@ -1,8 +1,9 @@
-// Packet Tunnel Provider scaffold for 网桥 VPN (iOS).
-//
-// This compiles as a Network Extension shell once the WGExtension target exists.
-// For a real WireGuard tunnel, replace the body with WireGuardKit + WireGuardAdapter
-// (see PacketTunnelProvider.WireGuardKit.swift.example and clients/netbridge/IMPL.md).
+// Packet Tunnel Provider for 网桥 VPN (iOS).
+// WGExtension is embedded in Runner. WireGuardKit SPM (wireguard-apple) was not
+// vendored here: passepartoutvpn fork is gone (404); official Package.swift needs
+ // tools-version 5.5+ and a Go build for WireGuardKitGo. Until WireGuardKit is
+ // linked, startTunnel returns wireGuardKitNotLinked after validating wgQuickConfig.
+ // Full body: apple/PacketTunnelProvider.WireGuardKit.swift.example — see IMPL.md.
 
 import Foundation
 import NetworkExtension
@@ -21,8 +22,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         options: [String: NSObject]?,
         completionHandler: @escaping (Error?) -> Void
     ) {
-        log("startTunnel — WireGuardKit not linked yet (scaffold)")
-        // Ensure Flutter/plugin handed us a wg-quick config (same key as wireguard_flutter).
+        log("startTunnel — WireGuardKit not linked yet (embedded scaffold)")
         guard let protocolConfiguration = self.protocolConfiguration as? NETunnelProviderProtocol,
               let providerConfiguration = protocolConfiguration.providerConfiguration,
               providerConfiguration["wgQuickConfig"] as? String != nil

@@ -2,7 +2,7 @@
 
 > 路径：`clients/netbridge/`  
 > 对齐：`docs/delivery/nbvpn/01-spec.md` FR-C、`02-design.md` C-01～C-12、`03-contract.md`  
-> 日期：2026-08-14（续：设置 About/法务链接、中英 l10n、语言切换；无 Android 真连）
+> 日期：2026-08-15（WGExtension 已嵌入 macOS/iOS；`extensionTargetLinked=true`）
 
 ## 概要
 
@@ -10,198 +10,97 @@ Flutter 单仓四端（Android / iOS / Windows / macOS）客户端，产品名 *
 
 - **无**内置服务器、**无**登录墙  
 - 导入：`nbvpn:1?<base64url>` URI、`.nbvpn.json`、移动端相机扫码（QR=URI）  
-- Profile 解析：`lib/profile/`（与服务端 Go 契约对齐）；`sanitizeUriInput` + `parseFlexibleImport`  
-- 连接错误：`lib/services/vpn/vpn_errors.dart`（`humanizeVpnError`，支持 zh/en）  
-- 凭据 / 服务器清单：`ServerStore`（`flutter_secure_storage` + **桌面端 SharedPreferences 镜像**；macOS 沙盒 Keychain 失败时列表仍可读写）；Kill Switch / 语言：`shared_preferences`（Kill Switch 默认开）  
-- 品牌链接：`lib/config/brand_links.dart`（官方站 / 用户协议 / 隐私政策；默认对齐 store `meta` OpenList，**生产须替换为正式 URL**）  
-- 文案：`flutter gen-l10n`（`lib/l10n/app_zh.arb` + `app_en.arb`）；设置内「跟随系统 / 中文 / English」
-- **Windows / 桌面托盘**：`lib/desktop/desktop_tray.dart` — 关窗隐藏到托盘（VPN 保持）；右键显式 `popUpContextMenu`：显示主窗口、切换已保存节点、连接/断开、退出
-- **Windows 单实例**：`windows_single_instance`（`lib/main.dart`）— 二次启动激活已有窗口（含托盘隐藏）后退出新进程
+- Profile 解析：`lib/profile/`；连接错误：`lib/services/vpn/vpn_errors.dart`  
+- 凭据 / 清单：`ServerStore`；Kill Switch / 语言：`shared_preferences`  
+- 文案：`flutter gen-l10n`；桌面托盘与 Windows 单实例见既有说明  
 
 ## 本地命令
 
 ```bash
 export PATH="/Users/mac/flutter/bin:$PATH"
 cd clients/netbridge
-flutter pub get
-flutter gen-l10n
-flutter test
-flutter analyze
-# 运行（按平台）
+flutter pub get && flutter gen-l10n
+flutter test && flutter analyze
 flutter run -d macos
-flutter run -d windows
-flutter run -d <android-device-id>
-flutter run -d <ios-device-id>
+# 验证 Extension 目标（无签名）
+xcodebuild -project macos/Runner.xcodeproj -target WGExtension \
+  -configuration Debug CODE_SIGNING_ALLOWED=NO build
+flutter build macos --debug
 ```
 
-## 目录
+## 目录（Apple 相关）
 
 | 路径 | 作用 |
 |------|------|
-| `lib/config/brand_links.dart` | 官方站 / Terms / Privacy 常量（对齐 store meta 占位） |
-| `lib/l10n/` | ARB + 生成 `AppLocalizations`（zh / en） |
-| `lib/profile/` | NbVpnProfile 解析、URI 编解码、错误码中英文案 |
-| `lib/services/vpn/` | `VpnTunnel` + `WireGuardVpnTunnel` + `StubVpnTunnel` + `apple_tunnel_config.dart` |
-| `lib/state/app_controller.dart` | 列表、连接状态机、仅单隧道；Apple 启动失败回退 Stub；语言偏好 |
-| `ios/WGExtension/` | Packet Tunnel **脚手架**（源码/entitlements/Info） |
-| `macos/WGExtension/` | 同上（macOS） |
-| `apple/` | App Group 说明 + WireGuardKit 完整 Provider 示例 |
-| `lib/screens/` | C-01～C-11 流程界面（含设置 About / 法务外链） |
-| `test/profile/` | URI roundtrip / 错误码单测 |
-
-## 设置页条目（About / 法务）
-
-| 条目 | 行为 |
-|------|------|
-| Kill Switch | 偏好开关（逻辑未改） |
-| 隧道能力 / 连不上节点 | 说明文案 |
-| 语言 | 跟随系统 / 中文 / English（写入 prefs；system 时跟设备 locale，非 en 则回退 zh） |
-| 版本 | `BrandLinks.appVersion` + 责任一句话（去中心化、无官方节点） |
-| 官方网站 | `url_launcher` → `BrandLinks.officialSite` |
-| 用户协议 / Terms | → `BrandLinks.termsUrl` |
-| 隐私政策 / Privacy | → `BrandLinks.privacyUrl` |
-| 合作方 | 可选文案 TradeMind / TM Open Platform |
-| 关于与责任说明 | 对话框长文 |
+| `ios/WGExtension/`、`macos/WGExtension/` | Packet Tunnel Provider + Info + entitlements |
+| `macos/WGExtension/WGExtension-Debug.entitlements` | Debug/Profile：无 NE（Personal Team 可签名） |
+| `macos/WGExtension/WGExtension.entitlements` | Release：packet-tunnel + App Group |
+| `macos/Runner/AdHoc.entitlements` | Debug/Profile Host：无 NE |
+| `macos/Runner/Release.entitlements` / `DebugProfile.entitlements` | 含 NE + App Group（付费 Team / Release） |
+| `apple/PacketTunnelProvider.WireGuardKit.swift.example` | WireGuardKit 完整实现备份 |
+| `lib/services/vpn/apple_tunnel_config.dart` | Bundle ID / App Group / `extensionTargetLinked` |
 
 ## 平台状态矩阵
 
-| 平台 | UI / 导入 / 存储 | 真实 WireGuard 隧道 | Kill Switch | 备注 |
-|------|------------------|---------------------|-------------|------|
-| **Android** | 完整（含扫码） | **可用**（`wireguard_flutter`，需系统 VPN 授权） | 偏好已存；依赖 VPN 服务路由，完整阻断视 OEM | 推荐优先联调 |
-| **iOS** | 完整（含扫码） | **脚手架就绪，未链接** | UI + 偏好；无系统级 KS | 见下方 Xcode 步骤；`extensionTargetLinked=false` → Stub |
-| **Windows** | 完整（文件/URI；无相机扫码） | **部分**（插件支持，需**管理员**运行） | UI + 偏好；无防火墙 KS | 提权与安装包签名待 release |
-| **macOS** | 完整（文件/URI）；清单持久化见上 | **脚手架就绪，未链接** | UI + 偏好 | 同 iOS；**无系统 VPN 权限弹窗（预期）** |
+| 平台 | 真实隧道 | 备注 |
+|------|----------|------|
+| **Android** | 可用 | 系统 VPN 授权 |
+| **iOS** | Extension **已嵌入** | 同 macOS：付费 Team + NE + WireGuardKit 后才有数据面 |
+| **macOS** | Extension **已嵌入** | Debug 可编过；Release 需 NE 能力 |
+| **Windows** | 部分 | 常需管理员 |
 
-初始化时若原生插件失败，仍回退 **StubVpnTunnel** 以便导入/列表可用；**连接时不再静默假连接**——Stub / 未链接 NE 会给出明确中文错误（请用官方 WireGuard + `.conf`，或完成 Team 签名后设 `extensionTargetLinked=true`）。
+Dart：`AppleTunnelConfig.extensionTargetLinked = true` → 走 `WireGuardVpnTunnel`（不再 Stub）。  
+连接时会调插件；**Debug/Personal Team 构建无 NE entitlement**，系统通常无法真正拉起 Packet Tunnel。
 
-## 隧道集成细节
+## 诚实边界（必读）
 
-### Android（已接线）
+**「加上扩展」≠「打包就能给别人用」。**
 
-1. `WireGuardVpnTunnel` 调用 `WireGuardFlutter.initialize` / `startVpn`  
-2. 配置由 `ProfileCodec.toWireGuardConf` 生成 wg-quick 文本  
-3. 用户首次连接会看到系统 VPN 授权对话框（C-10 语义）
+| 门槛 | 现状 |
+|------|------|
+| Xcode Embed | **已完成**：`WGExtension.appex` 在 `Contents/PlugIns/` |
+| Bundle 族 / App Group 字符串 | Host `com.netbridge.netbridge`；Extension `…WGExtension`；Group `group.com.netbridge.netbridge` |
+| DEVELOPMENT_TEAM | 工程沿用 **`846K6R4WU8`**（本机 Xcode Personal Team）。换账号：Xcode → Signing 选 Team，**勿伪造无效 Team** |
+| Network Extension | **付费** Apple Developer 才稳定；Personal Team 描述文件**不含** NE → Debug 故意用 AdHoc / Debug entitlements |
+| WireGuardKit | **尚未链接**：`passepartoutvpn/wireguard-apple` 已 404；官方 `WireGuard/wireguard-apple` 需 tools-version≥5.5 + Go 编 `WireGuardKitGo`。当前 Provider 为嵌入脚手架，校验 `wgQuickConfig` 后返回 `wireGuardKitNotLinked` |
+| 公证 / 分发 | 给别人用的 macOS 包通常要 Developer ID + **公证**；仅本地 Debug 签名不够 |
 
-### iOS / macOS — 标识符（无门户密钥）
+### 本机 Personal Team 如何看错误
+
+1. Xcode 打开 `macos/Runner.xcworkspace` → Runner / WGExtension → Signing & Capabilities  
+2. 若把 Debug 改回 `DebugProfile.entitlements`（含 NE），常见报错：`Provisioning profile … doesn't include the Network Extensions capability`  
+3. Console.app 过滤 `NESession` / `WGExtension` / `NetworkExtension`  
+4. 无付费账号时：继续用官方 WireGuard App + `nbvpn` 导出的 `.conf`
+
+### Release / 真连仍须用户完成
+
+1. 付费 Team；门户为两个 App ID 打开 **Network Extensions** + **App Groups**  
+2. Release：Runner 用 `Release.entitlements`，Extension 用 `WGExtension.entitlements`（工程已如此配置）  
+3. Xcode 添加 SPM WireGuardKit（可用官方仓库并修好 Package.swift tools-version，或 vendor 源码），用 `apple/PacketTunnelProvider.WireGuardKit.swift.example` 替换脚手架  
+4. 真机/本机测：应出现系统 VPN 权限框并能握手自建节点  
+5. 外发：Archive → 公证  
+
+## 设置页
+
+「隧道能力」在真隧道路径下会附加 `tunnelAppleLinkedNote`（付费账号 / Personal Team / 公证说明）。关于页平台段落已同步。
+
+## 标识符
 
 | 项 | 值 |
 |----|-----|
 | Host Bundle ID | `com.netbridge.netbridge` |
 | Extension Bundle ID | `com.netbridge.netbridge.WGExtension` |
 | App Group | `group.com.netbridge.netbridge` |
-| Dart 开关 | `AppleTunnelConfig.extensionTargetLinked`（默认 **false**） |
+| `extensionTargetLinked` | **true** |
+| DEVELOPMENT_TEAM | `846K6R4WU8`（Personal；可改） |
 
-仓库已含：
+## 已知限制（摘要）
 
-- `ios/Runner/Runner.entitlements`（NE + App Group 模板；已挂到 Xcode `CODE_SIGN_ENTITLEMENTS`）
-- `macos/Runner/DebugProfile.entitlements` / `Release.entitlements`（同上）
-- `ios/WGExtension/*`、`macos/WGExtension/*`（Provider 壳 + entitlements + Info.plist）
-- `apple/PacketTunnelProvider.WireGuardKit.swift.example`（可扫进目标的完整 WireGuardKit 实现，来自 wireguard_flutter example / MIT）
+1. Debug macOS：**无 NE** 以便 Personal Team 编过；真连请用付费 Team + Release entitlements  
+2. WireGuardKit 未接入 → Extension 无法建立真实 UDP 隧道数据面  
+3. 分发 / 公证未做  
+4. 其余产品限制见历史条目（扫码、`.conf` 导入、Kill Switch 等）  
 
-**未提交**：Apple Team ID、Provisioning Profile、证书、App Store Connect 密钥。
+## 品牌 / Android 瘦身
 
-### iOS / macOS — 剩余 Xcode 步骤（精确）
-
-> 需要：**付费** Apple Developer Program、本机 Xcode、用户提供的 **Team ID**。
-
-#### A. Developer Portal（网页）
-
-1. Identifiers → 注册/编辑 App ID `com.netbridge.netbridge`  
-   - Capabilities：**App Groups**、**Network Extensions**（Packet Tunnel）  
-2. 新建 App ID `com.netbridge.netbridge.WGExtension`（App Extension）  
-   - 同样启用 App Groups + Network Extensions  
-3. App Groups → 创建 `group.com.netbridge.netbridge`，挂到上述两个 App ID  
-4. Profiles：为 Host + Extension 各生成 Development（真机）/ Distribution（发版）描述文件  
-
-#### B. Xcode — 创建并嵌入 Extension 目标
-
-对 **iOS**（`ios/Runner.xcworkspace` 或 `Runner.xcodeproj`）与 **macOS** 各做一遍：
-
-1. File → New → Target → **Network Extension** → **Packet Tunnel Provider**  
-2. Product Name: `WGExtension`  
-3. Bundle Identifier: **`com.netbridge.netbridge.WGExtension`**（必须与 Dart `providerBundleIdentifier` 一致）  
-4. Language: Swift；取消勾选多余模板文件，改用仓库已有源码：  
-   - 将 Target 的源文件指到 `ios/WGExtension/PacketTunnelProvider.swift`（macOS 用 `macos/WGExtension/`）  
-   - `Info.plist` → 仓库 `WGExtension/Info.plist`  
-   - Signing & Capabilities → entitlements 选 `WGExtension.entitlements`  
-5. Runner target → **Signing & Capabilities**  
-   - Team: 选择你的 Team（填入 Team ID）  
-   - 确认 entitlements 为 `Runner/Runner.entitlements`（iOS）或现有 macOS entitlements  
-   - App Groups 勾选 `group.com.netbridge.netbridge`  
-6. WGExtension target → 同一 Team；同一 App Group  
-7. Runner → Build Phases → **Embed Foundation Extensions** 必须包含 `WGExtension.appex`  
-8. Deployment：iOS **15.0+**、macOS **12.0+**（与 `wireguard_flutter` 一致）
-
-#### C. 接入真实 WireGuard（生产隧道）
-
-脚手架 `PacketTunnelProvider.swift` 在收到 `wgQuickConfig` 后会返回 `wireGuardKitNotLinked`（有意）。
-
-1. File → Add Package Dependencies → 添加官方 **WireGuardKit**（wireguard-apple / 与 wireguard_flutter example 相同来源）  
-2. 将 WireGuardKit **只**链到 **WGExtension** target（Host 一般不需要）  
-3. 用 `apple/PacketTunnelProvider.WireGuardKit.swift.example` **替换**脚手架 `PacketTunnelProvider.swift`（或合并 `WireGuardAdapter` 逻辑）  
-4. 确认 `providerConfiguration["wgQuickConfig"]` 解析路径与 example 一致（`wireguard_flutter` 插件写入同名字段）
-
-#### D. 打开 Dart 真隧道开关
-
-1. 确认真机/模拟器上 Extension 已嵌入且签名成功  
-2. 编辑 `lib/services/vpn/apple_tunnel_config.dart`：  
-   `static const bool extensionTargetLinked = true;`  
-3. `flutter run` → 连接时应走 `WireGuardVpnTunnel`；失败仍会回退 Stub  
-
-#### E. 验证清单
-
-- [ ] Host + Extension 同 Team、同 App Group  
-- [ ] `providerBundleIdentifier` == Extension Bundle ID  
-- [ ] 系统 VPN 权限对话框出现（C-10）  
-- [ ] 能连自建节点（需 Linux VPS）  
-- [ ] 设置页「隧道能力」不再显示 Stub 文案  
-
-### Windows — 下一步
-
-1. 以管理员身份运行或安装时声明 requireAdministrator  
-2. 验证 `wireguard_flutter` 创建隧道  
-3. Kill Switch：在隧道断开时用 Windows Filtering Platform / 防火墙规则阻断非隧道流量（当前未实现）
-
-## Kill Switch
-
-- 设置页开关，**默认开启**（FR-C09）  
-- 偏好持久化；真实「断隧道即阻断」仅在平台原生能力具备时生效  
-- 诚实文案见设置页与本文件矩阵
-
-## 错误码中文（设计 C-03 / C-12）
-
-| 码 | 文案 |
-|----|------|
-| E_URI_SCHEME | 不是有效的 nbvpn 链接，请确认以 nbvpn: 开头。 |
-| E_URI_VERSION | URI 版本不受支持，请使用 nbvpn:1? 形式或升级客户端。 |
-| E_URI_DECODE | 无法解析配置内容（Base64 或 JSON 无效）。 |
-| E_PROFILE_INVALID | 配置字段无效：… |
-| E_PROFILE_UNSUPPORTED | 配置版本过高，请升级客户端后再导入。 |
-
-（英文见 `ProfileException.messageEn` / `messageForLanguage`。）
-
-## 已知限制
-
-1. 桌面端未做系统托盘快捷连接（设计 should）  
-2. 扫码：相机 + **从相册选图** + 同页粘贴 URI；终端密 QR 仍建议 `--uri` / `peers/*.png`  
-3. `.conf` 导入为 should，当前仅 `.nbvpn.json`  
-4. 日志侧已避免打印私钥；调试时请勿手动 dump profile  
-5. 自动重连：依赖 `wireguard_flutter` 的 `reconnect` / `wait_connection` 阶段映射；Stub 可模拟重连  
-6. iOS/macOS：**无 Team ID 时无法完成签名与真隧道**；脚手架 + Stub 不关闭 DEF-02  
-7. 自建联调：`ssh netbridge-vps` → `nbvpn show --uri`（警告在 stderr）/ 拷贝 `peers/*.png`；粘贴可含 WARNING 行或 JSON。本环境无 Android 设备时无法完成本轮真握手  
-8. **不要声称** iOS/macOS Extension 生产就绪：默认 `extensionTargetLinked=false` → Stub；连接会报错而非显示「已连接」。无 Team/证书时**不会**出现系统 VPN 权限弹窗。  
-9. 重复导入：同 endpoint+公私钥已存在时 Snackbar「已添加」，删除后安全存储写 `[]`，同一 URI 可再导入  
-10. `BrandLinks` 的 Terms/Privacy 为 store meta 风格 **占位 URL**，上架前必须换成正式法务页  
-
-## 品牌
-
-- 名称：网桥 VPN / NetBridge VPN（EN）  
-- 色：深青灰 `#0F1C24`、强调青 `#2EC4B6`  
-- 字体：系统默认（可读性优先）  
-- **应用图标**：源图 `assets/branding/netbridge_icon_1024.png`（桥/双节点连线主题）；经 `flutter_launcher_icons` 写入 Android `mipmap-*` / adaptive、iOS/macOS `AppIcon.appiconset`、Windows `app_icon.ico`。重生成：`dart run flutter_launcher_icons`  
-- **链接常量**：`lib/config/brand_links.dart`（`officialSite` 默认 = store `openlistBrowse`）
-
-## Android 发布瘦身
-
-- `android/app/build.gradle.kts` release：`minifyEnabled` / `shrinkResources` + `proguard-android-optimize.txt` + `proguard-rules.pro`（WireGuard / flutter_secure_storage / Play Core dontwarn）
-- 产物：`flutter build apk --release --split-per-abi` → `dist/NetBridge-android-arm64.apk`（及 armeabi-v7a）；仍为 debug 签名便于侧载试用
+见仓库既有说明（图标、`BrandLinks`、APK split-per-abi）。

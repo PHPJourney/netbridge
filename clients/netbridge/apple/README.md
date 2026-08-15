@@ -1,22 +1,17 @@
 # Apple Packet Tunnel — notes
 
-Shared identifiers (also in `lib/services/vpn/apple_tunnel_config.dart`):
-
 | Item | Value |
 |------|--------|
-| Host app | `com.netbridge.netbridge` |
+| Host | `com.netbridge.netbridge` |
 | Extension | `com.netbridge.netbridge.WGExtension` |
 | App Group | `group.com.netbridge.netbridge` |
+| Dart | `AppleTunnelConfig.extensionTargetLinked = true` |
+| Team（工程内） | `846K6R4WU8`（Personal；可在 Xcode 更换） |
 
-Scaffold sources live under:
+**已完成：** macOS / iOS `WGExtension` target + Embed Foundation Extensions。  
+**Debug：** Host `AdHoc.entitlements`、Extension `WGExtension-Debug.entitlements`（无 NE，Personal Team 可编）。  
+**Release：** Host / Extension 使用含 packet-tunnel + App Group 的 entitlements。  
 
-- `ios/WGExtension/` — PacketTunnelProvider (shell), Info.plist, entitlements
-- `macos/WGExtension/` — same for macOS
-- `ios/Runner/Runner.entitlements` / `macos/Runner/*entitlements` — host NE + App Group templates
+**未完成：** WireGuardKit SPM/vendor；付费 NE 能力；公证。示例实现：`PacketTunnelProvider.WireGuardKit.swift.example`。  
 
-**No Apple Team ID / provisioning profiles / certificates are committed.**
-
-Full WireGuardKit-based provider (from `wireguard_flutter` example, MIT):  
-`apple/PacketTunnelProvider.WireGuardKit.swift.example`
-
-Exact Xcode steps: `clients/netbridge/IMPL.md` § iOS/macOS.
+详见 `IMPL.md` 诚实边界。

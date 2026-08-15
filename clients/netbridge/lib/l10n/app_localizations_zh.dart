@@ -33,6 +33,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get tunnelStubSuffix => '（Stub ≠ 生产就绪）';
 
   @override
+  String get tunnelAppleLinkedNote =>
+      'WGExtension 已嵌入。Debug 可 Personal Team 编过；真 Packet Tunnel / 分发需付费 Apple Developer（NE）、Provisioning，且须接入 WireGuardKit。Personal Team 无法激活 NE。公证后才能较稳妥给别人用。';
+
+  @override
   String get cantConnectTitle => '连不上节点时';
 
   @override
@@ -88,7 +92,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get aboutBody =>
-      '网桥 VPN 是去中心化的自建节点工具。本产品不提供公共 VPN 节点，也不要求账号登录。\n\n节点部署在您的服务器上。出口网络与合法使用责任由您自行承担。\n\n连接信息（URI / 二维码 / 配置文件）等同于访问密钥，请勿公开发布。\n\n自建节点导入：\n1. 服务器：nbvpn show --uri（或扫 /var/lib/nbvpn/peers/*.png）\n2. 本应用：粘贴 URI / 扫码 / 导入 .nbvpn.json\n3. 若连不上：确认云安全组与主机防火墙已放行 UDP 51820，且 endpoint 为公网地址\n\n平台能力：\n• Android：真实 WireGuard 隧道（需系统 VPN 授权）\n• iOS/macOS：无 Apple Team / Extension 签名时为模拟隧道（Stub），不能当作生产 VPN\n• Windows：需管理员权限；Kill Switch 未做系统防火墙级阻断';
+      '网桥 VPN 是去中心化的自建节点工具。本产品不提供公共 VPN 节点，也不要求账号登录。\n\n节点部署在您的服务器上。出口网络与合法使用责任由您自行承担。\n\n连接信息（URI / 二维码 / 配置文件）等同于访问密钥，请勿公开发布。\n\n自建节点导入：\n1. 服务器：nbvpn show --uri（或扫 /var/lib/nbvpn/peers/*.png）\n2. 本应用：粘贴 URI / 扫码 / 导入 .nbvpn.json\n3. 若连不上：确认云安全组与主机防火墙已放行 UDP 51820，且 endpoint 为公网地址\n\n平台能力：\n• Android：真实 WireGuard 隧道（需系统 VPN 授权）\n• iOS/macOS：工程已嵌入 WGExtension；真连需付费 Apple Developer（Network Extension + App Group + 签名）。Personal Team 往往编过但无法激活 Packet Tunnel。打包给别人用还需公证/合适的分发方式。\n• Windows：需管理员权限；Kill Switch 未做系统防火墙级阻断';
 
   @override
   String get close => '关闭';

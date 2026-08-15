@@ -39,7 +39,7 @@ class SettingsScreen extends StatelessWidget {
             title: Text(l10n.tunnelCapability),
             subtitle: Text(
               real
-                  ? c.vpnCapabilityNote
+                  ? '${c.vpnCapabilityNote}\n${l10n.tunnelAppleLinkedNote}'
                   : '${c.vpnCapabilityNote}\n${l10n.tunnelStubSuffix}',
             ),
             isThreeLine: true,

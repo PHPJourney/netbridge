@@ -1,7 +1,9 @@
-// Packet Tunnel Provider scaffold for 网桥 VPN (macOS).
-//
-// See ios/WGExtension for the same contract. Full WireGuardKit body:
-// PacketTunnelProvider.WireGuardKit.swift.example + IMPL.md.
+// Packet Tunnel Provider for 网桥 VPN (macOS).
+// WGExtension is embedded in Runner. WireGuardKit SPM (wireguard-apple) was not
+// vendored here: passepartoutvpn fork is gone (404); official Package.swift needs
+ // tools-version 5.5+ and a Go build for WireGuardKitGo. Until WireGuardKit is
+ // linked, startTunnel returns wireGuardKitNotLinked after validating wgQuickConfig.
+ // Full body: apple/PacketTunnelProvider.WireGuardKit.swift.example — see IMPL.md.
 
 import Foundation
 import NetworkExtension
@@ -20,7 +22,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         options: [String: NSObject]?,
         completionHandler: @escaping (Error?) -> Void
     ) {
-        log("startTunnel — WireGuardKit not linked yet (scaffold)")
+        log("startTunnel — WireGuardKit not linked yet (embedded scaffold)")
         guard let protocolConfiguration = self.protocolConfiguration as? NETunnelProviderProtocol,
               let providerConfiguration = protocolConfiguration.providerConfiguration,
               providerConfiguration["wgQuickConfig"] as? String != nil
@@ -37,9 +39,6 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     ) {
         log("stopTunnel reason=\(reason.rawValue)")
         completionHandler()
-        // Known macOS Network Extension quirk: process may need explicit exit after stop.
-        // Uncomment only after a real tunnel is linked and you observe hung extensions:
-        // exit(0)
     }
 
     override func handleAppMessage(_ messageData: Data, completionHandler: ((Data?) -> Void)?) {

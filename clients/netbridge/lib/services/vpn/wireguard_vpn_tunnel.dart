@@ -49,9 +49,10 @@ class WireGuardVpnTunnel implements VpnTunnel {
           'Kill Switch 需额外防火墙规则（见 IMPL.md）。';
     }
     if (Platform.isIOS || Platform.isMacOS) {
-      return 'iOS/macOS：使用 Packet Tunnel（$providerBundleIdentifier）；'
-          '需 Xcode 嵌入 WGExtension、App Group '
-          '(${AppleTunnelConfig.appGroupId}) 与签名。脚手架见 ios/macos/WGExtension。';
+      return 'iOS/macOS：WGExtension 已嵌入（$providerBundleIdentifier）。'
+          'Debug 可用 Personal Team 编过；真 Packet Tunnel 需付费账号 + NE/'
+          'App Group（Release entitlements）。WireGuardKit 尚未 SPM 接入'
+          '（passepartout 源 404），隧道数据面见 apple/*.example / IMPL.md。';
     }
     return '本平台暂无真实隧道集成。';
   }
