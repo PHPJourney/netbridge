@@ -23,7 +23,11 @@ var Version = "1.0.0"
 // Run is the CLI entrypoint. Returns process exit code.
 func Run(args []string) int {
 	if len(args) == 0 {
-		printHelp(os.Stdout)
+		// No args: common when double-clicking the .exe on Windows — print
+		// Chinese usage and pause if we own the console alone (else window
+		// closes instantly and looks like a crash).
+		printHelpZh(os.Stdout)
+		pauseIfDoubleClickConsole()
 		return 0
 	}
 	cmd := args[0]
@@ -31,6 +35,7 @@ func Run(args []string) int {
 	var err error
 	switch cmd {
 	case "help", "-h", "--help":
+		printHelpZh(os.Stdout)
 		printHelp(os.Stdout)
 		return 0
 	case "install":
@@ -56,6 +61,7 @@ func Run(args []string) int {
 		return 0
 	default:
 		fmt.Fprintf(os.Stderr, "unknown command %q\n\n", cmd)
+		printHelpZh(os.Stderr)
 		printHelp(os.Stderr)
 		return 1
 	}
@@ -64,6 +70,36 @@ func Run(args []string) int {
 		return 1
 	}
 	return 0
+}
+
+func printHelpZh(w *os.File) {
+	fmt.Fprint(w, `nbvpn — 网桥 VPN 服务端命令行（WireGuard）
+
+用法（请在 CMD / PowerShell 中运行，不要双击 exe）：
+  nbvpn <命令> [参数]
+
+常用命令:
+  version                         打印版本（验证 exe 能否启动）
+  install                         安装/配置节点、首个 peer、启用服务
+  show [--uri|--qr|--file|--conf|--all]
+                                  显示客户端连接信息（默认 --all）
+  status                          服务 / 隧道状态
+  start | stop | restart          管理 WireGuard 服务
+  peer add [name]                 新增客户端 peer
+  peer list                       列出 peer
+  peer revoke <id|name>           吊销 peer
+  config set endpoint <host[:port]>
+                                  设置对外 endpoint
+  uninstall [--yes]               停止服务并清理数据
+  help                            显示帮助
+
+Windows Server 2012 / 2012 R2:
+  推荐双击安装: NetBridge-nbvpn-Setup-win2012.exe
+  含 WireGuard 0.5.3（历史官方）+ Win32 GUI（非 Fyne）
+  装好后: 开始菜单 →「NetBridge nbvpn GUI」
+  说明见 WINDOWS.md
+
+`)
 }
 
 func printHelp(w *os.File) {

@@ -7,25 +7,38 @@
   Dot-source from install.ps1 or call Ensure-WireGuardForWindows.
   Policy:
     - If wireguard.exe already present → skip (do not upgrade).
-    - Windows 10+ / Server 2016+: install bundled MSI, or download pinned URL + SHA256.
-    - Server 2012 / 2012 R2: do not install modern MSI; return LegacyUnsupported.
+    - Windows 10+ / Server 2016+: install modern pin (wireguard-bundle.json, currently 1.1).
+    - Server 2012 / 2012 R2: install legacy pin (wireguard-bundle-win2012.json, currently 0.5.3).
+      Do NOT install modern 1.1 MSI on 2012.
     - Silent MSI: msiexec /i … DO_NOT_LAUNCH=1 /qn
     - msiexec 3010 (reboot required) → treat as success; success = wireguard.exe on disk.
 
 .NOTES
-  Bundle pin: wireguard-bundle.json next to this script (or under vendor\wireguard).
-  msiexec args must be a SINGLE quoted string — Start-Process -ArgumentList @(...)
-  mangles paths under "C:\Program Files\..." (space) and yields exit 1619 / 1603.
+  Bundle pin: wireguard-bundle.json / wireguard-bundle-win2012.json next to this script
+  (or under vendor\wireguard). msiexec args must be a SINGLE quoted string.
 #>
 
 function Get-WireGuardBundlePin {
-  param([string[]]$SearchRoots)
-  foreach ($root in $SearchRoots) {
-    if (-not $root) { continue }
-    foreach ($rel in @(
+  param(
+    [string[]]$SearchRoots,
+    [switch]$PreferLegacy
+  )
+  $names = if ($PreferLegacy) {
+    @(
+      'wireguard-bundle-win2012.json',
+      'vendor\wireguard\wireguard-bundle-win2012.json',
       'wireguard-bundle.json',
       'vendor\wireguard\wireguard-bundle.json'
-    )) {
+    )
+  } else {
+    @(
+      'wireguard-bundle.json',
+      'vendor\wireguard\wireguard-bundle.json'
+    )
+  }
+  foreach ($root in $SearchRoots) {
+    if (-not $root) { continue }
+    foreach ($rel in $names) {
       $p = Join-Path $root $rel
       if (Test-Path -LiteralPath $p) {
         try {
@@ -297,29 +310,34 @@ function Ensure-WireGuardForWindows {
     return $result
   }
 
-  if ((Test-WireGuardLegacyOs) -or $ForceLegacyDryRun) {
+  $isLegacy = (Test-WireGuardLegacyOs) -or $ForceLegacyDryRun
+  if ($isLegacy -and $ForceLegacyDryRun) {
     $result.Status = 'LegacyUnsupported'
-    $result.Message = @'
-Official WireGuard for Windows (1.1+) requires Windows 10 / Server 2016+.
-This host looks like Server 2012 / 2012 R2 — automatic WG install is SKIPPED (not a hard failure).
-Profiles/keys will still be written (dry-run). For a real tunnel, use Server 2016+
-or install a historically compatible WireGuard build yourself:
-  https://www.wireguard.com/install/
-On 2012 prefer: nbvpn-windows-amd64-win2012.exe + install.ps1 (not modern Setup.exe alone).
-'@
+    $result.Message = 'ForceLegacyDryRun set — skipping WireGuard install (profiles only).'
     Write-Warning $result.Message
     return $result
   }
 
-  $pin = Get-WireGuardBundlePin -SearchRoots $SearchRoots
+  $pin = Get-WireGuardBundlePin -SearchRoots $SearchRoots -PreferLegacy:$isLegacy
   if (-not $pin) {
     $result.Message = @"
-wireguard-bundle.json not found next to install scripts.
+wireguard-bundle.json / wireguard-bundle-win2012.json not found next to install scripts.
 Searched roots: $($SearchRoots -join '; ')
-Expected: <root>\wireguard-bundle.json or <root>\vendor\wireguard\wireguard-bundle.json
+Expected: <root>\wireguard-bundle.json or <root>\vendor\wireguard\…
+On Server 2012 place wireguard-bundle-win2012.json (0.5.3 pin).
 "@
     Write-Warning $result.Message
     return $result
+  }
+
+  if ($isLegacy) {
+    Write-Host "==> Legacy OS detected — using WireGuard pin $($pin.version) (win2012 bundle; NOT modern 1.1)"
+    if ([string]$pin.version -eq '1.1' -or [string]$pin.filename -like '*1.1*') {
+      $result.Status = 'LegacyUnsupported'
+      $result.Message = 'Refusing to install modern WireGuard 1.1 MSI on Server 2012. Provide wireguard-bundle-win2012.json (0.5.3).'
+      Write-Warning $result.Message
+      return $result
+    }
   }
 
   $filename = [string]$pin.filename
@@ -337,16 +355,47 @@ Expected: <root>\wireguard-bundle.json or <root>\vendor\wireguard\wireguard-bund
       Write-Warning $result.Message
       return $result
     }
-    $tmp = Join-Path $env:TEMP ("nbvpn-wg-" + [guid]::NewGuid().ToString('n') + '-' + $filename)
-    try {
-      Save-RemoteFileChecked -Uri $url -OutFile $tmp -ExpectedSha256 $sha
-      $msi = $tmp
-    } catch {
+    $urls = New-Object System.Collections.ArrayList
+    if ($url) { [void]$urls.Add([string]$url) }
+    if ($pin.urlFallbacks) {
+      foreach ($u in @($pin.urlFallbacks)) {
+        if ($u) { [void]$urls.Add([string]$u) }
+      }
+    }
+    $destDir = $null
+    foreach ($r in $SearchRoots) {
+      if ($r -and (Test-Path -LiteralPath $r)) {
+        $destDir = Join-Path $r 'vendor\wireguard'
+        break
+      }
+    }
+    if (-not $destDir) { $destDir = Join-Path $env:TEMP 'nbvpn-wireguard' }
+    New-Item -ItemType Directory -Force -Path $destDir | Out-Null
+    $msi = Join-Path $destDir $filename
+    $downloaded = $false
+    foreach ($tryUrl in $urls) {
+      try {
+        Write-Host "==> Downloading WireGuard MSI: $tryUrl"
+        if (Get-Command Save-RemoteFileChecked -ErrorAction SilentlyContinue) {
+          Save-RemoteFileChecked -Uri $tryUrl -OutFile $msi -ExpectedSha256 $sha
+        } else {
+          Invoke-WebRequest -Uri $tryUrl -OutFile $msi -UseBasicParsing
+          $got = (Get-FileHash -LiteralPath $msi -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($got -ne $sha.ToLowerInvariant()) {
+            throw "SHA256 mismatch: expected $sha, got $got"
+          }
+        }
+        $downloaded = $true
+        break
+      } catch {
+        Write-Warning "Download failed from $tryUrl : $_"
+        Remove-Item -Force -LiteralPath $msi -ErrorAction SilentlyContinue
+      }
+    }
+    if (-not $downloaded) {
       $result.Message = @"
-Failed to download WireGuard MSI: $_
-Manual install (then re-run install.ps1 / Setup):
-  $url
-  https://www.wireguard.com/install/
+Failed to download WireGuard MSI $filename (SHA256 $sha).
+Tried: $($urls -join '; ')
 "@
       Write-Warning $result.Message
       return $result
@@ -354,7 +403,11 @@ Manual install (then re-run install.ps1 / Setup):
   } else {
     Write-Host "==> Using bundled MSI: $msi"
     if ($sha) {
-      $got = Get-FileSha256Hex -Path $msi
+      if (Get-Command Get-FileSha256Hex -ErrorAction SilentlyContinue) {
+        $got = Get-FileSha256Hex -Path $msi
+      } else {
+        $got = (Get-FileHash -LiteralPath $msi -Algorithm SHA256).Hash.ToLowerInvariant()
+      }
       if ($got -ne $sha.ToLowerInvariant()) {
         $result.Message = "Bundled MSI SHA256 mismatch (expected $($sha.ToLowerInvariant()), got $got)`nMSI: $msi"
         Write-Warning $result.Message

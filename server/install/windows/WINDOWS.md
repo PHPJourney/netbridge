@@ -6,10 +6,11 @@ NetBridge VPN **node** on Windows Server (or Windows 10/11 lab). Linux install p
 
 | Artifact | When |
 |----------|------|
-| **`NetBridge-nbvpn-Setup.exe`** | **Primary** — download and Run as Administrator (no CLI). **Bundles + silently installs** pinned WireGuard for Windows when missing |
-| `bootstrap.ps1` one-liner | Advanced / headless — like Linux `curl \| bash` |
-| `install.ps1` + `nbvpn-windows-amd64*.exe` | Manual advanced / scripting (same WG auto-install) |
-| `nbvpn-windows-amd64-win2012.exe` | Server **2012 / 2012 R2** only (Go 1.20 binary; **no** official WG auto-install) |
+| **`NetBridge-nbvpn-Setup.exe`** | **Win10+/2016+ Primary** — Run as Administrator. **Bundles + silently installs** pinned WireGuard for Windows when missing |
+| **`NetBridge-nbvpn-Setup-win2012.exe`** | **Server 2012 / 2012 R2 Primary** — double-click; **WireGuard 0.5.3** + **Win32 GUI** + CLI |
+| `bootstrap.ps1` one-liner | Advanced / headless — picks modern vs win2012 Setup |
+| `install.ps1` + `nbvpn-windows-amd64*.exe` | Manual advanced / scripting |
+| `nbvpn-windows-amd64-win2012.exe` | Raw 2012 CLI only (Go 1.20; prefer Setup-win2012) |
 
 ### Store UX
 
@@ -117,7 +118,7 @@ nbvpn start
 explorer $env:ProgramData\nbvpn
 ```
 
-### B. PowerShell — Server 2012 / 2012 R2（不要用任何 Setup）
+### B. Setup-win2012 — Server 2012 / 2012 R2（推荐双击）
 
 **禁止下载（装了也会失败 / 英文拒装）：**
 
@@ -127,25 +128,21 @@ explorer $env:ProgramData\nbvpn
 | `NetBridge-nbvpn-Setup.exe` | 服务端现代 Setup；`MinVersion=10.0` |
 | `nbvpn-windows-amd64.exe` / `nbvpn-gui-*.exe` | Go 1.21+ / Fyne，2012 无法运行 |
 
-从 GitHub Release（**v0.1.7+**）只下载下面两个到同一文件夹（例 `C:\NetBridge\deploy\`）：
+**请下载并双击（管理员）：**
 
-1. `nbvpn-windows-amd64-win2012.exe`（Go 1.20，纯 CGO=0 CLI）
-2. `install.ps1`（Release 旁路或 raw：`server/install/windows/install.ps1`）
+1. [`NetBridge-nbvpn-Setup-win2012.exe`](https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-nbvpn-Setup-win2012.exe)（v0.1.8+）
 
-**不要双击「安装」任何 Setup**；也不要把 win2012 exe 当成安装包双击完事。正确做法：管理员 PowerShell。可先验证 exe 能启动：
+安装内容：`nbvpn` CLI + **Win32 GUI** + **WireGuard 0.5.3**（历史官方 MSI；不是现代 1.1）。
 
-```powershell
-mkdir C:\NetBridge\deploy -Force
-cd C:\NetBridge\deploy
-# 确认本目录已有 win2012 exe 与 install.ps1 后：
-.\nbvpn-windows-amd64-win2012.exe version
-# 应打印版本号（v0.1.6 及更早若报 14001/SxS，请换 v0.1.7+）
-powershell -ExecutionPolicy Bypass -File .\install.ps1 -SkipWireGuard
-```
+安装后：
 
-- `-SkipWireGuard`：跳过官方 WG 1.1 MSI（2012 不支持）。
-- **无 Fyne GUI**；用 CLI：`nbvpn show --uri` / `nbvpn status`（隧道多为 dry-run / 仅导出配置）。
-- 客户端真隧道建议换 **Server 2016+** 或 Linux 节点。
+| 怎么管 | 说明 |
+|--------|------|
+| 开始菜单 **「NetBridge nbvpn GUI」** | 启停、状态、peer、URI、QR、数据目录 |
+| 「NetBridge nbvpn 管理 (菜单)」 | 可选 cmd 数字菜单 |
+| WireGuard | Setup 静默装 0.5.3；已装则跳过。现代 1.1 不能用在 2012 |
+
+高级裸装：`nbvpn-windows-amd64-win2012.exe` + `nbvpn-gui-win2012.exe` + `install.ps1`（同目录放 `wireguard-bundle-win2012.json`）。
 
 Or one-liner (detects OS): `irm …/bootstrap.ps1 | iex`
 

@@ -165,36 +165,57 @@ jobs:
             sed -i 's/^go .*/go 1.20/' go.mod
             sed -i '/^toolchain /d' go.mod || true
           fi
-          # CLI only — never build cmd/nbvpn-gui (Fyne/CGO) into the win2012 artifact.
+          # CLI + Win32 GUI (CGO=0) — never build Fyne cmd/nbvpn-gui into win2012 artifacts.
           go version
           test "$(go env GOVERSION)" = "go1.20.14"
           test "$(go env CGO_ENABLED)" = "0"
           go list -f '{{.ImportPath}} {{.Name}}' .
           go build -mod=readonly -trimpath -ldflags="-s -w -X main.version=${GITHUB_REF_NAME}" \
             -o dist/nbvpn-windows-amd64-win2012.exe .
+          go build -mod=readonly -trimpath -ldflags="-s -w -H windowsgui -X main.version=${GITHUB_REF_NAME}" \
+            -o dist/nbvpn-gui-win2012.exe ./cmd/nbvpn-gui-win2012
           python3 <<'PY'
           from pathlib import Path
+          import struct
+          def check_cli(path):
+            d = Path(path).read_bytes()
+            assert b"go1.20." in d, "missing go1.20"
+            assert b"go1.21." not in d and b"go1.22." not in d, "wrong Go toolchain"
+            assert b"fyne" not in d.lower(), "Fyne must not be linked into win2012 CLI"
+            assert b"VCRUNTIME" not in d and b"MSVCP" not in d, "unexpected MSVC CRT strings"
+            assert b"libgcc" not in d and b"libstdc" not in d, "unexpected MinGW CRT strings"
+            assert b"43dc-5fe-2a023fafe7aa" not in d, "bad Vista GUID still embedded"
+            if b"assemblyIdentity" in d:
+                assert b"e2011457-1546-43dc-a9fe-2a023fafe7aa" in d, "manifest missing valid Vista GUID"
+            e = int.from_bytes(d[0x3C:0x40], "little")
+            oh = e + 24
+            assert int.from_bytes(d[oh:oh+2], "little") == 0x20B, "not PE32+"
+            major_os = int.from_bytes(d[oh+40:oh+42], "little")
+            minor_os = int.from_bytes(d[oh+42:oh+44], "little")
+            major_sub = int.from_bytes(d[oh+48:oh+50], "little")
+            minor_sub = int.from_bytes(d[oh+50:oh+52], "little")
+            assert (major_os, minor_os) == (6, 1), (major_os, minor_os)
+            assert (major_sub, minor_sub) == (6, 1), (major_sub, minor_sub)
+            print("CLI OK", path)
+          def check_gui(path):
+            d = Path(path).read_bytes()
+            assert b"go1.20." in d, "missing go1.20"
+            assert b"fyne.io" not in d, "Fyne must not be in win2012 GUI"
+            assert b"libgcc" not in d and b"libstdc" not in d, "MinGW CRT in GUI"
+            e = int.from_bytes(d[0x3C:0x40], "little")
+            oh = e + 24
+            subsystem = int.from_bytes(d[oh+68:oh+70], "little")
+            assert subsystem == 2, f"GUI subsystem want 2 got {subsystem}"  # IMAGE_SUBSYSTEM_WINDOWS_GUI
+            major_sub = int.from_bytes(d[oh+48:oh+50], "little")
+            minor_sub = int.from_bytes(d[oh+50:oh+52], "little")
+            assert (major_sub, minor_sub) == (6, 1), (major_sub, minor_sub)
+            print("GUI OK", path)
+          check_cli("dist/nbvpn-windows-amd64-win2012.exe")
+          check_gui("dist/nbvpn-gui-win2012.exe")
+          # Import table: CLI should only need kernel32.dll
           d = Path("dist/nbvpn-windows-amd64-win2012.exe").read_bytes()
-          assert b"go1.20." in d, "missing go1.20"
-          assert b"go1.21." not in d and b"go1.22." not in d, "wrong Go toolchain"
-          assert b"fyne" not in d.lower(), "Fyne must not be linked into win2012 CLI"
-          assert b"VCRUNTIME" not in d and b"MSVCP" not in d, "unexpected MSVC CRT strings"
-          assert b"libgcc" not in d and b"libstdc" not in d, "unexpected MinGW CRT strings"
-          # Truncated Vista GUID (3 hex digits in 4th group) → SxS 14001
-          assert b"43dc-5fe-2a023fafe7aa" not in d, "bad Vista GUID still embedded"
-          if b"assemblyIdentity" in d:
-              assert b"e2011457-1546-43dc-a9fe-2a023fafe7aa" in d, "manifest missing valid Vista GUID"
-          # PE optional header: MajorOSVersion / MajorSubsystemVersion (PE32+)
           e = int.from_bytes(d[0x3C:0x40], "little")
           oh = e + 24
-          assert int.from_bytes(d[oh:oh+2], "little") == 0x20B, "not PE32+"
-          major_os = int.from_bytes(d[oh+40:oh+42], "little")
-          minor_os = int.from_bytes(d[oh+42:oh+44], "little")
-          major_sub = int.from_bytes(d[oh+48:oh+50], "little")
-          minor_sub = int.from_bytes(d[oh+50:oh+52], "little")
-          assert (major_os, minor_os) == (6, 1), (major_os, minor_os)
-          assert (major_sub, minor_sub) == (6, 1), (major_sub, minor_sub)
-          # Import table: pure Go should only need kernel32.dll
           num_sections = int.from_bytes(d[e+6:e+8], "little")
           opt_size = int.from_bytes(d[e+20:e+22], "little")
           sec_off = e + 24 + opt_size
@@ -226,17 +247,20 @@ jobs:
                   if no:
                       dlls.append(d[no:no+64].split(b"\0")[0].decode("ascii", "replace").lower())
                   i += 20
-          print("imports:", dlls)
+          print("CLI imports:", dlls)
           assert dlls == ["kernel32.dll"], dlls
-          print("OK: go1.20 + valid manifest + pure kernel32 imports")
+          print("OK: go1.20 + valid manifest + pure kernel32 imports + Win32 GUI")
           PY
           (cd dist && sha256sum nbvpn-windows-amd64-win2012.exe > nbvpn-windows-amd64-win2012.exe.sha256)
+          (cd dist && sha256sum nbvpn-gui-win2012.exe > nbvpn-gui-win2012.exe.sha256)
       - uses: actions/upload-artifact@v4
         with:
           name: nbvpn-windows-amd64-win2012
           path: |
             server/nbvpn/dist/nbvpn-windows-amd64-win2012.exe
             server/nbvpn/dist/nbvpn-windows-amd64-win2012.exe.sha256
+            server/nbvpn/dist/nbvpn-gui-win2012.exe
+            server/nbvpn/dist/nbvpn-gui-win2012.exe.sha256
 
   windows-setup:
     name: Windows Setup.exe (Inno)
@@ -309,9 +333,69 @@ jobs:
             stage/dist/NetBridge-nbvpn-Setup.exe.sha256
             stage/dist/NetBridge-nbvpn-Setup-zip.zip
 
+  windows-setup-win2012:
+    name: Windows Setup-win2012 (Inno)
+    needs: [windows-win2012]
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: nbvpn-windows-amd64-win2012
+          path: stage
+      - name: Stage win2012 install scripts + icon
+        shell: pwsh
+        run: |
+          Copy-Item -Force server\install\windows\install.ps1 stage\
+          Copy-Item -Force server\install\windows\Install-WireGuard.ps1 stage\
+          Copy-Item -Force server\install\windows\wireguard-bundle-win2012.json stage\
+          Copy-Item -Force server\install\windows\WINDOWS.md stage\
+          Copy-Item -Force server\install\windows\THIRDPARTY-NOTICE.txt stage\
+          Copy-Item -Force server\install\windows\nbvpn-setup-win2012.iss stage\
+          Copy-Item -Force server\install\windows\build-setup-win2012.ps1 stage\
+          Copy-Item -Force server\install\windows\nbvpn-manage.cmd stage\
+          Copy-Item -Force server\install\windows\nbvpn-open-cmd.cmd stage\
+          Copy-Item -Force server\install\windows\nbvpn-status.cmd stage\
+          Copy-Item -Force server\install\windows\README-WIN2012.txt stage\
+          Copy-Item -Force server\install\windows\netbridge.ico stage\
+          if (-not (Test-Path stage\nbvpn-windows-amd64-win2012.exe)) { throw 'missing nbvpn-windows-amd64-win2012.exe' }
+          if (-not (Test-Path stage\nbvpn-gui-win2012.exe)) { throw 'missing nbvpn-gui-win2012.exe' }
+          # Guard: never stage Fyne GUI or modern 1.1 into this product
+          if (Test-Path stage\nbvpn-gui-windows-amd64.exe) { throw 'Fyne GUI must not be staged for win2012 Setup' }
+          Get-ChildItem stage
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { $iscc = "${env:ProgramFiles}\Inno Setup 6\ISCC.exe" }
+          if (-not (Test-Path $iscc)) { throw "ISCC.exe not found after choco install" }
+          echo "ISCC=$iscc" >> $env:GITHUB_ENV
+      - name: Build NetBridge-nbvpn-Setup-win2012.exe
+        shell: pwsh
+        env:
+          NBVPN_VERSION: ${{ github.ref_name }}
+        run: |
+          $stage = (Resolve-Path stage).Path
+          $out = Join-Path $stage 'dist'
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          & .\server\install\windows\build-setup-win2012.ps1 -StageDir $stage -OutDir $out -Version $env:NBVPN_VERSION
+          $setup = Join-Path $out 'NetBridge-nbvpn-Setup-win2012.exe'
+          if (-not (Test-Path $setup)) { throw "Setup-win2012 missing: $setup" }
+          # Confirm legacy MSI (0.5.3) was staged — not 1.1
+          $msi = Get-ChildItem (Join-Path $stage 'vendor\wireguard') -Filter 'wireguard-amd64-0.5.3.msi' -ErrorAction SilentlyContinue
+          if (-not $msi) { throw 'Setup-win2012 build missing wireguard-amd64-0.5.3.msi' }
+          Get-ChildItem $out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nbvpn-windows-setup-win2012
+          path: |
+            stage/dist/NetBridge-nbvpn-Setup-win2012.exe
+            stage/dist/NetBridge-nbvpn-Setup-win2012.exe.sha256
+
   package:
     name: package-server-zip
-    needs: [linux, windows-win10, windows-win2012, windows-gui, windows-setup]
+    needs: [linux, windows-win10, windows-win2012, windows-gui, windows-setup, windows-setup-win2012]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

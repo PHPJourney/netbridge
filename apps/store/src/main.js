@@ -252,7 +252,7 @@ function serverBlock(key, item) {
   const docsUrl = item.docsUrl || "";
   const note =
     getLang() === "en" ? item.noteEn || item.note || "" : item.note || item.noteEn || "";
-  const hasAnyDownload = Boolean(url || setupUrl || installScriptUrl || win2012Url);
+  const hasAnyDownload = Boolean(url || setupUrl || installScriptUrl || win2012Url || item.setupWin2012Url);
   const pending = item.status === "pending_upload" || !hasAnyDownload;
   const isWindows = key === "windows";
 
@@ -263,6 +263,7 @@ function serverBlock(key, item) {
       sha,
       cmd,
       setupUrl,
+      setupWin2012Url: item.setupWin2012Url || "",
       url,
       win2012Url,
       installScriptUrl,
@@ -329,6 +330,7 @@ function windowsServerBlock({
   sha,
   cmd,
   setupUrl,
+  setupWin2012Url,
   url,
   win2012Url,
   installScriptUrl,
@@ -341,6 +343,11 @@ function windowsServerBlock({
     primaryHtml = `<span class="btn btn-primary btn-block is-disabled" aria-disabled="true">${escapeHtml(t("dl.uploadPending"))}</span>`;
   } else {
     primaryHtml = `<a class="btn btn-primary btn-block" href="${escapeAttr(setupUrl)}" download>${escapeHtml(t("dl.downloadWinSetup"))}</a>`;
+  }
+
+  let setup2012Html = "";
+  if (setupWin2012Url && !pending) {
+    setup2012Html = `<div class="card-actions card-actions--primary"><a class="btn btn-primary btn-block" href="${escapeAttr(setupWin2012Url)}" download>${escapeHtml(t("dl.downloadWin2012Setup"))}</a><p class="distro-hint">${escapeHtml(t("dl.windows2012SetupHint"))}</p></div>`;
   }
 
   const advLinks = [];
@@ -366,29 +373,31 @@ function windowsServerBlock({
   }
 
   const win2012Steps =
-    win2012Url
+    setupWin2012Url || win2012Url
       ? `<p class="distro-advanced-lead">${escapeHtml(t("dl.windows2012Lead"))}</p>
         <ol class="distro-steps">
           <li>${escapeHtml(t("dl.windows2012Step1"))}</li>
-          <li>${
-            installScriptUrl
-              ? `<a class="text-link" href="${escapeAttr(installScriptUrl)}" download>${escapeHtml(t("dl.linkInstallPs1"))}</a>`
-              : escapeHtml(t("dl.linkInstallPs1"))
-          } ${escapeHtml(t("dl.windows2012Step2Tail"))}</li>
+          <li>${escapeHtml(t("dl.windows2012Step2"))}</li>
           <li>${escapeHtml(t("dl.windows2012Step3"))}</li>
         </ol>
         <div class="card-actions">
-          <a class="btn btn-ghost btn-block" href="${escapeAttr(win2012Url)}" download>${escapeHtml(t("dl.downloadWin2012Exe"))}</a>
+          ${
+            setupWin2012Url
+              ? `<a class="btn btn-ghost btn-block" href="${escapeAttr(setupWin2012Url)}" download>${escapeHtml(t("dl.downloadWin2012Setup"))}</a>`
+              : ""
+          }
+          ${
+            win2012Url
+              ? `<a class="btn btn-ghost btn-block" href="${escapeAttr(win2012Url)}" download>${escapeHtml(t("dl.downloadWin2012Exe"))}</a>`
+              : ""
+          }
           ${
             installScriptUrl
               ? `<a class="btn btn-ghost btn-block" href="${escapeAttr(installScriptUrl)}" download>${escapeHtml(t("dl.downloadInstallPs1"))}</a>`
               : ""
           }
         </div>
-        <div class="command-row">
-          <code data-copy-source>${escapeHtml(t("dl.windows2012Cmd"))}</code>
-          <button class="btn btn-ghost copy-btn" type="button" data-copy ${pending ? "disabled" : ""}>${escapeHtml(t("dl.copy"))}</button>
-        </div>
+        <p class="distro-hint">${escapeHtml(t("dl.windows2012Manage"))}</p>
         <p class="distro-hint">${escapeHtml(t("dl.windowsSameFolder"))}</p>`
       : "";
 
@@ -398,11 +407,12 @@ function windowsServerBlock({
       <p class="distro-meta">${escapeHtml(t("dl.version"))} ${escapeHtml(version)}</p>
       <p class="checksum-line">SHA256 ${escapeHtml(sha)}</p>
       <p class="distro-callout" role="note">${escapeHtml(t("dl.windows2012Banner"))}</p>
+      ${setup2012Html}
       <div class="card-actions card-actions--primary">
         ${primaryHtml}
       </div>
       <p class="distro-hint">${escapeHtml(t("dl.windowsSetupHint"))}</p>
-      <details class="distro-advanced"${win2012Url ? " open" : ""}>
+      <details class="distro-advanced"${setupWin2012Url || win2012Url ? " open" : ""}>
         <summary>${escapeHtml(t("dl.windowsAdvanced"))}</summary>
         ${win2012Steps}
         <p class="distro-advanced-lead">${escapeHtml(t("dl.windowsBootstrapHint"))}</p>

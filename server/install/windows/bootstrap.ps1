@@ -5,8 +5,8 @@
 .DESCRIPTION
   Detects OS, downloads the correct installer from GitHub Releases, and runs
   elevated install. Prefer Setup.exe on Server 2016+ / Windows 10+ (Setup bundles
-  WireGuard MSI); on Server 2012 / 2012 R2 downloads win2012 exe + install.ps1
-  (official WG not auto-installed on 2012).
+  WireGuard MSI); on Server 2012 / 2012 R2 downloads NetBridge-nbvpn-Setup-win2012.exe
+  (CLI manage menu; no Fyne GUI / no official WG MSI).
 
 .EXAMPLE
   irm https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/windows/bootstrap.ps1 | iex
@@ -17,6 +17,7 @@ param(
   [string]$InstallPs1Url = $(if ($env:NBVPN_INSTALL_PS1_URL) { $env:NBVPN_INSTALL_PS1_URL } else { 'https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/windows/install.ps1' }),
   [string]$BootstrapUrl = $(if ($env:NBVPN_BOOTSTRAP_URL) { $env:NBVPN_BOOTSTRAP_URL } else { 'https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/windows/bootstrap.ps1' }),
   [string]$SetupName = 'NetBridge-nbvpn-Setup.exe',
+  [string]$SetupWin2012Name = 'NetBridge-nbvpn-Setup-win2012.exe',
   [string]$Win2012Name = 'nbvpn-windows-amd64-win2012.exe'
 )
 
@@ -82,21 +83,41 @@ try {
     return
   }
 
-  # Server 2012 / 2012 R2 — no modern Setup; use install.ps1 + win2012 exe
-  Write-Warn 'Legacy Windows detected — using win2012 exe + install.ps1 (no GUI Setup).'
+  # Server 2012 / 2012 R2 — dedicated Setup (CLI manage menu; no Fyne / no WG MSI)
+  Write-Warn 'Legacy Windows detected — using NetBridge-nbvpn-Setup-win2012.exe'
+  $setup2012 = Join-Path $work $SetupWin2012Name
+  $setup2012Url = ($ReleaseBase.TrimEnd('/') + '/' + $SetupWin2012Name)
+  try {
+    Save-RemoteFile -Uri $setup2012Url -OutFile $setup2012
+    Write-Log "Starting Setup-win2012 (elevated)…"
+    $proc = Start-Process -FilePath $setup2012 -Wait -PassThru
+    if ($null -eq $proc) { throw 'Failed to start Setup-win2012.exe' }
+    if ($proc.ExitCode -ne 0) {
+      throw ("Setup-win2012 exited with code {0}" -f $proc.ExitCode)
+    }
+    Write-Log 'Setup finished. Start Menu →「NetBridge nbvpn 管理」or: nbvpn status'
+    return
+  } catch {
+    Write-Warn ("Setup-win2012 failed ($($_.Exception.Message)) — falling back to exe + install.ps1")
+  }
+
+  Write-Warn 'Fallback: win2012 exe + install.ps1 (legacy WG 0.5.3 pin)'
   $exePath = Join-Path $work $Win2012Name
   $ps1Path = Join-Path $work 'install.ps1'
+  $bundlePath = Join-Path $work 'wireguard-bundle-win2012.json'
   $exeUrl = ($ReleaseBase.TrimEnd('/') + '/' + $Win2012Name)
+  $bundleUrl = 'https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/windows/wireguard-bundle-win2012.json'
   Save-RemoteFile -Uri $exeUrl -OutFile $exePath
   Save-RemoteFile -Uri $InstallPs1Url -OutFile $ps1Path
+  try { Save-RemoteFile -Uri $bundleUrl -OutFile $bundlePath } catch { Write-Warn "Could not fetch win2012 WG pin: $_" }
 
-  Write-Log "Running install.ps1…"
+  Write-Log "Running install.ps1 (will install WG 0.5.3 on 2012)…"
   $inst = Start-Process -FilePath 'powershell.exe' -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$ps1Path`"" -Wait -PassThru
   if ($null -eq $inst -or $inst.ExitCode -ne 0) {
     $code = if ($inst) { $inst.ExitCode } else { -1 }
     throw ("install.ps1 exited with code {0}" -f $code)
   }
-  Write-Log 'Install finished. Open a NEW PowerShell and run: nbvpn show'
+  Write-Log 'Install finished. Start Menu →「NetBridge nbvpn GUI」or: nbvpn status'
 }
 finally {
   Remove-Item -Recurse -Force -LiteralPath $work -ErrorAction SilentlyContinue

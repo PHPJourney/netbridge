@@ -236,12 +236,10 @@ switch ($wgResult.Status) {
     Write-Host @"
 
 ********************************************************************************
-  Server 2012 / 2012 R2: official WireGuard for Windows is NOT supported.
-  Continuing with keys/profiles only (dry-run) — this is NOT a Setup hard-fail.
-  Prefer Server 2016+ / Win10+ for a real tunnel.
-  On 2012 use: nbvpn-windows-amd64-win2012.exe + install.ps1 from Releases
-  (modern NetBridge-nbvpn-Setup.exe targets Win10+/2016+).
-  Manual / historical WG: https://www.wireguard.com/install/
+  WireGuard auto-install skipped/unavailable on this host (legacy pin missing,
+  ForceLegacyDryRun, or refused modern 1.1 MSI).
+  Continuing with keys/profiles only (dry-run).
+  Server 2012: use NetBridge-nbvpn-Setup-win2012.exe (bundles WG 0.5.3 + Win32 GUI).
 ********************************************************************************
 
 "@
@@ -252,25 +250,18 @@ switch ($wgResult.Status) {
     Write-Warn $wgResult.Message
   }
   default {
-    # Modern OS after failed auto-install: hard-fail (one-click expectation).
-    # Legacy: never hard-fail on WG — continue dry-run.
-    if ($osInfo.IsLegacy) {
-      $wgMissing = $true
-      Write-Warn $wgResult.Message
-    } else {
-      $msg = @"
+    # Failed auto-install: hard-fail on all OS (2012 now has 0.5.3 pin via Setup-win2012).
+    $msg = @"
 WireGuard for Windows could not be installed automatically.
 
 $($wgResult.Message)
 
-Pinned MSI: see wireguard-bundle.json / https://download.wireguard.com/windows-client/
-Or: https://www.wireguard.com/install/
+Server 2012 / 2012 R2: use NetBridge-nbvpn-Setup-win2012.exe (bundles wireguard-amd64-0.5.3.msi).
+Win10+/2016+: use NetBridge-nbvpn-Setup.exe or ensure wireguard-bundle.json is present.
 Advanced dry-run only: re-run with -SkipWireGuard
-Setup log: $($script:NbVpnSetupLog)
 "@
-      Save-SetupFailure $msg
-      throw $msg
-    }
+    Save-SetupFailure $msg
+    throw $msg
   }
 }
 

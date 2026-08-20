@@ -28,6 +28,8 @@
 | `nbvpn-linux-arm64` | Linux arm64 |
 | `nbvpn-windows-amd64.exe` | Win10+ / Server 2016+（Go 1.22） |
 | `nbvpn-windows-amd64-win2012.exe` | **Server 2012 R2**（Go 1.20） |
+| `NetBridge-nbvpn-Setup.exe` | 服务端现代 Setup（Win10+/2016+，含 WG MSI） |
+| `NetBridge-nbvpn-Setup-win2012.exe` | **Server 2012 专用 Setup**（WG 0.5.3 + Win32 GUI + CLI） |
 | `nbvpn-server-<tag>.zip` | 上述二进制 + `server/install` 脚本 |
 
 ### 客户端（`build-clients.yml`）

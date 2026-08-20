@@ -1,0 +1,17 @@
+{
+  "product": "WireGuard for Windows (legacy pin for Server 2012 / 2012 R2)",
+  "version": "0.5.3",
+  "arch": "amd64",
+  "filename": "wireguard-amd64-0.5.3.msi",
+  "url": "https://download.wireguard.com/windows-client/wireguard-amd64-0.5.3.msi",
+  "urlFallbacks": [
+    "https://web.archive.org/web/20220301000000id_/https://download.wireguard.com/windows-client/wireguard-amd64-0.5.3.msi",
+    "https://web.archive.org/web/20211225000000id_/https://download.wireguard.com/windows-client/wireguard-amd64-0.5.3.msi"
+  ],
+  "sha256": "76fcec042c5989c5b816cd32eaed1e5b1c3b998a4b1c9eca55f299e3314ef7e4",
+  "msiexecExtra": "DO_NOT_LAUNCH=1",
+  "license": "GPLv2",
+  "homepage": "https://www.wireguard.com/install/",
+  "minOs": "Windows 7 / Server 2008 R2 / Server 2012 / 2012 R2 (Win6.1+)",
+  "notes": "Historical official amd64 MSI (Chocolatey-verified SHA256). Modern wireguard-amd64-1.1.msi requires Win10/Server 2016+ (Jason Donenfeld sunsetting Mar 2026). Official download index may only list 1.1 now — use this pin + SHA + fallbacks for 2012 Setup. Do NOT use 1.1 on Server 2012."
+}
