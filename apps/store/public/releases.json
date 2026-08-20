@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-15T10:51:58Z",
+  "updatedAt": "2026-08-20T05:30:00Z",
   "meta": {
     "landingPage": "GitHub Pages (apps/store)",
     "artifactStorage": "GitHub Releases (primary); OpenList optional mirror",
@@ -10,7 +10,7 @@
     "openlistBrowse": "http://154.37.213.245:5244/store",
     "downloadUrlHint": "Primary: GitHub Releases latest/download/<filename>. OpenList remains an optional mirror — see docs/delivery/nbvpn/OPENLIST-UPLOAD.md",
     "status": "github_releases_published",
-    "note": "v0.1.5 publishes NetBridge-nbvpn-Setup.exe (native Fyne GUI + tray, hard-bundled WireGuard MSI) + nbvpn-gui-windows-amd64.exe; Server 2012 Chinese reject-install + Store redirect; macOS list persistence / stub fake-connect stop; WGExtension embed for Apple.",
+    "note": "v0.1.6: Server 2012 UX — root cause was clients installing NetBridge-windows-setup (AppName 网桥 VPN) or modern Setup; win2012 exe was already Go 1.20.14. Client Setup now MinVersion=10.0 + zh refuse; Store forbids Setup on 2012 with open Advanced 3-step; CI asserts go1.20.14 in win2012 binary.",
     "officialSite": "https://phpjourney.github.io/netbridge/",
     "termsUrl": "./terms.html",
     "privacyUrl": "./privacy.html",
@@ -26,20 +26,21 @@
         "url": "#"
       }
     ],
-    "releaseTag": "v0.1.5",
-    "releaseUrl": "https://github.com/PHPJourney/netbridge/releases/tag/v0.1.5"
+    "releaseTag": "v0.1.6",
+    "releaseUrl": "https://github.com/PHPJourney/netbridge/releases/tag/v0.1.6"
   },
   "clients": {
     "windows": {
       "label": "Windows",
-      "version": "0.1.5",
+      "version": "0.1.6",
       "sha256": "c25b94fe10c66d1f29c6d6d17a824dbfe86064584090cefed587113d19e69477",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-windows-setup.exe",
       "filename": "NetBridge-windows-setup.exe",
       "portableUrl": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-windows-portable.zip",
       "portableFilename": "NetBridge-windows-portable.zip",
       "status": "available",
-      "note": "Primary: Setup.exe (Program Files + shortcuts). Portable zip is secondary. Win10+. SHA256 verified for v0.1.5."
+      "note": "仅 Windows 10/11 客户端。不支持 Server 2012。部署 2012 节点请用服务端 win2012 exe + install.ps1。SHA256 随 v0.1.6 Release 更新。",
+      "noteEn": "Windows 10/11 client only — not Server 2012. For 2012 nodes use server win2012 exe + install.ps1. SHA256 updates with v0.1.6 Release."
     },
     "macos": {
       "label": "macOS",
@@ -73,7 +74,7 @@
   "servers": {
     "debian": {
       "label": "Debian",
-      "version": "0.1.5",
+      "version": "0.1.6",
       "sha256": "b7740dbee1971e1b964cebbdf0fa33e8461229dc978db13e765c4ff32d5bd4fa",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-linux-amd64",
       "filename": "nbvpn-linux-amd64",
@@ -84,7 +85,7 @@
     },
     "ubuntu": {
       "label": "Ubuntu",
-      "version": "0.1.5",
+      "version": "0.1.6",
       "sha256": "b7740dbee1971e1b964cebbdf0fa33e8461229dc978db13e765c4ff32d5bd4fa",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-linux-amd64",
       "filename": "nbvpn-linux-amd64",
@@ -95,7 +96,7 @@
     },
     "centos": {
       "label": "CentOS",
-      "version": "0.1.5",
+      "version": "0.1.6",
       "sha256": "b7740dbee1971e1b964cebbdf0fa33e8461229dc978db13e765c4ff32d5bd4fa",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-linux-amd64",
       "filename": "nbvpn-linux-amd64",
@@ -106,18 +107,18 @@
     },
     "rhel": {
       "label": "RHEL",
-      "version": "0.1.5",
+      "version": "0.1.6",
       "sha256": "b7740dbee1971e1b964cebbdf0fa33e8461229dc978db13e765c4ff32d5bd4fa",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-linux-amd64",
       "filename": "nbvpn-linux-amd64",
       "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/rhel.sh",
       "installCommand": "curl -fsSL https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/rhel.sh | sudo bash",
       "status": "available",
-      "note": "linux-amd64 primary; also nbvpn-linux-arm64 and nbvpn-server-v0.1.2.zip in Release."
+      "note": "linux-amd64 primary; also nbvpn-linux-arm64 and nbvpn-server zip in Release."
     },
     "windows": {
       "label": "Windows Server",
-      "version": "0.1.5",
+      "version": "0.1.6",
       "sha256": "03474fdbf6ed2834307270fbf9e7d01e953698a1346feddc60889ef7b177fec1",
       "setupUrl": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-nbvpn-Setup.exe",
       "setupFilename": "NetBridge-nbvpn-Setup.exe",
@@ -130,8 +131,8 @@
       "bootstrapUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/windows/bootstrap.ps1",
       "installCommand": "irm https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/windows/bootstrap.ps1 | iex",
       "status": "available",
-      "note": "Win10+/Server 2016+ 用 Setup.exe（Fyne GUI + 捆绑 WG）。Server 2012/2012 R2 禁止用 Setup/现代 exe/GUI——会弹「不支持此 Windows 版本」；请下 win2012 exe + install.ps1（-SkipWireGuard；无 GUI；无官方 WG 真隧道）。",
-      "noteEn": "Win10+/Server 2016+: Setup.exe (Fyne GUI + bundled WG). Server 2012/2012 R2: do NOT use Setup/modern exe/GUI (MinVersion 10 / Go 1.21+). Use win2012 exe + install.ps1 (-SkipWireGuard; no GUI; no official WG tunnel).",
+      "note": "Win10+/Server 2016+ 用服务端 Setup.exe。Server 2012/2012 R2：禁止 Setup / 客户端「网桥 VPN」安装包 / 现代 exe / GUI——展开高级按三步：win2012 exe + install.ps1 + -SkipWireGuard。",
+      "noteEn": "Win10+/Server 2016+: server Setup.exe. Server 2012/2012 R2: no Setup / client installer / modern exe / GUI — Advanced three steps: win2012 exe + install.ps1 + -SkipWireGuard.",
       "guiUrl": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-gui-windows-amd64.exe",
       "guiFilename": "nbvpn-gui-windows-amd64.exe",
       "guiSha256": "f81fc7e24dee814f94aecd4515a7badbd97d4f5c2800b0416a12573e79af4f02",

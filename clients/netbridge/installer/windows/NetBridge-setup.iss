@@ -31,11 +31,18 @@ SolidCompression=yes
 PrivilegesRequired=admin
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
+; Flutter Windows client needs Win10+ APIs — refuse Server 2012 before install
+MinVersion=10.0
 WizardStyle=modern
 UninstallDisplayIcon={app}\netbridge.exe
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
+
+; MinVersion aborts before InitializeSetup — override stock English box.
+; This is the *client* installer (AppName 网桥 VPN), not the server nbvpn Setup.
+[Messages]
+WindowsVersionNotSupported=本安装包是「网桥 VPN」客户端，仅支持 Windows 10 及以上，不能在 Server 2012 / 2012 R2 上安装。%n%n若您要在 Server 2012 / 2012 R2 上部署服务端节点：请勿使用本客户端 Setup，也勿使用 NetBridge-nbvpn-Setup.exe。请从 GitHub Releases 下载：%n  • nbvpn-windows-amd64-win2012.exe%n  • install.ps1%n放到同一文件夹后，以管理员打开 PowerShell：%n  powershell -ExecutionPolicy Bypass -File .\install.ps1 -SkipWireGuard%n%n---%nThis is the NetBridge *client* Setup (Windows 10+ only). On Server 2012 / 2012 R2 deploy the server with nbvpn-windows-amd64-win2012.exe + install.ps1 (-SkipWireGuard), not this client and not NetBridge-nbvpn-Setup.exe.
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Additional icons:"; Flags: unchecked
