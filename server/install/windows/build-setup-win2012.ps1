@@ -77,7 +77,11 @@ if (-not (Test-Path -LiteralPath $pinPath)) {
 $wgVendor = Join-Path $StageDir 'vendor\wireguard'
 New-Item -ItemType Directory -Force -Path $wgVendor | Out-Null
 Copy-Item -Force -LiteralPath $pinPath -Destination (Join-Path $wgVendor 'wireguard-bundle-win2012.json')
-Copy-Item -Force -LiteralPath $pinPath -Destination (Join-Path $StageDir 'wireguard-bundle-win2012.json')
+# CI already stages pin into StageDir; Copy-Item to self fails on PowerShell 7.
+$pinStage = Join-Path $StageDir 'wireguard-bundle-win2012.json'
+if ((Resolve-Path -LiteralPath $pinPath).Path -ne [System.IO.Path]::GetFullPath($pinStage)) {
+  Copy-Item -Force -LiteralPath $pinPath -Destination $pinStage
+}
 
 $pin = Get-Content -LiteralPath $pinPath -Raw | ConvertFrom-Json
 $msiName = [string]$pin.filename
