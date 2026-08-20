@@ -164,13 +164,7 @@ jobs:
           go build -mod=readonly -trimpath -ldflags="-s -w -X main.version=${GITHUB_REF_NAME}" \
             -o dist/nbvpn-windows-amd64-win2012.exe .
           # Guard against toolchain drift: binary must embed go1.20.x (2012 cannot run Go 1.21+)
-          python3 - <<'PY'
-from pathlib import Path
-data = Path("dist/nbvpn-windows-amd64-win2012.exe").read_bytes()
-assert b"go1.20." in data, "win2012 exe missing go1.20.* marker (wrong toolchain?)"
-assert b"go1.21." not in data and b"go1.22." not in data, "win2012 exe embeds Go 1.21+/1.22 — refuse"
-print("OK: go1.20.* present, no go1.21+/1.22 marker")
-PY
+          python3 -c 'from pathlib import Path; d=Path("dist/nbvpn-windows-amd64-win2012.exe").read_bytes(); assert b"go1.20." in d, "missing go1.20"; assert b"go1.21." not in d and b"go1.22." not in d, "wrong Go"; print("OK: go1.20 marker")'
           (cd dist && sha256sum nbvpn-windows-amd64-win2012.exe > nbvpn-windows-amd64-win2012.exe.sha256)
       - uses: actions/upload-artifact@v4
         with:
