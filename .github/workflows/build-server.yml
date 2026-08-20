@@ -181,7 +181,7 @@ jobs:
             d = Path(path).read_bytes()
             assert b"go1.20." in d, "missing go1.20"
             assert b"go1.21." not in d and b"go1.22." not in d, "wrong Go toolchain"
-            assert b"fyne" not in d.lower(), "Fyne must not be linked into win2012 CLI"
+            assert b"fyne.io" not in d, "Fyne must not be linked into win2012 CLI"
             assert b"VCRUNTIME" not in d and b"MSVCP" not in d, "unexpected MSVC CRT strings"
             assert b"libgcc" not in d and b"libstdc" not in d, "unexpected MinGW CRT strings"
             assert b"43dc-5fe-2a023fafe7aa" not in d, "bad Vista GUID still embedded"

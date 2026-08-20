@@ -95,7 +95,7 @@ func printHelpZh(w *os.File) {
 
 Windows Server 2012 / 2012 R2:
   推荐双击安装: NetBridge-nbvpn-Setup-win2012.exe
-  含 WireGuard 0.5.3（历史官方）+ Win32 GUI（非 Fyne）
+  含 WireGuard 0.5.3（历史官方）+ Win32 GUI（纯 Win32）
   装好后: 开始菜单 →「NetBridge nbvpn GUI」
   说明见 WINDOWS.md
 
