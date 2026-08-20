@@ -127,18 +127,19 @@ explorer $env:ProgramData\nbvpn
 | `NetBridge-nbvpn-Setup.exe` | 服务端现代 Setup；`MinVersion=10.0` |
 | `nbvpn-windows-amd64.exe` / `nbvpn-gui-*.exe` | Go 1.21+ / Fyne，2012 无法运行 |
 
-从 GitHub Release（**v0.1.6+**）只下载下面两个到同一文件夹（例 `C:\NetBridge\deploy\`）：
+从 GitHub Release（**v0.1.7+**）只下载下面两个到同一文件夹（例 `C:\NetBridge\deploy\`）：
 
-1. `nbvpn-windows-amd64-win2012.exe`（Go 1.20）
+1. `nbvpn-windows-amd64-win2012.exe`（Go 1.20，纯 CGO=0 CLI）
 2. `install.ps1`（Release 旁路或 raw：`server/install/windows/install.ps1`）
 
-管理员 PowerShell（三步）：
+**不要双击「安装」任何 Setup**；也不要把 win2012 exe 当成安装包双击完事。正确做法：管理员 PowerShell。可先验证 exe 能启动：
 
 ```powershell
 mkdir C:\NetBridge\deploy -Force
 cd C:\NetBridge\deploy
-# 1+2：确认本目录已有 win2012 exe 与 install.ps1
-# 3：安装（跳过官方 WG MSI）
+# 确认本目录已有 win2012 exe 与 install.ps1 后：
+.\nbvpn-windows-amd64-win2012.exe version
+# 应打印版本号（v0.1.6 及更早若报 14001/SxS，请换 v0.1.7+）
 powershell -ExecutionPolicy Bypass -File .\install.ps1 -SkipWireGuard
 ```
 

@@ -54,7 +54,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 ; MinVersion=10.0 aborts BEFORE InitializeSetup — override the stock English box
 ; ("This program does not support the version of Windows...") with a clear zh+en path.
 [Messages]
-WindowsVersionNotSupported=本安装包是服务端 Setup（NetBridge nbvpn），仅支持 Windows 10 / Server 2016 及以上，不能在 Server 2012 / 2012 R2 上运行。%n%n若您的系统是 Server 2012 / 2012 R2：请勿使用本 Setup、现代 GUI，也勿使用标题为「网桥 VPN」的客户端 Setup。请从 GitHub Releases（v0.1.6+）下载：%n  • nbvpn-windows-amd64-win2012.exe%n  • install.ps1%n放到同一文件夹后，以管理员打开 PowerShell：%n  powershell -ExecutionPolicy Bypass -File .\install.ps1 -SkipWireGuard%n%n说明：无 Fyne GUI；官方 WireGuard 1.1 MSI 不支持 2012（仅导出配置 / dry-run）。%n%n---%nThis is the *server* Setup (NetBridge nbvpn), Win10 / Server 2016+. On Server 2012 / 2012 R2 do not use this Setup or the client “网桥 VPN” Setup — use nbvpn-windows-amd64-win2012.exe + install.ps1 (-SkipWireGuard). No Fyne GUI.
+WindowsVersionNotSupported=本安装包是服务端 Setup（NetBridge nbvpn），仅支持 Windows 10 / Server 2016 及以上，不能在 Server 2012 / 2012 R2 上运行。%n%n若您的系统是 Server 2012 / 2012 R2：请勿双击本 Setup 或客户端「网桥 VPN」Setup。请从 GitHub Releases（v0.1.7+）下载：%n  • nbvpn-windows-amd64-win2012.exe%n  • install.ps1%n放到同一文件夹后，以管理员打开 PowerShell：%n  .\nbvpn-windows-amd64-win2012.exe version%n  powershell -ExecutionPolicy Bypass -File .\install.ps1 -SkipWireGuard%n%n说明：无 Fyne GUI；官方 WireGuard 1.1 MSI 不支持 2012（仅导出配置 / dry-run）。%n%n---%nThis is the *server* Setup (NetBridge nbvpn), Win10 / Server 2016+. On Server 2012 / 2012 R2 do not use this Setup — download nbvpn-windows-amd64-win2012.exe + install.ps1 from Releases v0.1.7+, then elevated PowerShell (-SkipWireGuard).
 
 [Files]
 Source: "{#SrcDir}\{#SrcExe}"; DestDir: "{app}"; DestName: "nbvpn.exe"; Flags: ignoreversion

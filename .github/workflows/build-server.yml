@@ -150,6 +150,12 @@ jobs:
           GOTOOLCHAIN: local
         run: |
           mkdir -p dist
+          # Fail fast if embedded Windows manifest still has the truncated Vista GUID
+          # (invalid Id → ERROR_SXS_CANT_GEN_ACTCTX / 14001 on Server 2012).
+          if grep -R --include='*.manifest' --include='*.syso' -n '43dc-5fe-2a023fafe7aa' .; then
+            echo 'ERROR: malformed Vista supportedOS GUID in manifest/syso (causes 14001)' >&2
+            exit 1
+          fi
           if [[ -f go.mod.win2012 ]]; then
             cp go.mod.win2012 go.mod
             if [[ -f go.sum.win2012 ]]; then
@@ -159,12 +165,71 @@ jobs:
             sed -i 's/^go .*/go 1.20/' go.mod
             sed -i '/^toolchain /d' go.mod || true
           fi
+          # CLI only — never build cmd/nbvpn-gui (Fyne/CGO) into the win2012 artifact.
           go version
           test "$(go env GOVERSION)" = "go1.20.14"
+          test "$(go env CGO_ENABLED)" = "0"
+          go list -f '{{.ImportPath}} {{.Name}}' .
           go build -mod=readonly -trimpath -ldflags="-s -w -X main.version=${GITHUB_REF_NAME}" \
             -o dist/nbvpn-windows-amd64-win2012.exe .
-          # Guard against toolchain drift: binary must embed go1.20.x (2012 cannot run Go 1.21+)
-          python3 -c 'from pathlib import Path; d=Path("dist/nbvpn-windows-amd64-win2012.exe").read_bytes(); assert b"go1.20." in d, "missing go1.20"; assert b"go1.21." not in d and b"go1.22." not in d, "wrong Go"; print("OK: go1.20 marker")'
+          python3 <<'PY'
+          from pathlib import Path
+          d = Path("dist/nbvpn-windows-amd64-win2012.exe").read_bytes()
+          assert b"go1.20." in d, "missing go1.20"
+          assert b"go1.21." not in d and b"go1.22." not in d, "wrong Go toolchain"
+          assert b"fyne" not in d.lower(), "Fyne must not be linked into win2012 CLI"
+          assert b"VCRUNTIME" not in d and b"MSVCP" not in d, "unexpected MSVC CRT strings"
+          assert b"libgcc" not in d and b"libstdc" not in d, "unexpected MinGW CRT strings"
+          # Truncated Vista GUID (3 hex digits in 4th group) → SxS 14001
+          assert b"43dc-5fe-2a023fafe7aa" not in d, "bad Vista GUID still embedded"
+          if b"assemblyIdentity" in d:
+              assert b"e2011457-1546-43dc-a9fe-2a023fafe7aa" in d, "manifest missing valid Vista GUID"
+          # PE optional header: MajorOSVersion / MajorSubsystemVersion (PE32+)
+          e = int.from_bytes(d[0x3C:0x40], "little")
+          oh = e + 24
+          assert int.from_bytes(d[oh:oh+2], "little") == 0x20B, "not PE32+"
+          major_os = int.from_bytes(d[oh+40:oh+42], "little")
+          minor_os = int.from_bytes(d[oh+42:oh+44], "little")
+          major_sub = int.from_bytes(d[oh+48:oh+50], "little")
+          minor_sub = int.from_bytes(d[oh+50:oh+52], "little")
+          assert (major_os, minor_os) == (6, 1), (major_os, minor_os)
+          assert (major_sub, minor_sub) == (6, 1), (major_sub, minor_sub)
+          # Import table: pure Go should only need kernel32.dll
+          num_sections = int.from_bytes(d[e+6:e+8], "little")
+          opt_size = int.from_bytes(d[e+20:e+22], "little")
+          sec_off = e + 24 + opt_size
+          sections = []
+          for i in range(num_sections):
+              s = sec_off + i * 40
+              va = int.from_bytes(d[s+12:s+16], "little")
+              vsize = int.from_bytes(d[s+8:s+12], "little")
+              rawptr = int.from_bytes(d[s+20:s+24], "little")
+              rawsize = int.from_bytes(d[s+16:s+20], "little")
+              sections.append((va, vsize, rawptr, rawsize))
+          def rva_to_off(rva):
+              for va, vsize, rawptr, rawsize in sections:
+                  if va <= rva < va + max(vsize, rawsize):
+                      return rawptr + (rva - va)
+              return None
+          dd = oh + 112
+          imp_rva = int.from_bytes(d[dd+8:dd+12], "little")
+          off = rva_to_off(imp_rva)
+          dlls = []
+          if off is not None:
+              i = 0
+              while True:
+                  desc = d[off+i:off+i+20]
+                  if desc == b"\0" * 20:
+                      break
+                  name_rva = int.from_bytes(desc[12:16], "little")
+                  no = rva_to_off(name_rva)
+                  if no:
+                      dlls.append(d[no:no+64].split(b"\0")[0].decode("ascii", "replace").lower())
+                  i += 20
+          print("imports:", dlls)
+          assert dlls == ["kernel32.dll"], dlls
+          print("OK: go1.20 + valid manifest + pure kernel32 imports")
+          PY
           (cd dist && sha256sum nbvpn-windows-amd64-win2012.exe > nbvpn-windows-amd64-win2012.exe.sha256)
       - uses: actions/upload-artifact@v4
         with:
