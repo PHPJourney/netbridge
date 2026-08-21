@@ -58,12 +58,20 @@ $icoCandidates = @(
   (Join-Path $Here 'netbridge.ico'),
   (Join-Path $StageDir 'netbridge.ico')
 )
+$icoStaged = $false
 foreach ($ico in $icoCandidates) {
   if ($ico -and (Test-Path -LiteralPath $ico)) {
-    Copy-Item -Force -LiteralPath $ico -Destination (Join-Path $StageDir 'netbridge.ico')
+    $destIco = Join-Path $StageDir 'netbridge.ico'
+    if ((Resolve-Path -LiteralPath $ico).Path -ne [System.IO.Path]::GetFullPath($destIco)) {
+      Copy-Item -Force -LiteralPath $ico -Destination $destIco
+    }
     Write-Host "==> Staged Setup icon: $ico"
+    $icoStaged = $true
     break
   }
+}
+if (-not $icoStaged) {
+  throw 'Missing netbridge.ico (required for Setup-win2012 shortcuts / UninstallDisplayIcon)'
 }
 
 # --- Stage legacy WireGuard 0.5.3 MSI ---

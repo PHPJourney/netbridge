@@ -43,7 +43,7 @@ WizardStyle=modern
 SetupLogging=yes
 ChangesEnvironment=yes
 SetupIconFile={#SrcDir}\netbridge.ico
-UninstallDisplayIcon={app}\nbvpn-gui.exe
+UninstallDisplayIcon={app}\netbridge.ico
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -60,7 +60,7 @@ Source: "{#SrcDir}\wireguard-bundle-win2012.json"; DestDir: "{app}"; Flags: igno
 Source: "{#SrcDir}\wireguard-bundle-win2012.json"; DestDir: "{app}\vendor\wireguard"; DestName: "wireguard-bundle-win2012.json"; Flags: ignoreversion
 Source: "{#SrcDir}\WINDOWS.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "{#SrcDir}\THIRDPARTY-NOTICE.txt"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "{#SrcDir}\netbridge.ico"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "{#SrcDir}\netbridge.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SrcDir}\nbvpn-manage.cmd"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "{#SrcDir}\nbvpn-open-cmd.cmd"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "{#SrcDir}\nbvpn-status.cmd"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
@@ -69,13 +69,14 @@ Source: "{#SrcDir}\README-WIN2012.txt"; DestDir: "{app}"; Flags: ignoreversion s
 Source: "{#SrcDir}\vendor\wireguard\*"; DestDir: "{app}\vendor\wireguard"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\NetBridge nbvpn GUI"; Filename: "{app}\nbvpn-gui.exe"; WorkingDir: "{app}"; IconFilename: "{app}\nbvpn-gui.exe"
-Name: "{group}\NetBridge nbvpn 管理 (菜单)"; Filename: "{app}\nbvpn-manage.cmd"; WorkingDir: "{app}"; IconFilename: "{app}\nbvpn.exe"
-Name: "{group}\nbvpn 命令提示符"; Filename: "{app}\nbvpn-open-cmd.cmd"; WorkingDir: "{app}"; IconFilename: "{app}\nbvpn.exe"
-Name: "{group}\打开数据目录"; Filename: "{win}\explorer.exe"; Parameters: "%ProgramData%\nbvpn"
+; Prefer staged netbridge.ico (same branding as embedded exe icon) so shortcuts work even if shell caches stale exe icons.
+Name: "{group}\NetBridge nbvpn GUI"; Filename: "{app}\nbvpn-gui.exe"; WorkingDir: "{app}"; IconFilename: "{app}\netbridge.ico"
+Name: "{group}\NetBridge nbvpn 管理 (菜单)"; Filename: "{app}\nbvpn-manage.cmd"; WorkingDir: "{app}"; IconFilename: "{app}\netbridge.ico"
+Name: "{group}\nbvpn 命令提示符"; Filename: "{app}\nbvpn-open-cmd.cmd"; WorkingDir: "{app}"; IconFilename: "{app}\netbridge.ico"
+Name: "{group}\打开数据目录"; Filename: "{win}\explorer.exe"; Parameters: "%ProgramData%\nbvpn"; IconFilename: "{app}\netbridge.ico"
 Name: "{group}\阅读 2012 说明"; Filename: "{app}\README-WIN2012.txt"
 Name: "{group}\卸载 NetBridge nbvpn (2012)"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\NetBridge nbvpn GUI"; Filename: "{app}\nbvpn-gui.exe"; WorkingDir: "{app}"; IconFilename: "{app}\nbvpn-gui.exe"; Tasks: desktopicon
+Name: "{autodesktop}\NetBridge nbvpn GUI"; Filename: "{app}\nbvpn-gui.exe"; WorkingDir: "{app}"; IconFilename: "{app}\netbridge.ico"; Tasks: desktopicon
 
 [Tasks]
 Name: "desktopicon"; Description: "在桌面创建 GUI 快捷方式"; GroupDescription: "附加图标:"; Flags: unchecked

@@ -132,11 +132,19 @@ func main() {
 	hInst, _, _ := procGetModuleHandle.Call(0)
 	loadCursor := user32.NewProc("LoadCursorW")
 	hCursor, _, _ := loadCursor.Call(0, uintptr(idcArrow))
+	// Embedded RT_GROUP_ICON from resource_windows_amd64.syso (goversioninfo → ID 1).
+	loadIcon := user32.NewProc("LoadIconW")
+	hIcon, _, _ := loadIcon.Call(hInst, 1)
+	if hIcon == 0 {
+		hIcon, _, _ = loadIcon.Call(0, uintptr(idiApplication))
+	}
 
 	var wc wndClassEx
 	wc.size = uint32(unsafe.Sizeof(wc))
 	wc.wndProc = syscall.NewCallback(wndProc)
 	wc.instance = syscall.Handle(hInst)
+	wc.icon = syscall.Handle(hIcon)
+	wc.iconSm = syscall.Handle(hIcon)
 	wc.cursor = syscall.Handle(hCursor)
 	wc.background = colorWindow + 1
 	wc.className = className
@@ -160,6 +168,12 @@ func main() {
 		os.Exit(1)
 	}
 	hwndMain = syscall.Handle(hwnd)
+	// WM_SETICON large/small — ensure title bar / Alt-Tab use embedded icon.
+	const wmSetIcon = 0x0080
+	const iconBig, iconSmall = 1, 0
+	sendMsg := user32.NewProc("SendMessageW")
+	sendMsg.Call(hwnd, wmSetIcon, iconBig, hIcon)
+	sendMsg.Call(hwnd, wmSetIcon, iconSmall, hIcon)
 	procShowWindow.Call(hwnd, swShow)
 	procUpdateWindow.Call(hwnd)
 	setEditText("正在加载状态…\r\n")

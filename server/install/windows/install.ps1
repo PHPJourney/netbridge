@@ -123,6 +123,35 @@ function Join-SafePath([string]$Base, [string]$Child) {
   return (Join-Path -Path $Base -ChildPath $Child)
 }
 
+# Setup already places nbvpn.exe in InstallDir; Copy-Item A→A fails on PS7 / Win2012.
+function Test-SameFilePath([string]$A, [string]$B) {
+  if (-not $A -or -not $B) { return $false }
+  $norm = {
+    param([string]$p)
+    try {
+      if (Test-Path -LiteralPath $p) {
+        return ([string](Resolve-Path -LiteralPath $p).Path).TrimEnd('\')
+      }
+    } catch { }
+    try {
+      return [System.IO.Path]::GetFullPath($p).TrimEnd('\')
+    } catch {
+      return $p.TrimEnd('\')
+    }
+  }
+  $pa = & $norm $A
+  $pb = & $norm $B
+  return [string]::Equals($pa, $pb, [StringComparison]::OrdinalIgnoreCase)
+}
+
+function Copy-FileUnlessSame([string]$Source, [string]$Destination, [string]$Label = 'binary') {
+  if (Test-SameFilePath -A $Source -B $Destination) {
+    Write-Log ("{0} already at destination — skip Copy-Item self-overwrite: {1}" -f $Label, $Destination)
+    return
+  }
+  Copy-Item -Force -LiteralPath $Source -Destination $Destination
+}
+
 function Get-WindowsBuildInfo {
   $ver = [Environment]::OSVersion.Version
   $isLegacy = ($ver.Major -lt 10)  # Server 2012 / 2012 R2 = 6.2 / 6.3
@@ -310,7 +339,7 @@ foreach ($c in $candidates) {
 
 if ($src) {
   Write-Log "Installing binary from $src"
-  Copy-Item -Force -LiteralPath $src -Destination $TargetExe
+  Copy-FileUnlessSame -Source $src -Destination $TargetExe -Label 'nbvpn.exe'
 } elseif ($BinaryUrl) {
   Write-Log "Downloading nbvpn from $BinaryUrl"
   $tmpName = "nbvpn-windows-amd64-$([guid]::NewGuid().ToString('n')).exe"
@@ -322,7 +351,7 @@ if ($src) {
     $wc = New-Object System.Net.WebClient
     $wc.DownloadFile($BinaryUrl, $tmp)
   }
-  Copy-Item -Force -LiteralPath $tmp -Destination $TargetExe
+  Copy-FileUnlessSame -Source $tmp -Destination $TargetExe -Label 'nbvpn.exe'
   Remove-Item -Force -LiteralPath $tmp -ErrorAction SilentlyContinue
 } elseif (Get-Command go.exe -ErrorAction SilentlyContinue) {
   if (-not $NbVpnSrc -or -not (Test-Path -LiteralPath (Join-SafePath $NbVpnSrc 'go.mod'))) {
@@ -333,7 +362,7 @@ if ($src) {
   try {
     & go build -o nbvpn.exe .
     if ($LASTEXITCODE -ne 0) { throw "go build failed" }
-    Copy-Item -Force -LiteralPath (Join-SafePath $NbVpnSrc 'nbvpn.exe') -Destination $TargetExe
+    Copy-FileUnlessSame -Source (Join-SafePath $NbVpnSrc 'nbvpn.exe') -Destination $TargetExe -Label 'nbvpn.exe'
   } finally {
     Pop-Location
   }
