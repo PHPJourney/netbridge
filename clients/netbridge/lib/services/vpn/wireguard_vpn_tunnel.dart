@@ -68,13 +68,22 @@ class WireGuardVpnTunnel implements VpnTunnel {
       _controller.add(_mapStage(stage));
     });
     _initialized = true;
-    // Prefer live OS stage so UI does not wipe an already-up tunnel.
+    // Bootstrap snapshot: connected is useful; idle plugin noise is not.
     try {
       final live = await WireGuardFlutter.instance.stage();
-      _controller.add(_mapStage(live));
+      _controller.add(_normalizeBootstrapStage(_mapStage(live)));
     } catch (_) {
       _controller.add(VpnTunnelStage.disconnected);
     }
+  }
+
+  /// Collapse pre-session plugin stages so a fresh install stays "disconnected".
+  VpnTunnelStage _normalizeBootstrapStage(VpnTunnelStage stage) {
+    return switch (stage) {
+      VpnTunnelStage.connected => VpnTunnelStage.connected,
+      VpnTunnelStage.disconnecting => VpnTunnelStage.disconnected,
+      _ => VpnTunnelStage.disconnected,
+    };
   }
 
   @override
@@ -117,9 +126,11 @@ class WireGuardVpnTunnel implements VpnTunnel {
       VpnStage.connected => VpnTunnelStage.connected,
       VpnStage.disconnecting => VpnTunnelStage.disconnecting,
       VpnStage.denied => VpnTunnelStage.denied,
+      // Distinct from reconnect: no link yet / transient plugin idle.
       VpnStage.noConnection => VpnTunnelStage.noConnection,
       VpnStage.exiting => VpnTunnelStage.disconnecting,
-      VpnStage.waitingConnection => VpnTunnelStage.reconnecting,
+      // waitingConnection is pre-connect wait, not a mid-session blip.
+      VpnStage.waitingConnection => VpnTunnelStage.preparing,
       VpnStage.authenticating => VpnTunnelStage.connecting,
       VpnStage.reconnect => VpnTunnelStage.reconnecting,
     };

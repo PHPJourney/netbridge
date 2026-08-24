@@ -1,23 +1,7 @@
 # Windows package (build on a Windows machine)
 
-Flutter **cannot** cross-compile Windows desktop from macOS or from a Linux Docker
-container. This Mac build therefore has **no** `NetBridge-windows.exe` unless you
-pass `WINDOWS_ARTIFACT` from a real Windows build.
-
-## OS requirements (client)
-
-| Host | Can build Flutter Windows? | Can run client? |
-|------|----------------------------|-----------------|
-| Windows 10 / 11 | Yes (VS 2022 + Flutter) | Yes |
-| Server 2019 / 2022 | Usually yes | Usually yes |
-| **Server 2012 / 2012 R2** | **No** | **No** — modern Flutter Windows needs Win10+ APIs |
-| Linux Docker on Mac | **No** — no Windows SDK / MSVC | N/A |
-| Windows container on Windows host | Possible in theory; not supported in this repo | N/A |
-
-**Server 2012 R2 is not a client runtime and not a build host.** Lab host
-`154.36.178.124` (2012 R2) is for **server** `nbvpn` experiments only
-(use `nbvpn-windows-amd64-win2012.exe`). Do **not** claim the Flutter client
-works on 2012.
+Flutter cannot cross-compile Windows from macOS. This Mac build therefore has
+**no** `NetBridge-windows.exe` unless you pass `WINDOWS_ARTIFACT`.
 
 ## Icon assets (already updated on Mac)
 
@@ -56,29 +40,8 @@ export WINDOWS_ARTIFACT=/path/to/build/windows/x64/runner/Release
 ```
 
 Outputs when Windows artifact is available:
-- **`dist/NetBridge-windows-setup.exe`** — **primary** Inno Setup installer (Program Files + Start Menu + uninstaller)
-- `dist/NetBridge-windows-portable.zip` — secondary portable zip (full Release folder)
-- `dist/NetBridge-windows.exe` — runner exe alone (insufficient without DLLs)
-
-## Inno Setup (local / CI)
-
-CI (`build-clients.yml` on windows-2022) installs Inno Setup via Chocolatey and runs:
-
-```powershell
-cd clients\netbridge
-flutter build windows --release
-.\installer\windows\build-setup.ps1
-# → dist\NetBridge-windows-setup.exe
-```
-
-Script: `clients/netbridge/installer/windows/NetBridge-setup.iss`
+- `dist/NetBridge-windows.exe` — main runner exe
+- `dist/NetBridge-windows-portable.zip` — full Flutter Windows Release folder (required DLLs)
 
 VPN: WireGuard tunnel may require **Run as administrator**. No Authenticode
 signing is applied by this script.
-
-## Docker note
-
-- **Server (Go):** use `server/nbvpn/scripts/build-windows-docker.sh` — Docker **is**
-  the recommended way to produce Win2012 vs Win10 server binaries on a Mac.
-- **Client (Flutter):** Linux Docker on Mac **cannot** produce the Windows desktop
-  app. Use a Win10+ machine (or CI Windows runner) and `WINDOWS_ARTIFACT`.

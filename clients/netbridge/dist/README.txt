@@ -1,6 +1,6 @@
 NetBridge client distribution packages (local build)
-Version: 1.0.0
-Generated: 2026-08-14T09:45Z
+Version: 0.1.13
+Generated: 2026-08-24T11:58Z
 Icon: assets/branding/netbridge_icon_1024.png (= icon-privacy-store-try.png)
       applied via flutter_launcher_icons → Android/iOS/macOS/Windows assets
 

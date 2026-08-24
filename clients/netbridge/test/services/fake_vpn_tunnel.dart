@@ -9,14 +9,17 @@ class FakeVpnTunnel implements VpnTunnel {
     this.connectDelay = const Duration(milliseconds: 40),
     this.disconnectDelay = const Duration(milliseconds: 30),
     this.failConnect = false,
+    this.finalStage = VpnTunnelStage.connected,
   });
 
   final Duration connectDelay;
   final Duration disconnectDelay;
   final bool failConnect;
+  final VpnTunnelStage finalStage;
 
   final _controller = StreamController<VpnTunnelStage>.broadcast();
   VpnTunnelStage _stage = VpnTunnelStage.disconnected;
+  VpnTunnelStage initialStage = VpnTunnelStage.disconnected;
   int connectCount = 0;
   int disconnectCount = 0;
   final List<String> connectedEndpoints = [];
@@ -32,8 +35,11 @@ class FakeVpnTunnel implements VpnTunnel {
 
   @override
   Future<void> initialize() async {
+    _stage = initialStage;
     _emit(_stage);
   }
+
+  void simulateStage(VpnTunnelStage stage) => _emit(stage);
 
   @override
   Future<VpnTunnelStage> currentStage() async => _stage;
@@ -48,7 +54,7 @@ class FakeVpnTunnel implements VpnTunnel {
       _emit(VpnTunnelStage.error);
       throw StateError('fake connect failed');
     }
-    _emit(VpnTunnelStage.connected);
+    _emit(finalStage);
   }
 
   @override

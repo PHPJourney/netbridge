@@ -42,6 +42,8 @@ class AppController extends ChangeNotifier {
   /// Serializes connect / disconnect / switch so stage events cannot race.
   Future<void> _tunnelChain = Future<void>.value();
   int _tunnelEpoch = 0;
+  /// Set while [connect] awaits native startVpn — stream denied is often transient.
+  int? _connectInFlightEpoch;
   /// When true, ignore disconnected stage clearing of [activeServerId]
   /// (used during intentional switch / reconnect).
   bool _suppressDisconnectClear = false;
@@ -93,20 +95,27 @@ class AppController extends ChangeNotifier {
     }
   }
 
+  String get _vpnPermissionDeniedMessage => languageCode == 'en'
+      ? 'VPN permission was denied. Allow “NetBridge VPN” in system settings, then tap Connect again.'
+      : '系统拒绝了 VPN 权限。请在系统设置中允许「网桥 VPN」，然后再次点击连接。';
+
   /// If the OS tunnel is still up after app restart / lost UI state, reflect it.
   Future<void> _syncFromNativeStage() async {
     try {
       final stage = await tunnel.currentStage();
-      _applyStage(stage, clearActiveOnDisconnect: true);
+      // Bootstrap snapshot: never treat plugin idle noise as reconnect.
+      _applyStage(stage, clearActiveOnDisconnect: true, fromBootstrap: true);
       if (stage == VpnTunnelStage.connected &&
           activeServerId == null &&
           servers.isNotEmpty) {
-        // Tunnel up but we lost which server — keep connected UI generic;
-        // user can reconnect a specific entry to re-bind id.
-        status = VpnUiStatus.connected;
+        // Tunnel up but we lost which server — prompt cleanup / rebind,
+        // not "reconnecting".
+        status = VpnUiStatus.disconnected;
         statusDetail = languageCode == 'en'
-            ? 'System tunnel is up; select a server and reconnect to bind UI.'
-            : '系统隧道仍在运行；请选择服务器重新连接以同步界面状态。';
+            ? 'A system VPN tunnel is still active. Select a server and connect '
+                'to bind UI, or disconnect VPN in system settings.'
+            : '系统隧道仍在运行。请选择服务器连接以同步界面，或在系统设置中断开 VPN。';
+        notifyListeners();
       }
     } catch (_) {
       // ignore — stage stream will update later
@@ -117,40 +126,122 @@ class AppController extends ChangeNotifier {
     _applyStage(stage, clearActiveOnDisconnect: !_suppressDisconnectClear);
   }
 
+  /// True when the UI is bound to a user-initiated tunnel session.
+  bool _hasTunnelSession() =>
+      activeServerId != null || _suppressDisconnectClear;
+
+  void _applyDenied() {
+    status = VpnUiStatus.error;
+    lastError = _vpnPermissionDeniedMessage;
+    statusDetail = null;
+    activeServerId = null;
+    notifyListeners();
+  }
+
   void _applyStage(
     VpnTunnelStage stage, {
     required bool clearActiveOnDisconnect,
+    bool fromBootstrap = false,
+    bool trusted = false,
   }) {
-    status = switch (stage) {
-      VpnTunnelStage.disconnected ||
-      VpnTunnelStage.disconnecting =>
-        VpnUiStatus.disconnected,
-      VpnTunnelStage.preparing ||
-      VpnTunnelStage.connecting =>
-        VpnUiStatus.connecting,
-      VpnTunnelStage.connected => VpnUiStatus.connected,
-      VpnTunnelStage.reconnecting ||
-      VpnTunnelStage.noConnection =>
-        VpnUiStatus.reconnecting,
-      VpnTunnelStage.denied ||
-      VpnTunnelStage.error =>
-        VpnUiStatus.error,
-    };
-    if (stage == VpnTunnelStage.disconnected ||
-        stage == VpnTunnelStage.disconnecting) {
-      if (clearActiveOnDisconnect && status == VpnUiStatus.disconnected) {
+    // Permission denied from the stage stream is often a transient pre-dialog
+    // blip on first startVpn. Only trust it after connect() settles, or when
+    // we were already connected (permission revoked mid-session).
+    if (stage == VpnTunnelStage.denied) {
+      if (!trusted) {
+        if (!_hasTunnelSession() || _connectInFlightEpoch != null) return;
+        if (status != VpnUiStatus.connected &&
+            status != VpnUiStatus.reconnecting) {
+          return;
+        }
+      }
+      _applyDenied();
+      return;
+    }
+
+    final hasSession = _hasTunnelSession();
+
+    // No user session (empty list / never connected / after disconnect):
+    // ignore reconnect / waiting / noConnection plugin noise.
+    if (!hasSession) {
+      switch (stage) {
+        case VpnTunnelStage.connected:
+          status = VpnUiStatus.disconnected;
+          statusDetail = languageCode == 'en'
+              ? 'A system VPN tunnel is still active but no server is bound. '
+                  'Disconnect VPN in system settings, or add a server and connect.'
+              : '检测到系统 VPN 仍在运行，但本地未绑定服务器。请在系统设置中断开 VPN，或添加服务器后连接。';
+        case VpnTunnelStage.reconnecting:
+        case VpnTunnelStage.noConnection:
+        case VpnTunnelStage.connecting:
+        case VpnTunnelStage.preparing:
+        case VpnTunnelStage.disconnected:
+        case VpnTunnelStage.disconnecting:
+          status = VpnUiStatus.disconnected;
+          statusDetail = null;
+        case VpnTunnelStage.error:
+          // Bootstrap/plugin error without a session is not actionable reconnect.
+          if (fromBootstrap) {
+            status = VpnUiStatus.disconnected;
+            statusDetail = null;
+          } else {
+            status = VpnUiStatus.error;
+            lastError ??= languageCode == 'en'
+                ? 'Tunnel error. Retry or check that the node is reachable.'
+                : '隧道错误，请重试或检查节点是否可达。';
+          }
+        case VpnTunnelStage.denied:
+          break; // handled above
+      }
+      if (clearActiveOnDisconnect &&
+          (stage == VpnTunnelStage.disconnected ||
+              stage == VpnTunnelStage.disconnecting)) {
         activeServerId = null;
       }
+      notifyListeners();
+      return;
     }
-    if (stage == VpnTunnelStage.denied) {
-      lastError = languageCode == 'en'
-          ? 'VPN permission was denied. Allow “NetBridge VPN” in system settings.'
-          : '系统拒绝了 VPN 权限。请在系统设置中允许「网桥 VPN」。';
+
+    // During intentional teardown/switch, ignore late reconnect noise.
+    if (_suppressDisconnectClear &&
+        (stage == VpnTunnelStage.reconnecting ||
+            stage == VpnTunnelStage.noConnection ||
+            stage == VpnTunnelStage.connected)) {
+      return;
     }
-    if (stage == VpnTunnelStage.error) {
-      lastError ??= languageCode == 'en'
-          ? 'Tunnel error. Retry or check that the node is reachable.'
-          : '隧道错误，请重试或检查节点是否可达。';
+
+    switch (stage) {
+      case VpnTunnelStage.disconnected:
+      case VpnTunnelStage.disconnecting:
+        status = VpnUiStatus.disconnected;
+        statusDetail = null;
+        if (clearActiveOnDisconnect) {
+          activeServerId = null;
+        }
+      case VpnTunnelStage.preparing:
+      case VpnTunnelStage.connecting:
+        status = VpnUiStatus.connecting;
+      case VpnTunnelStage.connected:
+        status = VpnUiStatus.connected;
+        statusDetail = null;
+      case VpnTunnelStage.reconnecting:
+      case VpnTunnelStage.noConnection:
+        // Only show reconnect when we already had a live tunnel session.
+        // During first connect, waitingConnection/noConnection is plugin noise.
+        if (status == VpnUiStatus.connected ||
+            status == VpnUiStatus.reconnecting) {
+          status = VpnUiStatus.reconnecting;
+        } else {
+          status = VpnUiStatus.connecting;
+        }
+      case VpnTunnelStage.error:
+        status = VpnUiStatus.error;
+        lastError ??= languageCode == 'en'
+            ? 'Tunnel error. Retry or check that the node is reachable.'
+            : '隧道错误，请重试或检查节点是否可达。';
+        activeServerId = null;
+      case VpnTunnelStage.denied:
+        break; // handled above
     }
     notifyListeners();
   }
@@ -400,16 +491,19 @@ class AppController extends ChangeNotifier {
         statusDetail = null;
         notifyListeners();
 
+        _connectInFlightEpoch = epoch;
         try {
           await tunnel.connect(entry.profile, killSwitch: killSwitch);
           if (epoch != _tunnelEpoch) return;
           // Prefer live stage over assuming connect() completion == connected.
           final stage = await tunnel.currentStage();
           if (epoch != _tunnelEpoch) return;
-          _applyStage(stage, clearActiveOnDisconnect: true);
+          _applyStage(stage, clearActiveOnDisconnect: true, trusted: true);
           if (stage == VpnTunnelStage.connected) {
             activeServerId = serverId;
             notifyListeners();
+          } else if (stage == VpnTunnelStage.denied) {
+            return;
           }
         } catch (e) {
           if (epoch != _tunnelEpoch) return;
@@ -427,6 +521,10 @@ class AppController extends ChangeNotifier {
           lastError = humanize(e);
           activeServerId = null;
           notifyListeners();
+        } finally {
+          if (_connectInFlightEpoch == epoch) {
+            _connectInFlightEpoch = null;
+          }
         }
       });
 

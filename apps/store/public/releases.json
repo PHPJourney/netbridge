@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-24T11:35:42Z",
+  "updatedAt": "2026-08-24T11:58:08Z",
   "meta": {
     "landingPage": "GitHub Pages (apps/store)",
     "artifactStorage": "GitHub Releases (primary); OpenList optional mirror",
@@ -10,11 +10,11 @@
     "openlistBrowse": "http://154.37.213.245:5244/store",
     "downloadUrlHint": "Primary: GitHub Releases latest/download/<filename>. OpenList remains an optional mirror — see docs/delivery/nbvpn/OPENLIST-UPLOAD.md",
     "status": "github_releases_published",
-    "note": "v0.1.12: 多服切换修复 + 编辑/导出/同步/分享（Android 客户端）。",
+    "note": "v0.1.13: 修复 VPN 状态误报（空列表重连、首次连接假 denied）。",
     "officialSite": "https://phpjourney.github.io/netbridge/",
     "termsUrl": "./terms.html",
     "privacyUrl": "./privacy.html",
-    "updatedAt": "2026-08-24T11:35:42Z",
+    "updatedAt": "2026-08-24T11:58:08Z",
     "partners": [
       {
         "name": "TradeMind",
@@ -27,8 +27,8 @@
         "url": "#"
       }
     ],
-    "releaseTag": "v0.1.12",
-    "releaseUrl": "https://github.com/PHPJourney/netbridge/releases/tag/v0.1.12"
+    "releaseTag": "v0.1.13",
+    "releaseUrl": "https://github.com/PHPJourney/netbridge/releases/tag/v0.1.13"
   },
   "clients": {
     "windows": {
@@ -55,12 +55,12 @@
     },
     "android": {
       "label": "Android",
-      "version": "0.1.12",
-      "sha256": "79bedae2e7e187fcff03ecc833d953ddfbf33d147b09de2e3bee0da890358193",
+      "version": "0.1.13",
+      "sha256": "d5c1436417d19642c7c4d8aa57f370fd1749a6b98175b2a46fbdacafafb625eb",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-android-arm64.apk",
       "filename": "NetBridge-android-arm64.apk",
       "status": "available",
-      "note": "R8 release arm64. Also NetBridge-android-armeabi-v7a.apk / NetBridge-android.apk in same Release."
+      "note": "R8 release arm64. Fixes VPN status false positives (empty-list reconnect, first-connect denied). Also NetBridge-android-armeabi-v7a.apk / NetBridge-android.apk in same Release."
     },
     "ios": {
       "label": "iOS",
