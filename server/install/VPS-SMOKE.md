@@ -30,7 +30,9 @@ sudo ./server/install/install.sh
 # sudo NBVPN_BINARY_URL='https://…/nbvpn-linux-amd64' ./server/install/install.sh
 ```
 
-Expect: WireGuard tools installed → `nbvpn` on PATH → `nbvpn install` creates node + first peer.
+Expect: WireGuard tools installed → **kernel can `modprobe wireguard`** → `nbvpn` on PATH → `nbvpn install` creates node + first peer.
+
+**CentOS 8 note:** if journal shows `Unknown device type` / `Protocol not supported`, the kernel lacks WireGuard. Upgrade to `kernel >= 4.18.0-553.el8_10` then install `kmod-wireguard` (see `FIREWALL.md` §7). Do not use `--skip-broken`.
 
 ## One-command verify
 

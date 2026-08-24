@@ -170,6 +170,7 @@ class _HomeScreenState extends State<HomeScreen> {
               StatusBanner(
                 status: c.status,
                 serverName: c.activeServer?.localName,
+                statusDetail: c.statusDetail,
                 errorText: c.lastError,
                 onCopyError: () {
                   ScaffoldMessenger.of(context).showSnackBar(

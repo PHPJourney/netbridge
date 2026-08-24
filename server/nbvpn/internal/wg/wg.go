@@ -345,7 +345,17 @@ func Start() (dryRun bool, msg string, err error) {
 	}
 	if caps.HasSystemd {
 		if err := run("systemctl", "start", "wg-quick@nbvpn"); err != nil {
-			return false, "", actionable(err, "start")
+			// systemd failed (common on CentOS 8 when kmod missing, or unit error):
+			// try wg-quick directly and surface actionable module hints.
+			if err2 := run("wg-quick", "up", "nbvpn"); err2 != nil {
+				return false, "", fmt.Errorf(
+					"%w\nHint: if journal shows 'Unknown device type' / 'Protocol not supported', "+
+						"install kmod-wireguard (EL8: elrepo) then: modprobe wireguard; "+
+						"see server/install/FIREWALL.md",
+					actionable(fmt.Errorf("systemctl: %v; wg-quick: %v", err, err2), "start"),
+				)
+			}
+			return false, "started via wg-quick up nbvpn (systemd start failed)", nil
 		}
 		return false, "started", nil
 	}

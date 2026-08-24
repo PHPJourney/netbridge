@@ -10,6 +10,8 @@
 # Env:
 #   NBVPN_BINARY_URL    download prebuilt nbvpn if no local binary/Go
 #   NBVPN_SKIP_INSTALL  if 1, skip `nbvpn install`
+#   NBVPN_SKIP_FIREWALL  if 1, skip ufw / firewalld allow rules
+#   NBVPN_LISTEN_PORT     override port for firewall rules (default from nbvpn config)
 set -eo pipefail
 
 _src="${BASH_SOURCE[0]:-}"

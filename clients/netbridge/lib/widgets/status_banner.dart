@@ -10,6 +10,7 @@ class StatusBanner extends StatelessWidget {
     super.key,
     required this.status,
     this.serverName,
+    this.statusDetail,
     this.errorText,
     this.onCopyError,
     this.onRetry,
@@ -17,6 +18,8 @@ class StatusBanner extends StatelessWidget {
 
   final VpnUiStatus status;
   final String? serverName;
+  /// Optional override (e.g. “Switching server…”).
+  final String? statusDetail;
   final String? errorText;
   final VoidCallback? onCopyError;
   final VoidCallback? onRetry;
@@ -44,11 +47,13 @@ class StatusBanner extends StatelessWidget {
     final detail = switch (status) {
       VpnUiStatus.connected when serverName != null =>
         l10n.statusConnectedDetail(serverName!),
+      VpnUiStatus.connecting when statusDetail != null && statusDetail!.isNotEmpty =>
+        statusDetail!,
       VpnUiStatus.connecting when serverName != null =>
         l10n.statusConnectingDetail(serverName!),
       VpnUiStatus.reconnecting => l10n.statusReconnectingDetail,
       VpnUiStatus.error => errorText ?? l10n.statusErrorFallback,
-      _ => label,
+      _ => statusDetail?.isNotEmpty == true ? statusDetail! : label,
     };
 
     return AnimatedContainer(

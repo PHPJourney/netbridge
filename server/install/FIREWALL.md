@@ -4,7 +4,15 @@ WireGuard listens on **UDP** (default **51820**). Clients cannot handshake until
 
 ## 1. Host firewall (on the VPS)
 
-### ufw (Debian / Ubuntu)
+Linux install scripts (`deb-family.sh`, `rhel-family.sh`, `install.sh`) **automatically**:
+
+- `ufw allow <listenPort>/udp` (when `ufw` is installed)
+- `firewall-cmd --permanent --add-port=<listenPort>/udp` (when `firewalld` is running)
+- Set `DEFAULT_FORWARD_POLICY=ACCEPT` in `/etc/default/ufw` when ufw is present
+
+Skip with `NBVPN_SKIP_FIREWALL=1`. Override port with `NBVPN_LISTEN_PORT=51820`.
+
+Manual commands if needed:
 
 ```bash
 sudo ufw allow 51820/udp comment 'nbvpn WireGuard'
@@ -115,3 +123,60 @@ nbvpn peer revoke phone  # removes export files; old profiles stop working
 - Never commit URIs, peer JSON, or VPS passwords into git.
 
 See also: `VPS-SMOKE.md`, `server/nbvpn/README.md`.
+
+## 7. CentOS 8 / RHEL 8 — `Unknown device type` (missing WireGuard module)
+
+**Symptom:** `nbvpn status` shows `systemd: failed`, `interface: nbvpn (down)`; journal has:
+
+```text
+ip link add nbvpn type wireguard
+Error: Unknown device type.
+Unable to access interface: Protocol not supported
+```
+
+`lsmod | grep wireguard` is empty. This is **not** an nbvpn config bug — the running kernel has no WireGuard module.
+
+### Diagnose
+
+```bash
+uname -r
+lsmod | grep wireguard
+sudo modprobe wireguard
+# Module not found / Protocol not supported → need kmod or newer kernel
+rpm -q wireguard-tools kmod-wireguard 2>/dev/null || true
+systemctl status wg-quick@nbvpn --no-pager
+journalctl -u wg-quick@nbvpn -n 50 --no-pager
+command -v nbvpn; ls -la /usr/local/bin/nbvpn
+```
+
+### Fix (recommended order)
+
+**1. Same host — upgrade kernel to el8_10 (≥ `4.18.0-553.el8_10`), then install `kmod-wireguard`**
+
+CentOS 8 is EOL; enable vault mirrors if needed. `kmod-wireguard` from elrepo often requires `kernel >= 4.18.0-553.el8_10` — an older kernel (e.g. `4.18.0-408.el8`) **cannot** load that kmod. Do **not** use `--skip-broken` (leaves you without a module).
+
+```bash
+# Point repos at vault if yum/dnf mirror 404s (CentOS 8 EOL)
+# then:
+sudo dnf install -y kernel kernel-core kernel-modules   # aim for ≥ 4.18.0-553.el8_10
+# or on yum-only hosts:
+# sudo yum update -y kernel kernel-core kernel-modules
+
+sudo reboot
+# after reboot:
+uname -r   # must be ≥ 4.18.0-553.el8_10 (or a kernel that ships WG)
+
+sudo yum install -y epel-release elrepo-release
+sudo yum install -y kmod-wireguard wireguard-tools
+# or: sudo dnf install -y elrepo-release kmod-wireguard wireguard-tools
+
+sudo modprobe wireguard
+lsmod | grep wireguard
+
+sudo systemctl restart wg-quick@nbvpn
+nbvpn status
+```
+
+**2. Or migrate** to Rocky Linux 8 / AlmaLinux 8 (or newer) with a current kernel, then re-run `server/install/centos.sh` / `rhel-family.sh`.
+
+**3. Do not** pretend success with tools-only install — without a loadable module, `wg-quick@nbvpn` will keep failing.

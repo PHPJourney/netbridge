@@ -68,7 +68,13 @@ class WireGuardVpnTunnel implements VpnTunnel {
       _controller.add(_mapStage(stage));
     });
     _initialized = true;
-    _controller.add(VpnTunnelStage.disconnected);
+    // Prefer live OS stage so UI does not wipe an already-up tunnel.
+    try {
+      final live = await WireGuardFlutter.instance.stage();
+      _controller.add(_mapStage(live));
+    } catch (_) {
+      _controller.add(VpnTunnelStage.disconnected);
+    }
   }
 
   @override

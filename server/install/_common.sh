@@ -112,6 +112,23 @@ run_nbvpn_install() {
   fi
 }
 
+nbvpn_listen_port() {
+  if [[ -n "${NBVPN_LISTEN_PORT:-}" ]]; then
+    echo "${NBVPN_LISTEN_PORT}"
+    return 0
+  fi
+  local bin="${INSTALL_BIN_DIR}/nbvpn"
+  if command -v "${bin}" >/dev/null 2>&1; then
+    local line
+    line="$("${bin}" config 2>/dev/null | grep -i listenPort | head -1 || true)"
+    if [[ -n "${line}" ]]; then
+      echo "${line##*:}" | tr -d '[:space:]'
+      return 0
+    fi
+  fi
+  echo 51820
+}
+
 ensure_ufw_forward() {
   # Full-tunnel clients need FORWARD ACCEPT when ufw is active.
   if [[ -f /etc/default/ufw ]] && command -v ufw >/dev/null 2>&1; then
@@ -121,6 +138,66 @@ ensure_ufw_forward() {
       ufw reload >/dev/null 2>&1 || true
     fi
   fi
+}
+
+configure_host_firewall() {
+  if [[ "${NBVPN_SKIP_FIREWALL:-0}" == "1" ]]; then
+    log "NBVPN_SKIP_FIREWALL=1 — skipping host firewall configuration"
+    return 0
+  fi
+
+  local port
+  port="$(nbvpn_listen_port)"
+  log "configuring host firewall for UDP ${port} (WireGuard / nbvpn)"
+
+  if command -v ufw >/dev/null 2>&1; then
+    if ufw status numbered 2>/dev/null | grep -qE "(^|[[:space:]])${port}/udp"; then
+      log "ufw: UDP ${port} rule already present"
+    else
+      log "ufw: allowing inbound UDP ${port}"
+      if ufw allow "${port}/udp" comment 'nbvpn WireGuard' >/dev/null 2>&1; then
+        ok_msg="ufw allow ${port}/udp"
+      elif ufw allow "${port}/udp" >/dev/null 2>&1; then
+        ok_msg="ufw allow ${port}/udp"
+      else
+        warn "ufw allow ${port}/udp failed — run manually: ufw allow ${port}/udp"
+        ok_msg=""
+      fi
+      [[ -n "${ok_msg}" ]] && log "${ok_msg}"
+    fi
+    if ufw status 2>/dev/null | grep -qiE 'Status:[[:space:]]*active'; then
+      ufw reload >/dev/null 2>&1 || true
+      log "ufw: reloaded (active)"
+    else
+      warn "ufw installed but not active — rule queued; enable with: ufw enable"
+    fi
+  fi
+
+  if command -v firewall-cmd >/dev/null 2>&1 && firewall-cmd --state >/dev/null 2>&1; then
+    if firewall-cmd --list-ports 2>/dev/null | grep -q "${port}/udp"; then
+      log "firewalld: UDP ${port} already allowed"
+    else
+      log "firewalld: allowing UDP ${port} permanently"
+      if firewall-cmd --permanent --add-port="${port}/udp" >/dev/null 2>&1; then
+        firewall-cmd --reload >/dev/null 2>&1 || true
+      else
+        warn "firewall-cmd --add-port=${port}/udp failed"
+      fi
+    fi
+  fi
+}
+
+print_cloud_security_group_hints() {
+  local port
+  port="$(nbvpn_listen_port)"
+  cat <<EOF
+
+  Cloud security group / ACL (manual — install cannot change your cloud panel):
+    • Inbound: UDP ${port} from clients (0.0.0.0/0 for public self-hosted, or tighter CIDRs)
+    • Attach the rule group to THIS instance / VM (rules alone are not enough)
+    • TCP 22/80/443 alone does NOT carry WireGuard — need UDP ${port}
+    Docs: server/install/FIREWALL.md §2
+EOF
 }
 
 post_install_hints() {
@@ -137,9 +214,9 @@ Next steps:
   # Verify:
   sudo server/install/smoke-verify.sh
 
-  # Firewall (host + cloud security group): allow UDP 51820 (or your listen port)
+  # Host firewall: install script already tried ufw allow UDP <listenPort> / firewalld.
+  # Cloud security group: you must allow inbound UDP <listenPort> in the provider panel.
   #   Docs: server/install/FIREWALL.md
-  #   ufw allow 51820/udp && ufw reload
   # NAT / forwarding is baked into nbvpn.conf PostUp (ip_forward + MASQUERADE).
   # If VPN icon+traffic but no internet: check sysctl net.ipv4.ip_forward=1
   #   and: sudo iptables -t nat -L POSTROUTING -n -v | grep MASQUERADE
@@ -153,6 +230,8 @@ nbvpn_install_finish() {
   install_nbvpn_binary
   run_nbvpn_install
   ensure_ufw_forward
+  configure_host_firewall
   log "done."
+  print_cloud_security_group_hints
   post_install_hints
 }
