@@ -50,27 +50,33 @@ flutter build apk --release --split-per-abi
 
 ## CI：GitHub Secrets
 
-在仓库 **Settings → Secrets and variables → Actions** 配置：
+**密钥已配置到 GitHub Secrets**（`PHPJourney/netbridge` 与 `netbridge-commercial`）：
 
 | Secret | 说明 |
 |--------|------|
-| `ANDROID_KEYSTORE_BASE64` | `base64 -i upload-keystore.jks \| pbcopy`（或 `base64 -w0`） |
+| `ANDROID_KEYSTORE_BASE64` | `base64 -i upload-keystore.jks` |
 | `ANDROID_KEYSTORE_PASSWORD` | keystore 密码 |
 | `ANDROID_KEY_ALIAS` | 通常为 `upload` |
 | `ANDROID_KEY_PASSWORD` | key 密码 |
 
 `.github/workflows/build-clients.yml` 在上述 secrets **齐全** 时写入 `key.properties` 并用 release 签；**缺失**时仍打 debug 签（侧载/试装），workflow 内有注释说明。
 
-编码示例（macOS）：
+编码示例（macOS，仅在需轮换密钥时）：
 
 ```bash
 base64 -i clients/netbridge/android/upload-keystore.jks | pbcopy
 # 粘贴到 ANDROID_KEYSTORE_BASE64
 ```
 
+## 备份（必做）
+
+- 本地 `upload-keystore.jks` **必须**备份到密码管理器 / 离线安全介质；丢失后**无法**用同一包名覆盖升级，只能让用户卸载重装。
+- 同步备份 `key.properties`（或密码 + alias）。
+- **切勿**把真实密码、base64 keystore 写入本文件或任何 git 仓库。
+
 ## 用户侧：签名变更时
 
-- **临时**：卸载旧版再装新包（会清本地数据）。
+- **临时**：卸载旧版（含此前 debug 签分发包）再装新包（会清本地数据）。
 - **长期**：全渠道（CI + 本机发版）统一同一把 upload-keystore，之后可覆盖安装升级。
 
 切勿将 `*.jks` / `*.keystore` / `key.properties` 提交到 git。

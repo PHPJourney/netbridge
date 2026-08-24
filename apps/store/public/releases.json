@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-24T12:55:00Z",
+  "updatedAt": "2026-08-24T13:00:00Z",
   "meta": {
     "landingPage": "GitHub Pages (apps/store)",
     "artifactStorage": "GitHub Releases (primary); OpenList optional mirror",
@@ -10,11 +10,11 @@
     "openlistBrowse": "http://154.37.213.245:5244/store",
     "downloadUrlHint": "Primary: GitHub Releases latest/download/<filename>. OpenList remains an optional mirror — see docs/delivery/nbvpn/OPENLIST-UPLOAD.md",
     "status": "github_releases_published",
-    "note": "v0.1.15: 修复 Android「添加服务器」页内容区空白（嵌套滚动布局）；其余 v0.1.14 安全模型与导入能力不变。",
+    "note": "v0.1.15: 修复 Android「添加服务器」页空白；Android APK 起用固定 upload-keystore 正式签名（旧 debug 签包需卸载再装）。",
     "officialSite": "https://phpjourney.github.io/netbridge/",
     "termsUrl": "./terms.html",
     "privacyUrl": "./privacy.html",
-    "updatedAt": "2026-08-24T12:55:00Z",
+    "updatedAt": "2026-08-24T13:00:00Z",
     "partners": [
       {
         "name": "TradeMind",
@@ -56,11 +56,11 @@
     "android": {
       "label": "Android",
       "version": "0.1.15",
-      "sha256": "7b5b47f8dd23e38bb00993d2ac22a184b09ada6af0f09dd27c98171fc3e85f9c",
+      "sha256": "4fde6f60e7620599b10cc223ce8537d1152e42660540d694e9e55aa19056111e",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-android-arm64.apk",
       "filename": "NetBridge-android-arm64.apk",
       "status": "available",
-      "note": "R8 release arm64. v0.1.15 修复「添加服务器」页空白；若签名变更需卸载旧版再装。Also NetBridge-android-armeabi-v7a.apk / NetBridge-android.apk in same Release."
+      "note": "R8 release arm64，upload-keystore 正式签。v0.1.15 修复「添加服务器」页空白；旧 debug 签包需卸载再装。Also NetBridge-android-armeabi-v7a.apk / NetBridge-android.apk in same Release."
     },
     "ios": {
       "label": "iOS",
