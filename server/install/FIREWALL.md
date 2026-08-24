@@ -153,11 +153,10 @@ command -v nbvpn; ls -la /usr/local/bin/nbvpn
 
 **1. Same host — upgrade kernel to el8_10 (≥ `4.18.0-553.el8_10`), then install `kmod-wireguard`**
 
-CentOS 8 is EOL; enable vault mirrors if needed. `kmod-wireguard` from elrepo often requires `kernel >= 4.18.0-553.el8_10` — an older kernel (e.g. `4.18.0-408.el8`) **cannot** load that kmod. Do **not** use `--skip-broken` (leaves you without a module).
+CentOS 8 / Stream is EOL; the installer rewrites repos to **vault.centos.org** and must displace cloud mirrors (Aliyun etc.). `kmod-wireguard` from elrepo often requires `kernel >= 4.18.0-553.el8_10` — an older kernel (e.g. `4.18.0-408.el8`) **cannot** load that kmod. Do **not** use `--skip-broken`. If vault still has no ≥553 kernel (or cloud overlays keep winning), migrate to Rocky/Alma (`LINUX-PREFLIGHT.md`).
 
 ```bash
-# Point repos at vault if yum/dnf mirror 404s (CentOS 8 EOL)
-# then:
+# Confirm BaseOS/AppStream use vault (not mirrors.aliyun.com), then:
 sudo dnf install -y kernel kernel-core kernel-modules   # aim for ≥ 4.18.0-553.el8_10
 # or on yum-only hosts:
 # sudo yum update -y kernel kernel-core kernel-modules
@@ -177,7 +176,7 @@ sudo systemctl restart wg-quick@nbvpn
 nbvpn status
 ```
 
-**2. Or migrate** to Rocky Linux 8 / AlmaLinux 8 (or newer) with a current kernel, then re-run `server/install/centos.sh` / `rhel-family.sh`.
+**2. Or migrate** to Rocky Linux 8 / AlmaLinux 8 (or newer) with a current kernel, then re-run `server/install/centos.sh` / `rhel-family.sh`. Shortest Rocky path: `migrate2rocky.sh -r` (see `LINUX-PREFLIGHT.md`).
 
 **3. Do not** pretend success with tools-only install — without a loadable module, `wg-quick@nbvpn` will keep failing.
 
@@ -186,7 +185,7 @@ nbvpn status
 `install.sh`, `debian.sh` / `ubuntu.sh`, and `centos.sh` / `rhel.sh` all call shared `preflight_linux` (`_common.sh`), then family remediation:
 
 - **Debian/Ubuntu:** apt `wireguard` / tools / `wireguard-dkms` + headers when `modprobe` fails
-- **RHEL/Rocky/Alma/CentOS/Stream:** epel/elrepo, kernel update, CentOS EOL vault switch, `kmod-wireguard`, reboot prompt
+- **RHEL/Rocky/Alma/CentOS/Stream:** epel/elrepo, kernel update, CentOS EOL vault switch (incl. cloud overlays), `kmod-wireguard`, reboot prompt / migrate fail
 - Host firewall via `configure_host_firewall` (ufw / firewalld)
 - Fail with actionable steps instead of a fake success
 

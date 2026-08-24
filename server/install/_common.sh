@@ -190,7 +190,8 @@ error: WireGuard kernel module still unavailable after remediation.
     # if newer kernel was installed: sudo reboot  then re-run installer
     sudo dnf install -y epel-release elrepo-release kmod-wireguard wireguard-tools || \\
       sudo yum install -y epel-release elrepo-release kmod-wireguard wireguard-tools
-    # CentOS 8 / Stream EOL: see LINUX-PREFLIGHT.md (vault mirrors)
+    # CentOS 8 / Stream EOL: vault must displace cloud mirrors (Aliyun etc.);
+    # if kernel stays < 4.18.0-553 → migrate Rocky/Alma (LINUX-PREFLIGHT.md)
 
   Docs: server/install/LINUX-PREFLIGHT.md  |  FIREWALL.md §7
 EOF
