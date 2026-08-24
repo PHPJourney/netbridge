@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Thin wrapper → deb-family.sh (Ubuntu).
+# Thin wrapper → deb-family.sh (Ubuntu). Runs preflight + WireGuard remediation via family.
 # One-liner:
 #   curl -fsSL https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/ubuntu.sh | sudo bash
 set -eo pipefail

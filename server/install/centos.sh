@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Thin wrapper → rhel-family.sh (CentOS / Rocky / Alma).
+# Thin wrapper → rhel-family.sh (CentOS / Rocky / Alma / Stream). Preflight + vault/kmod remediation.
 # One-liner:
 #   curl -fsSL https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/centos.sh | sudo bash
 set -eo pipefail

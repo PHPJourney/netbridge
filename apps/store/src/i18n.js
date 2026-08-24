@@ -61,8 +61,10 @@ const dict = {
     "help.flow.note": "页顶「使用步骤」是同一流程的摘要；本区有更细的安装与排错说明。",
     "help.install.title": "安装服务端",
     "help.install.intro": "当前正式支持的服务端系统：",
-    "help.install.li1": "<strong>Debian</strong> / <strong>Ubuntu</strong>（deb 系一键脚本，支持 <code>curl|bash</code> 管道安装）",
-    "help.install.li2": "<strong>CentOS</strong> / <strong>RHEL</strong>（含 Rocky / Alma 等同系）",
+    "help.install.li1":
+      "<strong>Debian</strong> / <strong>Ubuntu</strong>（deb 系一键脚本；安装前评估环境，缺模块时尝试 headers/dkms）",
+    "help.install.li2":
+      "<strong>CentOS</strong> / <strong>RHEL</strong>（含 Rocky / Alma；脚本评估内核/换 vault 源/提示 reboot；Stream 8 旧内核需注意）",
     "help.install.li3":
       "<strong>Windows Server</strong>（Win10+/2016+ 用 <code>Setup.exe</code>；<strong>Server 2012 主推 <code>Setup-win2012</code></strong>，勿用现代 Setup）",
     "help.install.body":
@@ -97,9 +99,23 @@ const dict = {
     "help.network.li1":
       "默认监听 <strong>UDP 51820</strong>。请在<strong>主机防火墙</strong>与<strong>云厂商安全组</strong>同时放行该端口（只开 UDP，不要只开 TCP）。",
     "help.network.li2":
-      "安装脚本会尽量开启 <strong>IP 转发（ip_forward）</strong> 与 <strong>MASQUERADE（NAT）</strong>，让客户端流量经节点出口。若服务器已启用 ufw，还需按安装完成后的终端提示放行转发规则。",
+      "安装脚本会尽量开启 <strong>IP 转发（ip_forward）</strong> 与 <strong>MASQUERADE（NAT）</strong>，让客户端流量经节点出口；并在本机自动 <code>ufw allow 51820/udp</code>（或 firewalld 放行同端口）。",
     "help.network.li3":
-      "连不上时优先检查：安全组是否放行 UDP 51820 → <code>nbvpn status</code> 是否在跑 → <code>nbvpn show</code> 里的 endpoint 是否为真实可达的公网地址。",
+      "连不上时优先检查：安全组是否放行 UDP 51820 且已绑定实例 → 主机 <code>ufw status</code> → <code>nbvpn status</code> → endpoint 是否为可达公网地址。",
+    "help.network.sgTitle": "云安全组 / ACL（控制台手动配置）",
+    "help.network.sgIntro":
+      "安装脚本<strong>无法</strong>修改云厂商面板。请在 VPS 控制台为<strong>本实例</strong>关联的安全组添加入站规则（白名单模式需显式允许）：",
+    "help.network.sgTable":
+      "<table class=\"help-rules-table\"><thead><tr><th>方向</th><th>动作</th><th>协议</th><th>端口</th><th>源地址</th><th>说明</th></tr></thead><tbody><tr><td>入站</td><td>允许</td><td><strong>UDP</strong></td><td><strong>51820</strong></td><td><code>0.0.0.0/0</code>（或限定 CIDR）</td><td>WireGuard 握手（默认端口）</td></tr></tbody></table>",
+    "help.network.sgLi1":
+      "规则写进安全组后，必须<strong>绑定到当前这台云主机</strong>；只加规则、不绑实例等于未生效。",
+    "help.network.sgLi2":
+      "只开 TCP 22 / 80 / 443 <strong>不够</strong>，WireGuard 必须 UDP 51820（或自定义监听端口）。",
+    "help.network.sgLi3":
+      "症状：<code>tcpdump</code> 有入站 UDP 但 <code>wg show</code> 无 <code>latest handshake</code>、无出站回包 → 常见为安全组未绑实例，或主机 ufw 未放行。",
+    "help.network.hostTitle": "主机防火墙（安装脚本自动配置）",
+    "help.network.hostBody":
+      "Linux 一键安装会在本机尝试：<code>ufw allow 51820/udp</code>（Debian/Ubuntu）或 <code>firewall-cmd --add-port=51820/udp</code>（RHEL 系且 firewalld 在跑）。跳过：<code>NBVPN_SKIP_FIREWALL=1</code>。验证：",
     "help.duty.title": "责任说明",
     "help.duty.body":
       "节点部署在<strong>您的服务器</strong>上。出口网络行为与合法合规使用，责任由您自行承担。本产品<strong>不提供</strong>公共 VPN 节点，也不代管您的流量。更多摘要见 <a href=\"#responsibility\">责任与去中心化</a>。",
@@ -243,8 +259,10 @@ const dict = {
       "The top “Get started” strip is the same flow in brief; this section has more install and troubleshooting detail.",
     "help.install.title": "Install the server",
     "help.install.intro": "Currently supported server systems:",
-    "help.install.li1": "<strong>Debian</strong> / <strong>Ubuntu</strong> (deb-family one-liner; <code>curl|bash</code> piping supported)",
-    "help.install.li2": "<strong>CentOS</strong> / <strong>RHEL</strong> (including Rocky / Alma)",
+    "help.install.li1":
+      "<strong>Debian</strong> / <strong>Ubuntu</strong> (deb one-liner; preflight + headers/dkms when the module is missing)",
+    "help.install.li2":
+      "<strong>CentOS</strong> / <strong>RHEL</strong> (incl. Rocky / Alma; kernel assess / vault mirrors / reboot prompts — watch Stream 8 old kernels)",
     "help.install.li3":
       "<strong>Windows Server</strong> (Win10+/2016+: <code>Setup.exe</code>; <strong>Server 2012: prefer <code>Setup-win2012</code></strong> — not modern Setup)",
     "help.install.body":
@@ -282,9 +300,23 @@ const dict = {
     "help.network.li1":
       "Default listen port is <strong>UDP 51820</strong>. Allow it on both the <strong>host firewall</strong> and the <strong>cloud security group</strong> (UDP only — not TCP alone).",
     "help.network.li2":
-      "Install scripts try to enable <strong>IP forwarding (ip_forward)</strong> and <strong>MASQUERADE (NAT)</strong> so client traffic exits via the node. If ufw is already on, follow the post-install tips to allow forwarding.",
+      "Install scripts try to enable <strong>IP forwarding (ip_forward)</strong> and <strong>MASQUERADE (NAT)</strong>, and auto-run <code>ufw allow 51820/udp</code> (or firewalld for the same port).",
     "help.network.li3":
-      "If you cannot connect, check first: security group allows UDP 51820 → <code>nbvpn status</code> is running → endpoint in <code>nbvpn show</code> is a reachable public address.",
+      "If you cannot connect, check first: security group allows UDP 51820 and is bound to this VM → host <code>ufw status</code> → <code>nbvpn status</code> → reachable public endpoint.",
+    "help.network.sgTitle": "Cloud security group / ACL (console — manual)",
+    "help.network.sgIntro":
+      "Install scripts <strong>cannot</strong> change your cloud panel. In the VPS console, add an inbound rule on the security group <strong>attached to this instance</strong> (whitelist mode requires an explicit allow):",
+    "help.network.sgTable":
+      "<table class=\"help-rules-table\"><thead><tr><th>Direction</th><th>Action</th><th>Protocol</th><th>Port</th><th>Source</th><th>Notes</th></tr></thead><tbody><tr><td>Inbound</td><td>Allow</td><td><strong>UDP</strong></td><td><strong>51820</strong></td><td><code>0.0.0.0/0</code> (or tighter CIDR)</td><td>WireGuard handshake (default port)</td></tr></tbody></table>",
+    "help.network.sgLi1":
+      "After adding the rule, <strong>bind the security group to this VM</strong> — rules alone are not enough.",
+    "help.network.sgLi2":
+      "TCP 22 / 80 / 443 alone is <strong>not</strong> enough — WireGuard needs UDP 51820 (or your custom listen port).",
+    "help.network.sgLi3":
+      "Symptom: <code>tcpdump</code> shows inbound UDP but <code>wg show</code> has no <code>latest handshake</code> and no outbound replies → often SG not bound, or host ufw blocking.",
+    "help.network.hostTitle": "Host firewall (auto-configured by install)",
+    "help.network.hostBody":
+      "Linux one-liner install tries <code>ufw allow 51820/udp</code> (Debian/Ubuntu) or <code>firewall-cmd --add-port=51820/udp</code> (RHEL family when firewalld runs). Skip: <code>NBVPN_SKIP_FIREWALL=1</code>. Verify:",
     "help.duty.title": "Responsibility",
     "help.duty.body":
       "The node runs on <strong>your server</strong>. You are responsible for egress traffic and lawful use. This product <strong>does not</strong> provide public VPN nodes or proxy your traffic. See also <a href=\"#responsibility\">Responsibility & decentralization</a>.",

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Thin wrapper → deb-family.sh (Debian).
+# Thin wrapper → deb-family.sh (Debian). Runs preflight + WireGuard remediation via family.
 # One-liner:
 #   curl -fsSL https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/debian.sh | sudo bash
 set -eo pipefail

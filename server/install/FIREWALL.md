@@ -180,3 +180,15 @@ nbvpn status
 **2. Or migrate** to Rocky Linux 8 / AlmaLinux 8 (or newer) with a current kernel, then re-run `server/install/centos.sh` / `rhel-family.sh`.
 
 **3. Do not** pretend success with tools-only install — without a loadable module, `wg-quick@nbvpn` will keep failing.
+
+### Installer preflight (automatic — all Linux one-liners)
+
+`install.sh`, `debian.sh` / `ubuntu.sh`, and `centos.sh` / `rhel.sh` all call shared `preflight_linux` (`_common.sh`), then family remediation:
+
+- **Debian/Ubuntu:** apt `wireguard` / tools / `wireguard-dkms` + headers when `modprobe` fails
+- **RHEL/Rocky/Alma/CentOS/Stream:** epel/elrepo, kernel update, CentOS EOL vault switch, `kmod-wireguard`, reboot prompt
+- Host firewall via `configure_host_firewall` (ufw / firewalld)
+- Fail with actionable steps instead of a fake success
+
+Full write-up: **`LINUX-PREFLIGHT.md`**.
+

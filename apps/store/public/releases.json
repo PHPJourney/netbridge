@@ -81,7 +81,7 @@
       "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/debian.sh",
       "installCommand": "curl -fsSL https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/debian.sh | sudo bash",
       "status": "available",
-      "note": "curl|bash 一行命令：bootstrap 自动从 GitHub 拉取配套脚本；二进制默认 Releases latest（可用 NBVPN_BINARY_URL 覆盖）。"
+      "note": "curl|bash：bootstrap + preflight 评估/自愈（wireguard/dkms/headers）。见 LINUX-PREFLIGHT.md。"
     },
     "ubuntu": {
       "label": "Ubuntu",
@@ -92,7 +92,7 @@
       "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/ubuntu.sh",
       "installCommand": "curl -fsSL https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/ubuntu.sh | sudo bash",
       "status": "available",
-      "note": "与 Debian 共用 nbvpn-linux-amd64。curl|bash 管道安装已支持（bootstrap 拉配套脚本 + NBVPN_BINARY_URL）。"
+      "note": "与 Debian 共用二进制。curl|bash + preflight（wireguard/dkms）。见 LINUX-PREFLIGHT.md。"
     },
     "centos": {
       "label": "CentOS",
@@ -103,7 +103,7 @@
       "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/centos.sh",
       "installCommand": "curl -fsSL https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/centos.sh | sudo bash",
       "status": "available",
-      "note": "Rocky/Alma 等同 rhel 系。curl|bash 管道安装已支持。"
+      "note": "Rocky/Alma 等同 rhel 系。curl|bash 已支持。CentOS Stream 8：需内核模块；旧内核时脚本会评估/换 vault 源/提示 reboot（见 LINUX-PREFLIGHT.md）。"
     },
     "rhel": {
       "label": "RHEL",
@@ -114,7 +114,7 @@
       "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/rhel.sh",
       "installCommand": "curl -fsSL https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/rhel.sh | sudo bash",
       "status": "available",
-      "note": "linux-amd64 为主；Release 另有 nbvpn-linux-arm64 与 nbvpn-server zip。curl|bash 已支持。"
+      "note": "linux-amd64 为主；curl|bash + preflight（epel/elrepo/kmod）。见 LINUX-PREFLIGHT.md。"
     },
     "windows": {
       "label": "Windows Server",

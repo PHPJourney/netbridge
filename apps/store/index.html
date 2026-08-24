@@ -257,10 +257,10 @@
             <p data-i18n="help.install.intro">当前正式支持的服务端系统：</p>
             <ul class="help-list">
               <li data-i18n-html="help.install.li1">
-                <strong>Debian</strong> / <strong>Ubuntu</strong>（deb 系一键脚本，支持 <code>curl|bash</code> 管道安装）
+                <strong>Debian</strong> / <strong>Ubuntu</strong>（deb 系一键脚本；安装前评估环境，缺模块时尝试 headers/dkms）
               </li>
               <li data-i18n-html="help.install.li2">
-                <strong>CentOS</strong> / <strong>RHEL</strong>（含 Rocky / Alma 等同系）
+                <strong>CentOS</strong> / <strong>RHEL</strong>（含 Rocky / Alma；脚本评估内核/换 vault 源/提示 reboot；Stream 8 旧内核需注意）
               </li>
               <li data-i18n-html="help.install.li3">
                 <strong>Windows Server</strong>（Win10+/2016+ 用 <code>Setup.exe</code>；<strong>Server 2012
@@ -399,7 +399,7 @@
               <li data-i18n-html="help.network.li2">
                 安装脚本会尽量开启 <strong>IP 转发（ip_forward）</strong> 与
                 <strong>MASQUERADE（NAT）</strong>，让客户端流量经节点出口。若服务器已启用
-                ufw，还需按安装完成后的终端提示放行转发规则。
+                ufw，还会自动 <code>ufw allow 51820/udp</code> 并放宽转发策略。
               </li>
               <li data-i18n-html="help.network.li3">
                 连不上时优先检查：安全组是否放行 UDP 51820 →
@@ -409,6 +409,45 @@
                 里的 endpoint 是否为真实可达的公网地址。
               </li>
             </ul>
+
+            <h4 class="help-subtitle" data-i18n="help.network.sgTitle">云安全组 / ACL（控制台手动配置）</h4>
+            <p data-i18n-html="help.network.sgIntro">
+              安装脚本<strong>无法</strong>修改云厂商面板。请在 VPS 控制台为<strong>本实例</strong>关联的安全组添加入站规则（白名单模式需显式允许）：
+            </p>
+            <div class="help-rules-table-wrap" data-i18n-html="help.network.sgTable"></div>
+            <ul class="help-list">
+              <li data-i18n-html="help.network.sgLi1">
+                规则写进安全组后，必须<strong>绑定到当前这台云主机</strong>；只加规则、不绑实例等于未生效。
+              </li>
+              <li data-i18n-html="help.network.sgLi2">
+                只开 TCP 22 / 80 / 443 <strong>不够</strong>，WireGuard 必须 UDP 51820（或你自定义的监听端口）。
+              </li>
+              <li data-i18n-html="help.network.sgLi3">
+                症状：<code>tcpdump</code> 能看到入站 UDP 但 <code>wg show</code> 无
+                <code>latest handshake</code>、无出站回包 → 常见为安全组未绑实例，或主机 ufw 未放行。
+              </li>
+            </ul>
+
+            <h4 class="help-subtitle" data-i18n="help.network.hostTitle">主机防火墙（安装脚本自动配置）</h4>
+            <p data-i18n-html="help.network.hostBody">
+              Linux 一键安装会在本机尝试：<code>ufw allow 51820/udp</code>（Debian/Ubuntu）或
+              <code>firewall-cmd --add-port=51820/udp</code>（RHEL 系且 firewalld 在跑）。跳过：
+              <code>NBVPN_SKIP_FIREWALL=1</code>。验证：
+            </p>
+            <div class="help-cmd-list">
+              <div class="command-row">
+                <code data-copy-source>sudo ufw status | grep 51820</code>
+                <button class="btn btn-ghost copy-btn" type="button" data-copy data-i18n="dl.copy">
+                  复制
+                </button>
+              </div>
+              <div class="command-row">
+                <code data-copy-source>sudo ufw allow 51820/udp comment 'nbvpn WireGuard'</code>
+                <button class="btn btn-ghost copy-btn" type="button" data-copy data-i18n="dl.copy">
+                  复制
+                </button>
+              </div>
+            </div>
           </article>
 
           <article class="help-block" id="help-duty">

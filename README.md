@@ -105,6 +105,8 @@ cd clients/netbridge && flutter pub get && flutter run
 
 ## 文档
 
+- Linux 安装预检 / 全系环境自愈（Debian/Ubuntu + RHEL/CentOS）：`server/install/LINUX-PREFLIGHT.md`
+- 防火墙与缺 WireGuard 模块：`server/install/FIREWALL.md`
 - Windows 节点：`server/install/windows/WINDOWS.md`（含 win2012 CI 产物）
 - OpenList / Releases：`docs/delivery/nbvpn/OPENLIST-UPLOAD.md`
 - 规格：`docs/delivery/nbvpn/01-spec.md`

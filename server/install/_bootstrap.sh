@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Bootstrap for curl | bash one-liners: fetch companion scripts from GitHub raw.
 # Sourced by install.sh / *-family wrappers — not run directly.
+# Fetched bundle always includes _common.sh (preflight_linux) + family scripts.
 # shellcheck shell=bash
 
 NBVPN_INSTALL_REPO="${NBVPN_INSTALL_REPO:-PHPJourney/netbridge}"

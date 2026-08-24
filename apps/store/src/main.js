@@ -28,8 +28,10 @@ initLangToggle(() => {
     applyMeta(releaseCache.meta || {});
   }
   bindCopyButtons(document.querySelector("[data-help-commands]"));
+  bindCopyButtons(document.querySelector("#help-network"));
 });
 bindCopyButtons(document.querySelector("[data-help-commands]"));
+bindCopyButtons(document.querySelector("#help-network"));
 loadReleases();
 
 function initNav() {

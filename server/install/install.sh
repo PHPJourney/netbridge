@@ -1,17 +1,24 @@
 #!/usr/bin/env bash
 # NetBridge VPN — entry installer: detect distro and dispatch to family script.
 #
-# Supports: Debian, Ubuntu, RHEL, CentOS, Rocky, Alma
+# Supports: Debian, Ubuntu, RHEL, CentOS (Linux/Stream), Rocky, Alma, Fedora
 #
 # Usage (as root):
 #   curl -fsSL https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/install.sh | sudo bash
 #   sudo ./server/install/install.sh
+#
+# All Linux one-liners (install.sh / deb* / rhel* / centos*) run environment
+# assessment + remediation via preflight_linux / family ensure_* before nbvpn.
 #
 # Env:
 #   NBVPN_BINARY_URL    download prebuilt nbvpn if no local binary/Go
 #   NBVPN_SKIP_INSTALL  if 1, skip `nbvpn install`
 #   NBVPN_SKIP_FIREWALL  if 1, skip ufw / firewalld allow rules
 #   NBVPN_LISTEN_PORT     override port for firewall rules (default from nbvpn config)
+#   NBVPN_SKIP_PREFLIGHT_REPOS  if 1, do not rewrite CentOS repos to vault
+#   NBVPN_SKIP_KERNEL_UPDATE     if 1, skip kernel package updates on RHEL family
+#
+# Docs: LINUX-PREFLIGHT.md  |  FIREWALL.md §7
 set -eo pipefail
 
 _src="${BASH_SOURCE[0]:-}"
@@ -32,15 +39,15 @@ nbvpn_bootstrap_ensure_dir both
 . "${NBVPN_INSTALL_DIR}/_common.sh"
 
 dispatch() {
-  need_root
-  detect_os
+  # Shared assessment before family remediation (family scripts re-run preflight_linux).
+  preflight_linux soft
   case "${OS_ID}" in
     debian|ubuntu)
-      log "dispatch → deb-family.sh"
+      log "dispatch → deb-family.sh (preflight done; apt remediation next)"
       exec bash "${NBVPN_INSTALL_DIR}/deb-family.sh"
       ;;
     rhel|centos|rocky|almalinux|fedora)
-      log "dispatch → rhel-family.sh (OS_ID=${OS_ID})"
+      log "dispatch → rhel-family.sh (OS_ID=${OS_ID}; preflight done; dnf/yum remediation next)"
       exec bash "${NBVPN_INSTALL_DIR}/rhel-family.sh"
       ;;
     *)
@@ -54,7 +61,7 @@ dispatch() {
           exec bash "${NBVPN_INSTALL_DIR}/rhel-family.sh"
           ;;
         *)
-          err "unsupported OS (${OS_ID}). Use: debian.sh / ubuntu.sh / centos.sh / rhel.sh"
+          err "unsupported OS (${OS_ID}). Use: debian.sh / ubuntu.sh / centos.sh / rhel.sh — see LINUX-PREFLIGHT.md"
           ;;
       esac
       ;;

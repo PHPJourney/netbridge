@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Thin wrapper → rhel-family.sh (RHEL / Rocky / Alma).
+# Thin wrapper → rhel-family.sh (RHEL / Rocky / Alma). Preflight + epel/elrepo/kmod remediation.
 # One-liner:
 #   curl -fsSL https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/rhel.sh | sudo bash
 set -eo pipefail
