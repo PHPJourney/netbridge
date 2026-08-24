@@ -8,6 +8,8 @@ on:
       - ".github/workflows/pages-store.yml"
   workflow_dispatch:
 
+# Private commercial repo cannot use GitHub Pages like the public mirror.
+# Restrict deploy (and build) to PHPJourney/netbridge only.
 permissions:
   contents: read
   pages: write
@@ -19,13 +21,14 @@ concurrency:
 
 jobs:
   build:
+    if: github.repository == 'PHPJourney/netbridge'
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: apps/store
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: "22"
           cache: npm
@@ -35,11 +38,12 @@ jobs:
         env:
           VITE_BASE: /netbridge/
         run: npm run build
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: apps/store/dist
 
   deploy:
+    if: github.repository == 'PHPJourney/netbridge'
     needs: build
     runs-on: ubuntu-latest
     environment:
@@ -50,4 +54,4 @@ jobs:
       id-token: write
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
