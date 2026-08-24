@@ -7,7 +7,12 @@ NBVPN_VERSION="${NBVPN_VERSION:-1.0.0}"
 INSTALL_BIN_DIR="${INSTALL_BIN_DIR:-/usr/local/bin}"
 
 # When sourced from a family script under server/install/
-_INSTALL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# NBVPN_INSTALL_DIR set by _bootstrap.sh for curl|bash one-liners.
+if [[ -n "${NBVPN_INSTALL_DIR:-}" ]]; then
+  _INSTALL_DIR="${NBVPN_INSTALL_DIR}"
+else
+  _INSTALL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
 REPO_ROOT="$(cd "${_INSTALL_DIR}/../.." && pwd)"
 NBVPN_SRC="${REPO_ROOT}/server/nbvpn"
 
