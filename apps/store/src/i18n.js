@@ -21,6 +21,7 @@ const dict = {
     "hero.support": "无官方服务器，配置由你导入。",
     "hero.ctaClients": "下载客户端",
     "hero.ctaServers": "部署服务端",
+    "meta.lastUpdated": "最近更新：{time}",
     "steps.title": "三步开始",
     "steps.lead": "安装节点 → 拿到连接信息 → 客户端添加，无需账号。",
     "steps.1": "在 store 下载并安装服务端（Debian / Ubuntu / CentOS / RHEL）",
@@ -123,6 +124,7 @@ const dict = {
     "responsibility.copy":
       "节点部署在您的服务器上。出口网络与合法使用责任由您自行承担。本产品不提供公共 VPN 节点。",
     "footer.meta": "版本与校验和见 <a href=\"./releases.json\">releases.json</a>。下载后请核对 SHA256。",
+    "footer.lastUpdated": "最近更新：{time}",
     "footer.note": "无登录 · 无官方节点列表 · 配置由你导入",
     "footer.partners": "合作伙伴",
     "footer.terms": "用户协议",
@@ -215,6 +217,7 @@ const dict = {
     "hero.support": "No official servers — you import the config.",
     "hero.ctaClients": "Download clients",
     "hero.ctaServers": "Deploy server",
+    "meta.lastUpdated": "Last updated: {time}",
     "steps.title": "Three steps",
     "steps.lead": "Install a node → get connection info → add it in the client. No account needed.",
     "steps.1": "Download and install the server from this store (Debian / Ubuntu / CentOS / RHEL)",
@@ -325,6 +328,7 @@ const dict = {
       "The node runs on your server. You own egress and lawful-use responsibility. This product does not provide public VPN nodes.",
     "footer.meta":
       "Versions and checksums live in <a href=\"./releases.json\">releases.json</a>. Verify SHA256 after download.",
+    "footer.lastUpdated": "Last updated: {time}",
     "footer.note": "No login · no official node list · you import the config",
     "footer.partners": "Partners",
     "footer.terms": "Terms of use",

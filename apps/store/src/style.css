@@ -394,6 +394,19 @@ code {
   animation: cta-enter 0.8s var(--ease) 0.25s forwards;
 }
 
+.hero-updated {
+  margin: 1.15rem 0 0;
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  letter-spacing: 0.01em;
+  opacity: 0;
+  animation: cta-enter 0.8s var(--ease) 0.4s forwards;
+}
+
+.hero-updated[hidden] {
+  display: none;
+}
+
 @keyframes cta-enter {
   to {
     opacity: 1;
@@ -1037,10 +1050,15 @@ code {
 }
 
 .footer-meta,
-.footer-note {
+.footer-note,
+.footer-updated {
   margin: 0;
   color: var(--text-muted);
   font-size: 0.92rem;
+}
+
+.footer-updated[hidden] {
+  display: none;
 }
 
 .footer-partners {

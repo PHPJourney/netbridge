@@ -24,5 +24,5 @@ class BrandLinks {
   static const partnersLine = 'TradeMind / TM Open Platform';
 
   /// Keep in sync with pubspec `version` (before `+build`).
-  static const appVersion = '1.0.0';
+  static const appVersion = '0.1.12';
 }

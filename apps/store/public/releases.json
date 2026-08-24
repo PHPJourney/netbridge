@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-24T03:40:00Z",
+  "updatedAt": "2026-08-24T11:35:42Z",
   "meta": {
     "landingPage": "GitHub Pages (apps/store)",
     "artifactStorage": "GitHub Releases (primary); OpenList optional mirror",
@@ -10,10 +10,11 @@
     "openlistBrowse": "http://154.37.213.245:5244/store",
     "downloadUrlHint": "Primary: GitHub Releases latest/download/<filename>. OpenList remains an optional mirror — see docs/delivery/nbvpn/OPENLIST-UPLOAD.md",
     "status": "github_releases_published",
-    "note": "v0.1.11: Linux curl|bash 自动拉取配套脚本并设置 NBVPN_BINARY_URL；Server 2012 主推 Setup-win2012（WG 0.5.3 + Win32 GUI）；现代 Setup 仍为 WG 1.1+Fyne（Win10+/2016+）。",
+    "note": "v0.1.12: 多服切换修复 + 编辑/导出/同步/分享（Android 客户端）。",
     "officialSite": "https://phpjourney.github.io/netbridge/",
     "termsUrl": "./terms.html",
     "privacyUrl": "./privacy.html",
+    "updatedAt": "2026-08-24T11:35:42Z",
     "partners": [
       {
         "name": "TradeMind",
@@ -26,8 +27,8 @@
         "url": "#"
       }
     ],
-    "releaseTag": "v0.1.11",
-    "releaseUrl": "https://github.com/PHPJourney/netbridge/releases/tag/v0.1.11"
+    "releaseTag": "v0.1.12",
+    "releaseUrl": "https://github.com/PHPJourney/netbridge/releases/tag/v0.1.12"
   },
   "clients": {
     "windows": {
@@ -54,8 +55,8 @@
     },
     "android": {
       "label": "Android",
-      "version": "0.1.11",
-      "sha256": "e607b71998efac5a387c8dad5cf1b462191471d08143ec2722c037584c5f74e8",
+      "version": "0.1.12",
+      "sha256": "79bedae2e7e187fcff03ecc833d953ddfbf33d147b09de2e3bee0da890358193",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-android-arm64.apk",
       "filename": "NetBridge-android-arm64.apk",
       "status": "available",

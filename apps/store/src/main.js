@@ -26,6 +26,7 @@ initLangToggle(() => {
     renderClients(releaseCache.clients || {});
     renderServers(releaseCache.servers || {});
     applyMeta(releaseCache.meta || {});
+    applyLastUpdated(releaseCache);
   }
   bindCopyButtons(document.querySelector("[data-help-commands]"));
   bindCopyButtons(document.querySelector("#help-network"));
@@ -93,11 +94,13 @@ async function loadReleases() {
     const data = await res.json();
     releaseCache = data;
     applyMeta(data.meta || {});
+    applyLastUpdated(data);
     renderClients(data.clients || {});
     renderServers(data.servers || {});
   } catch (err) {
     console.error("Failed to load releases.json", err);
     applyMeta({});
+    applyLastUpdated({});
     renderLoadError(clientGrid, t("dl.loadClientsError"));
     renderLoadError(serverGrid, t("dl.loadServersError"));
   }
@@ -124,6 +127,41 @@ function applyMeta(meta) {
   }
 
   renderPartners(Array.isArray(meta.partners) && meta.partners.length ? meta.partners : DEFAULT_PARTNERS);
+}
+
+/**
+ * Show release manifest timestamp from meta.updatedAt or top-level updatedAt.
+ * Formats locally as YYYY-MM-DD HH:mm.
+ */
+function applyLastUpdated(data) {
+  const meta = data?.meta || {};
+  const raw = meta.updatedAt || data?.updatedAt || "";
+  const formatted = formatUpdatedAt(raw);
+  const hero = document.querySelector("[data-last-updated]");
+  const footer = document.querySelector("[data-last-updated-footer]");
+
+  const fill = (el, key) => {
+    if (!el) return;
+    if (!formatted) {
+      el.hidden = true;
+      el.textContent = "";
+      return;
+    }
+    el.hidden = false;
+    el.textContent = t(key).replace("{time}", formatted);
+  };
+
+  fill(hero, "meta.lastUpdated");
+  fill(footer, "footer.lastUpdated");
+}
+
+/** @param {string} iso */
+function formatUpdatedAt(iso) {
+  if (!iso || typeof iso !== "string") return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function renderPartners(partners) {
