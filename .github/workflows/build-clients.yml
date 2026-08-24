@@ -33,6 +33,33 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter gen-l10n
+      # Android release signing (optional):
+      # Set all four secrets for a stable upload-keystore signature:
+      #   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
+      #   ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+      # Without them, release APKs fall back to debug signing (sideload / trial only).
+      # See clients/netbridge/android/SIGNING.md
+      - name: Configure Android release keystore
+        working-directory: clients/netbridge/android
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [[ -n "${ANDROID_KEYSTORE_BASE64:-}" && -n "${ANDROID_KEYSTORE_PASSWORD:-}" \
+            && -n "${ANDROID_KEY_ALIAS:-}" && -n "${ANDROID_KEY_PASSWORD:-}" ]]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > upload-keystore.jks
+            {
+              echo "storePassword=${ANDROID_KEYSTORE_PASSWORD}"
+              echo "keyPassword=${ANDROID_KEY_PASSWORD}"
+              echo "keyAlias=${ANDROID_KEY_ALIAS}"
+              echo "storeFile=upload-keystore.jks"
+            } > key.properties
+            echo "Release signing: key.properties written (upload-keystore)."
+          else
+            echo "::warning::Android signing secrets missing — APK will be DEBUG-signed (sideload). See clients/netbridge/android/SIGNING.md"
+          fi
       - name: Build release APKs (split ABI, R8)
         run: flutter build apk --release --split-per-abi
       - name: Stage artifacts

@@ -60,7 +60,7 @@
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-android-arm64.apk",
       "filename": "NetBridge-android-arm64.apk",
       "status": "available",
-      "note": "R8 release arm64. Security model: NFC plain sync, encrypted share/QR import, backup export separated. Also NetBridge-android-armeabi-v7a.apk / NetBridge-android.apk in same Release."
+      "note": "R8 release arm64. 侧载包若签名变更需卸载旧版再装；统一 upload-keystore 后可覆盖安装。Also NetBridge-android-armeabi-v7a.apk / NetBridge-android.apk in same Release."
     },
     "ios": {
       "label": "iOS",

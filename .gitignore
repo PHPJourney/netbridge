@@ -46,3 +46,6 @@ id_rsa.*
 # Android local
 **/local.properties
 **/captures/
+**/key.properties
+**/*.jks
+**/*.keystore

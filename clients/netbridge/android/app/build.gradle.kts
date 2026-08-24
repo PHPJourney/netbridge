@@ -5,6 +5,15 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Release signing: android/key.properties + upload-keystore (see SIGNING.md).
+// Missing key.properties → debug signing (sideload / local trial only).
+val keystoreProperties = java.util.Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+val hasReleaseKeystore = keystorePropertiesFile.exists()
+if (hasReleaseKeystore) {
+    keystoreProperties.load(java.io.FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "com.netbridge.netbridge"
     compileSdk = flutter.compileSdkVersion
@@ -30,11 +39,30 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (hasReleaseKeystore) {
+            create("release") {
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+                storeFile = rootProject.file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // Sideload / trial: still debug-signed so `flutter run --release` works.
-            // Production: replace with a real release keystore.
-            signingConfig = signingConfigs.getByName("debug")
+            // Prefer upload-keystore when key.properties exists; else debug (sideload mode).
+            // See android/SIGNING.md — GitHub Release ≠ Android release certificate.
+            signingConfig = if (hasReleaseKeystore) {
+                signingConfigs.getByName("release")
+            } else {
+                logger.warn(
+                    "android/key.properties missing: release APK will be DEBUG-signed " +
+                        "(sideload only). Configure upload-keystore for stable upgrades — see SIGNING.md.",
+                )
+                signingConfigs.getByName("debug")
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
