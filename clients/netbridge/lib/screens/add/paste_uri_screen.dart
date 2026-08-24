@@ -1,15 +1,13 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../layout/responsive.dart';
-import '../../profile/profile.dart';
-import '../../services/server_pack_codec.dart';
+import '../../profile/profile_errors.dart';
+import '../../services/server_import.dart';
 import '../../widgets/common_widgets.dart';
 
-/// C-03: paste nbvpn URI (or encrypted sync pack).
+/// Paste nbvpn URI / JSON (plain or encrypted with passphrase).
 class PasteUriScreen extends StatefulWidget {
   const PasteUriScreen({super.key});
 
@@ -38,40 +36,6 @@ class _PasteUriScreenState extends State<PasteUriScreen> {
     }
   }
 
-  Future<String?> _askPassphrase() async {
-    final l10n = AppLocalizations.of(context);
-    final field = TextEditingController();
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.syncPassphraseTitle),
-        content: TextField(
-          controller: field,
-          obscureText: true,
-          autofocus: true,
-          decoration: InputDecoration(
-            labelText: l10n.passphrase,
-            border: const OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(l10n.continueAction),
-          ),
-        ],
-      ),
-    );
-    final text = field.text;
-    field.dispose();
-    if (ok != true || text.isEmpty) return null;
-    return text;
-  }
-
   Future<void> _submit() async {
     final lang = Localizations.localeOf(context).languageCode;
     setState(() {
@@ -79,50 +43,22 @@ class _PasteUriScreenState extends State<PasteUriScreen> {
       _error = null;
     });
     try {
-      final raw = _controller.text.trim();
-      if (ServerPackCodec.looksLikeEncryptedUri(raw) ||
-          ServerPackCodec.looksLikeEncryptedJson(raw)) {
-        final pass = await _askPassphrase();
-        if (pass == null) {
-          setState(() => _validating = false);
-          return;
-        }
-        final entries = ServerPackCodec.looksLikeEncryptedUri(raw)
-            ? await ServerPackCodec.decryptPackUri(raw, pass)
-            : await ServerPackCodec.decryptEnvelope(
-                (jsonDecode(raw) as Map).cast<String, dynamic>(),
-                pass,
-              );
-        if (entries.isEmpty) {
-          throw const FormatException('empty pack');
-        }
-        if (!mounted) return;
-        // Add-flow returns one profile; multi-pack → first entry.
-        final first = entries.first;
-        final profile = NbVpnProfile(
-          v: first.profile.v,
-          name: first.localName.isNotEmpty
-              ? first.localName
-              : first.profile.name,
-          client: first.profile.client,
-          server: first.profile.server,
-        );
-        Navigator.of(context).pop(profile);
+      final entries = await ProfileImportService.parseText(
+        context,
+        _controller.text,
+      );
+      if (entries == null) {
+        setState(() => _validating = false);
         return;
       }
-
-      final profile = ProfileCodec.parseFlexibleImport(raw);
+      if (entries.isEmpty) {
+        throw ProfileException(ProfileErrorCode.uriDecode, detail: 'empty pack');
+      }
       if (!mounted) return;
-      Navigator.of(context).pop(profile);
-    } on ProfileException catch (e) {
+      Navigator.of(context).pop(entries);
+    } catch (e) {
       setState(() {
-        _error = e.messageForLanguage(lang);
-        _validating = false;
-      });
-    } catch (_) {
-      setState(() {
-        _error = ProfileException(ProfileErrorCode.uriDecode)
-            .messageForLanguage(lang);
+        _error = ProfileImportService.errorMessage(e, lang);
         _validating = false;
       });
     }

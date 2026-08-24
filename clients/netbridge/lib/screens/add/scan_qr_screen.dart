@@ -5,14 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-import '../../profile/profile.dart';
+import '../../l10n/app_localizations.dart';
+import '../../profile/profile_codec.dart';
+import '../../profile/profile_errors.dart';
+import '../../services/server_import.dart';
 import '../../theme.dart';
 import '../../widgets/common_widgets.dart';
 
-/// C-05: camera QR scan (mobile). QR content = full `nbvpn:1?<base64url>`.
-///
-/// Terminal / peers PNG QRs are dense — high camera resolution, large window,
-/// auto-zoom, torch, gallery decode, and paste are first-class.
+/// Camera QR scan: plain `nbvpn:` and encrypted `nbvpn-enc:` (passphrase prompt).
 class ScanQrScreen extends StatefulWidget {
   const ScanQrScreen({super.key});
 
@@ -33,14 +33,12 @@ class _ScanQrScreenState extends State<ScanQrScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // Android defaults to 640x480 when null — too coarse for dense nbvpn URIs.
     _controller = MobileScannerController(
       formats: const [BarcodeFormat.qrCode],
       detectionSpeed: DetectionSpeed.normal,
       detectionTimeoutMs: 800,
       cameraResolution: const Size(1920, 1080),
       autoZoom: true,
-      // Mild zoom helps dense terminal modules fill the frame sooner.
       initialZoom: 0.15,
       autoStart: true,
     );
@@ -56,13 +54,10 @@ class _ScanQrScreenState extends State<ScanQrScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Custom controller → plugin does not auto pause/resume; we must.
     if (!_controller.value.isInitialized) return;
     switch (state) {
       case AppLifecycleState.resumed:
-        if (!_handled) {
-          unawaited(_safeStart());
-        }
+        if (!_handled) unawaited(_safeStart());
       case AppLifecycleState.inactive:
       case AppLifecycleState.paused:
       case AppLifecycleState.hidden:
@@ -76,9 +71,7 @@ class _ScanQrScreenState extends State<ScanQrScreen>
       if (!_controller.value.isRunning && !_controller.value.isStarting) {
         await _controller.start();
       }
-    } catch (_) {
-      // Start races / already starting — ignore; retry / next detect recovers.
-    }
+    } catch (_) {}
   }
 
   Future<void> _safePause() async {
@@ -87,59 +80,49 @@ class _ScanQrScreenState extends State<ScanQrScreen>
     } catch (_) {}
   }
 
-  /// Prefer full `nbvpn:` payloads; otherwise the longest non-empty string.
   String _bestRaw(BarcodeCapture capture) {
-    String best = '';
-    String bestNb = '';
+    final candidates = <String?>[];
     for (final b in capture.barcodes) {
-      for (final candidate in [b.rawValue, b.displayValue]) {
-        if (candidate == null || candidate.isEmpty) continue;
-        final cleaned = ProfileCodec.sanitizeUriInput(candidate);
-        if (cleaned.toLowerCase().startsWith('nbvpn:') &&
-            cleaned.length > bestNb.length) {
-          bestNb = cleaned;
-        }
-        if (candidate.length > best.length) best = candidate;
-      }
+      candidates.add(b.rawValue);
+      candidates.add(b.displayValue);
     }
-    return bestNb.isNotEmpty ? bestNb : best;
+    return ProfileImportService.bestFromScan(candidates);
   }
 
   Future<void> _consumeRaw(String raw) async {
     if (_handled) return;
     final cleaned = ProfileCodec.sanitizeUriInput(raw);
-    if (cleaned.isEmpty) return;
+    if (cleaned.isEmpty && raw.trim().isEmpty) return;
 
     _handled = true;
     await _safePause();
+    final lang = Localizations.localeOf(context).languageCode;
+    final l10n = AppLocalizations.of(context);
 
     try {
-      final profile = ProfileCodec.parseFlexibleImport(cleaned);
+      final entries = await ProfileImportService.parseText(
+        context,
+        cleaned.isNotEmpty ? cleaned : raw.trim(),
+      );
       if (!mounted) return;
-      Navigator.of(context).pop(profile);
-    } on ProfileException catch (e) {
+      if (entries == null) {
+        _resetDetection();
+        await _safeStart();
+        return;
+      }
+      if (entries.isEmpty) {
+        throw ProfileException(ProfileErrorCode.uriDecode, detail: 'empty pack');
+      }
+      Navigator.of(context).pop(entries);
+    } catch (e) {
       _resetDetection();
       if (!mounted) return;
-      final lang = Localizations.localeOf(context).languageCode;
-      setState(() => _error = e.messageForLanguage(lang));
-      await _safeStart();
-    } catch (_) {
-      _resetDetection();
-      if (!mounted) return;
-      final en = Localizations.localeOf(context).languageCode.startsWith('en');
-      setState(() {
-        _error = en
-            ? 'Could not recognize the QR. Dense terminal URIs: move closer, tap to focus, use torch, or prefer gallery (peers/*.png) / paste URI.'
-            : '无法识别二维码内容。终端长 URI 较密：拉近、点按对焦、开灯，'
-                '或优先用「从相册选图」（peers/*.png）/ 粘贴 URI。';
-      });
+      setState(() => _error = ProfileImportService.errorMessage(e, lang));
       await _safeStart();
     }
   }
 
-  void _resetDetection() {
-    _handled = false;
-  }
+  void _resetDetection() => _handled = false;
 
   void _onDetect(BarcodeCapture capture) {
     if (_handled) return;
@@ -155,7 +138,7 @@ class _ScanQrScreenState extends State<ScanQrScreen>
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('无法切换闪光灯')),
+          SnackBar(content: Text(AppLocalizations.of(context).torchToggleFailed)),
         );
       }
     }
@@ -163,6 +146,7 @@ class _ScanQrScreenState extends State<ScanQrScreen>
 
   Future<void> _pickFromGallery() async {
     if (_handled || _analyzingGallery) return;
+    final l10n = AppLocalizations.of(context);
     setState(() {
       _analyzingGallery = true;
       _error = null;
@@ -175,8 +159,7 @@ class _ScanQrScreenState extends State<ScanQrScreen>
       );
       if (!mounted) return;
       final files = result?.files;
-      final path =
-          (files != null && files.isNotEmpty) ? files.first.path : null;
+      final path = (files != null && files.isNotEmpty) ? files.first.path : null;
       if (path == null || path.isEmpty) {
         _resetDetection();
         await _safeStart();
@@ -190,9 +173,7 @@ class _ScanQrScreenState extends State<ScanQrScreen>
       final raw = capture == null ? '' : _bestRaw(capture);
       if (raw.isEmpty) {
         _resetDetection();
-        setState(() {
-          _error = '图片中未识别到二维码。请选 peers/<id>.png 或改用粘贴 URI。';
-        });
+        setState(() => _error = l10n.qrGalleryNoCode);
         await _safeStart();
         return;
       }
@@ -200,7 +181,7 @@ class _ScanQrScreenState extends State<ScanQrScreen>
     } catch (_) {
       _resetDetection();
       if (mounted) {
-        setState(() => _error = '无法从图片识别二维码，请改用粘贴 URI。');
+        setState(() => _error = l10n.qrGalleryFailed);
         await _safeStart();
       }
     } finally {
@@ -209,9 +190,10 @@ class _ScanQrScreenState extends State<ScanQrScreen>
   }
 
   Future<void> _submitPaste() async {
+    final l10n = AppLocalizations.of(context);
     final text = _paste.text.trim();
     if (text.isEmpty) {
-      setState(() => _error = '请粘贴 nbvpn:1?… 链接');
+      setState(() => _error = l10n.scanPasteEmpty);
       return;
     }
     await _consumeRaw(text);
@@ -235,7 +217,6 @@ class _ScanQrScreenState extends State<ScanQrScreen>
     unawaited(_safeStart());
   }
 
-  /// Large centered window so dense modules occupy more of the analyzer crop.
   Rect _scanWindowFor(BoxConstraints constraints) {
     final size = constraints.biggest;
     final side = (size.shortestSide * 0.90).clamp(240.0, size.shortestSide);
@@ -248,12 +229,13 @@ class _ScanQrScreenState extends State<ScanQrScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('扫描二维码'),
+        title: Text(l10n.scanQr),
         actions: [
           IconButton(
-            tooltip: _torchOn ? '关闭闪光灯' : '打开闪光灯',
+            tooltip: _torchOn ? l10n.torchOff : l10n.torchOn,
             onPressed: _toggleTorch,
             icon: Icon(_torchOn ? Icons.flash_on : Icons.flash_off_outlined),
           ),
@@ -281,8 +263,7 @@ class _ScanQrScreenState extends State<ScanQrScreen>
                             child: Padding(
                               padding: const EdgeInsets.all(24),
                               child: Text(
-                                '无法打开相机：${error.errorCode.name}\n'
-                                '请允许相机权限，或改用下方「从相册选图」/粘贴。',
+                                l10n.cameraOpenFailed(error.errorCode.name),
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   color: Colors.white70,
@@ -311,7 +292,7 @@ class _ScanQrScreenState extends State<ScanQrScreen>
                       bottom: 12,
                       child: IgnorePointer(
                         child: Text(
-                          '终端 / PNG 二维码较密：填满取景框，点按对焦，必要时开灯',
+                          l10n.scanQrCameraHint,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.92),
@@ -343,7 +324,7 @@ class _ScanQrScreenState extends State<ScanQrScreen>
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.photo_library_outlined, size: 18),
-                  label: const Text('从相册选图（推荐：peers/*.png）'),
+                  label: Text(l10n.scanFromGallery),
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -352,14 +333,14 @@ class _ScanQrScreenState extends State<ScanQrScreen>
                       child: OutlinedButton.icon(
                         onPressed: _pasteClipboard,
                         icon: const Icon(Icons.content_paste, size: 18),
-                        label: const Text('粘贴剪贴板'),
+                        label: Text(l10n.pasteFromClipboard),
                       ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: OutlinedButton(
                         onPressed: _handled ? null : _submitPaste,
-                        child: const Text('校验粘贴'),
+                        child: Text(l10n.validateContinue),
                       ),
                     ),
                   ],
@@ -369,8 +350,8 @@ class _ScanQrScreenState extends State<ScanQrScreen>
                   controller: _paste,
                   minLines: 2,
                   maxLines: 3,
-                  decoration: const InputDecoration(
-                    hintText: '或粘贴 nbvpn:1?…（终端密码扫不清时用）',
+                  decoration: InputDecoration(
+                    hintText: l10n.scanPasteHint,
                     isDense: true,
                   ),
                   onChanged: (_) {

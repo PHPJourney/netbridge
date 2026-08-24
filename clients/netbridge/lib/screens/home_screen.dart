@@ -9,6 +9,7 @@ import '../l10n/app_localizations.dart';
 import '../layout/responsive.dart';
 import '../models/server_entry.dart';
 import '../profile/profile.dart';
+import '../services/server_import.dart';
 import '../state/app_controller.dart';
 import '../theme.dart';
 import '../widgets/common_widgets.dart';
@@ -37,12 +38,88 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _openAdd(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
-    final profile = await Navigator.of(context).push<NbVpnProfile>(
+    final imported = await Navigator.of(context).push<List<ImportedServer>>(
       MaterialPageRoute(builder: (_) => const AddMethodScreen()),
     );
-    if (profile == null || !context.mounted) return;
+    if (imported == null || imported.isEmpty || !context.mounted) return;
 
-    // Same endpoint+keys already present → clear feedback, never silent no-op.
+    if (imported.length == 1) {
+      await _addSingleImported(context, imported.first);
+      return;
+    }
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.importBatchTitle(imported.length)),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(l10n.importBatchBody),
+              const SizedBox(height: 12),
+              for (final e in imported)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text('• ${e.localName}'),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.add),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+
+    var added = 0;
+    var skipped = 0;
+    for (final item in imported) {
+      final profile = NbVpnProfile(
+        v: item.profile.v,
+        name: item.localName.isNotEmpty ? item.localName : item.profile.name,
+        client: item.profile.client,
+        server: item.profile.server,
+      );
+      final existing = controller.findDuplicate(profile);
+      if (existing != null) {
+        skipped++;
+        continue;
+      }
+      await controller.addServer(
+        profile: profile,
+        localName: item.localName.isNotEmpty ? item.localName : profile.name,
+      );
+      added++;
+    }
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.importBatchResult(added, skipped))),
+      );
+    }
+  }
+
+  Future<void> _addSingleImported(
+    BuildContext context,
+    ImportedServer item,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final profile = NbVpnProfile(
+      v: item.profile.v,
+      name: item.localName.isNotEmpty ? item.localName : item.profile.name,
+      client: item.profile.client,
+      server: item.profile.server,
+    );
+
     final existing = controller.findDuplicate(profile);
     if (existing != null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -511,7 +588,7 @@ class _DesktopDetailPane extends StatelessWidget {
                   ),
                   OutlinedButton(
                     onPressed: onExport,
-                    child: Text(l10n.export),
+                    child: Text(l10n.exportBackup),
                   ),
                   OutlinedButton(
                     onPressed: onSync,
@@ -689,7 +766,7 @@ class _ServerTile extends StatelessWidget {
                       child: Text(l10n.disconnect),
                     ),
                   PopupMenuItem(value: 'edit', child: Text(l10n.edit)),
-                  PopupMenuItem(value: 'export', child: Text(l10n.export)),
+                  PopupMenuItem(value: 'export', child: Text(l10n.exportBackup)),
                   PopupMenuItem(value: 'sync', child: Text(l10n.sync)),
                   PopupMenuItem(value: 'share', child: Text(l10n.share)),
                   PopupMenuItem(value: 'rename', child: Text(l10n.rename)),
@@ -705,12 +782,12 @@ class _ServerTile extends StatelessWidget {
 }
 
 /// Shared helpers used by add flows.
-Future<NbVpnProfile?> pickAndParseNbVpnFile(BuildContext context) async {
+Future<List<ImportedServer>?> pickAndParseNbVpnFiles(BuildContext context) async {
   final l10n = AppLocalizations.of(context);
   final lang = Localizations.localeOf(context).languageCode;
   final result = await FilePicker.pickFiles(
     type: FileType.custom,
-    allowedExtensions: const ['json'],
+    allowedExtensions: const ['json', 'txt'],
     withData: true,
   );
   if (result == null || result.files.isEmpty) return null;
@@ -725,11 +802,11 @@ Future<NbVpnProfile?> pickAndParseNbVpnFile(BuildContext context) async {
     return null;
   }
   try {
-    return ProfileCodec.parseJsonBytes(bytes);
-  } on ProfileException catch (e) {
+    return await ProfileImportService.parseBytes(context, bytes);
+  } catch (e) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.messageForLanguage(lang))),
+        SnackBar(content: Text(ProfileImportService.errorMessage(e, lang))),
       );
     }
     return null;

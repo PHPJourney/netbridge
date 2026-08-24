@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-24T11:58:08Z",
+  "updatedAt": "2026-08-24T12:26:58Z",
   "meta": {
     "landingPage": "GitHub Pages (apps/store)",
     "artifactStorage": "GitHub Releases (primary); OpenList optional mirror",
@@ -10,11 +10,11 @@
     "openlistBrowse": "http://154.37.213.245:5244/store",
     "downloadUrlHint": "Primary: GitHub Releases latest/download/<filename>. OpenList remains an optional mirror — see docs/delivery/nbvpn/OPENLIST-UPLOAD.md",
     "status": "github_releases_published",
-    "note": "v0.1.13: 修复 VPN 状态误报（空列表重连、首次连接假 denied）。",
+    "note": "v0.1.14: 安全模型重构——编辑不暴露密钥；近场同步 NFC 明文/蓝牙可选加密；加密分享与备份导出分离；添加服务器支持扫码/粘贴/文件/NFC/蓝牙加密导入。",
     "officialSite": "https://phpjourney.github.io/netbridge/",
     "termsUrl": "./terms.html",
     "privacyUrl": "./privacy.html",
-    "updatedAt": "2026-08-24T11:58:08Z",
+    "updatedAt": "2026-08-24T12:26:58Z",
     "partners": [
       {
         "name": "TradeMind",
@@ -27,8 +27,8 @@
         "url": "#"
       }
     ],
-    "releaseTag": "v0.1.13",
-    "releaseUrl": "https://github.com/PHPJourney/netbridge/releases/tag/v0.1.13"
+    "releaseTag": "v0.1.14",
+    "releaseUrl": "https://github.com/PHPJourney/netbridge/releases/tag/v0.1.14"
   },
   "clients": {
     "windows": {
@@ -55,12 +55,12 @@
     },
     "android": {
       "label": "Android",
-      "version": "0.1.13",
-      "sha256": "d5c1436417d19642c7c4d8aa57f370fd1749a6b98175b2a46fbdacafafb625eb",
+      "version": "0.1.14",
+      "sha256": "f790571a3213e2f12f7619a47c5e90fd5acf42849d971a6d9a2f57af297c847c",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-android-arm64.apk",
       "filename": "NetBridge-android-arm64.apk",
       "status": "available",
-      "note": "R8 release arm64. Fixes VPN status false positives (empty-list reconnect, first-connect denied). Also NetBridge-android-armeabi-v7a.apk / NetBridge-android.apk in same Release."
+      "note": "R8 release arm64. Security model: NFC plain sync, encrypted share/QR import, backup export separated. Also NetBridge-android-armeabi-v7a.apk / NetBridge-android.apk in same Release."
     },
     "ios": {
       "label": "iOS",

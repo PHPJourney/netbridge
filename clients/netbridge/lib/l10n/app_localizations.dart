@@ -461,13 +461,13 @@ abstract class AppLocalizations {
   /// No description provided for @pasteUri.
   ///
   /// In en, this message translates to:
-  /// **'Paste URI'**
+  /// **'Paste URI / JSON'**
   String get pasteUri;
 
   /// No description provided for @pasteUriSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Paste an nbvpn:1?… link'**
+  /// **'Plain nbvpn: or encrypted nbvpn-enc: / encrypted JSON'**
   String get pasteUriSubtitle;
 
   /// No description provided for @importFile.
@@ -479,7 +479,7 @@ abstract class AppLocalizations {
   /// No description provided for @importFileSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Choose a .nbvpn.json config file'**
+  /// **'Plain .nbvpn.json or encrypted .nbvpn.enc.json'**
   String get importFileSubtitle;
 
   /// No description provided for @scanQr.
@@ -491,7 +491,7 @@ abstract class AppLocalizations {
   /// No description provided for @scanQrSubtitleMobile.
   ///
   /// In en, this message translates to:
-  /// **'Camera / gallery / paste URI on this screen'**
+  /// **'Plain nbvpn: and encrypted nbvpn-enc: (passphrase required)'**
   String get scanQrSubtitleMobile;
 
   /// No description provided for @scanQrSubtitleDesktop.
@@ -539,13 +539,13 @@ abstract class AppLocalizations {
   /// No description provided for @pasteUriHint.
   ///
   /// In en, this message translates to:
-  /// **'nbvpn:1?… or full .nbvpn.json text'**
+  /// **'nbvpn:1?… / nbvpn-enc:1?… / JSON'**
   String get pasteUriHint;
 
   /// No description provided for @pasteUriHelper.
   ///
   /// In en, this message translates to:
-  /// **'Ignores WARNING lines, quotes, newlines, and code fences; JSON paste also works'**
+  /// **'Supports plain URI and encrypted URI/JSON (passphrase prompt). Ignores extra whitespace and quotes.'**
   String get pasteUriHelper;
 
   /// No description provided for @pasteFromClipboard.
@@ -716,11 +716,275 @@ abstract class AppLocalizations {
   /// **'Hide'**
   String get hide;
 
-  /// No description provided for @exportServersTitle.
+  /// No description provided for @editKeysLockedHint.
   ///
   /// In en, this message translates to:
-  /// **'Export servers'**
-  String get exportServersTitle;
+  /// **'Key fields cannot be edited here. Use Export backup to migrate keys.'**
+  String get editKeysLockedHint;
+
+  /// No description provided for @keysConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'Keys configured'**
+  String get keysConfigured;
+
+  /// No description provided for @keysConfiguredSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Client private key and server public key are stored securely and not shown here'**
+  String get keysConfiguredSubtitle;
+
+  /// No description provided for @exportBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Export backup (with keys)'**
+  String get exportBackup;
+
+  /// No description provided for @exportBackupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export backup (with keys)'**
+  String get exportBackupTitle;
+
+  /// No description provided for @exportBackupBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup files contain your full private key — equivalent to a password. For trusted local backup or migration only. Never send to WeChat, email, or other public channels.'**
+  String get exportBackupBody;
+
+  /// No description provided for @exportBackupHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Local backup only — cleartext JSON/conf with private keys. For external sharing use encrypted QR/file under Share.'**
+  String get exportBackupHint;
+
+  /// No description provided for @nearFieldSyncTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Near-field sync'**
+  String get nearFieldSyncTitle;
+
+  /// No description provided for @nearFieldSyncHint.
+  ///
+  /// In en, this message translates to:
+  /// **'NFC uses a short plain URI (no passphrase). Bluetooth can optionally encrypt before sending via the system share sheet.'**
+  String get nearFieldSyncHint;
+
+  /// No description provided for @syncViaNfcPlainSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Write plain nbvpn: URI (no passphrase, one server)'**
+  String get syncViaNfcPlainSubtitle;
+
+  /// No description provided for @syncViaBluetooth.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth / system share'**
+  String get syncViaBluetooth;
+
+  /// No description provided for @syncViaBluetoothSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send via system share sheet to Bluetooth / nearby devices'**
+  String get syncViaBluetoothSubtitle;
+
+  /// No description provided for @bluetoothUsePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypt for Bluetooth share'**
+  String get bluetoothUsePassword;
+
+  /// No description provided for @bluetoothUsePasswordSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Off = plain URI file; On = encrypted JSON (recipient needs passphrase)'**
+  String get bluetoothUsePasswordSubtitle;
+
+  /// No description provided for @encryptedShareTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted share'**
+  String get encryptedShareTitle;
+
+  /// No description provided for @encryptedShareHint.
+  ///
+  /// In en, this message translates to:
+  /// **'For WeChat / screenshots — passphrase required; never plain private-key JSON'**
+  String get encryptedShareHint;
+
+  /// No description provided for @shareEncryptedFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted file'**
+  String get shareEncryptedFile;
+
+  /// No description provided for @shareEncryptedFileSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Passphrase-encrypted .nbvpn.enc.json'**
+  String get shareEncryptedFileSubtitle;
+
+  /// No description provided for @importPassphraseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter decryption passphrase'**
+  String get importPassphraseTitle;
+
+  /// No description provided for @importPassphraseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted config detected. Enter the passphrase set when sharing.'**
+  String get importPassphraseBody;
+
+  /// No description provided for @importMethodsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'All methods below support plain and encrypted config. Encrypted content prompts for a passphrase. Multi-server packs import all entries.'**
+  String get importMethodsHint;
+
+  /// No description provided for @importViaNfc.
+  ///
+  /// In en, this message translates to:
+  /// **'Read NFC tag'**
+  String get importViaNfc;
+
+  /// No description provided for @importViaNfcSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap tag to read plain nbvpn: URI'**
+  String get importViaNfcSubtitle;
+
+  /// No description provided for @importViaNfcBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold an NFC tag containing a NetBridge config near your phone. Tags store a plain nbvpn: URI — no passphrase needed.'**
+  String get importViaNfcBody;
+
+  /// No description provided for @nfcStartRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Start reading NFC tag'**
+  String get nfcStartRead;
+
+  /// No description provided for @nfcReadEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No valid config found on the tag'**
+  String get nfcReadEmpty;
+
+  /// No description provided for @importViaBluetooth.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth receive'**
+  String get importViaBluetooth;
+
+  /// No description provided for @importViaBluetoothSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a config file received via Bluetooth'**
+  String get importViaBluetoothSubtitle;
+
+  /// No description provided for @importViaBluetoothBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask the sender to use Sync → Bluetooth. After receiving the file, tap below to pick the .txt / .json from Downloads. Encrypted files require a passphrase.'**
+  String get importViaBluetoothBody;
+
+  /// No description provided for @importViaBluetoothDesktop.
+  ///
+  /// In en, this message translates to:
+  /// **'On desktop, use Import file to pick the received config.'**
+  String get importViaBluetoothDesktop;
+
+  /// No description provided for @importBluetoothPickFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick received file'**
+  String get importBluetoothPickFile;
+
+  /// No description provided for @nfcTooLargePlainBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Config is too long for an NFC tag. Sync one server at a time, or use Bluetooth / encrypted share.'**
+  String get nfcTooLargePlainBody;
+
+  /// No description provided for @importBatchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import {count} servers?'**
+  String importBatchTitle(int count);
+
+  /// No description provided for @importBatchBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The following servers will be added (duplicates are skipped):'**
+  String get importBatchBody;
+
+  /// No description provided for @importBatchResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Added {added}, skipped {skipped} (duplicate)'**
+  String importBatchResult(int added, int skipped);
+
+  /// No description provided for @torchToggleFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not toggle torch'**
+  String get torchToggleFailed;
+
+  /// No description provided for @torchOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn torch on'**
+  String get torchOn;
+
+  /// No description provided for @torchOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn torch off'**
+  String get torchOff;
+
+  /// No description provided for @qrGalleryNoCode.
+  ///
+  /// In en, this message translates to:
+  /// **'No QR code found in the image'**
+  String get qrGalleryNoCode;
+
+  /// No description provided for @qrGalleryFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not decode QR from image'**
+  String get qrGalleryFailed;
+
+  /// No description provided for @scanPasteEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste an nbvpn: or nbvpn-enc: link'**
+  String get scanPasteEmpty;
+
+  /// No description provided for @scanPasteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Or paste nbvpn: / nbvpn-enc: link'**
+  String get scanPasteHint;
+
+  /// No description provided for @scanQrCameraHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Plain and encrypted QR supported; encrypted scans prompt for passphrase'**
+  String get scanQrCameraHint;
+
+  /// No description provided for @scanFromGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick from gallery'**
+  String get scanFromGallery;
+
+  /// No description provided for @cameraOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open camera: {code}\nAllow camera permission, or use gallery / paste.'**
+  String cameraOpenFailed(String code);
 
   /// No description provided for @exportSecretTitle.
   ///
@@ -733,6 +997,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Exported files include private keys — equivalent to passwords. Do not share publicly.'**
   String get exportSecretBody;
+
+  /// No description provided for @exportServersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export servers'**
+  String get exportServersTitle;
 
   /// No description provided for @exportAlsoWireGuard.
   ///
@@ -779,7 +1049,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncTitle.
   ///
   /// In en, this message translates to:
-  /// **'Sync to another device'**
+  /// **'Near-field sync'**
   String get syncTitle;
 
   /// No description provided for @syncPassphraseTitle.
@@ -833,7 +1103,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncViaNfcSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Write short encrypted payload to a tag'**
+  /// **'Write plain nbvpn: URI (no passphrase)'**
   String get syncViaNfcSubtitle;
 
   /// No description provided for @syncBluetoothNote.

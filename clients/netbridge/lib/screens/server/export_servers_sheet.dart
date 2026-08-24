@@ -8,7 +8,7 @@ import '../../services/server_pack_codec.dart';
 import '../../services/server_share_service.dart';
 import '../../theme.dart';
 
-/// Bottom sheet: multi-select servers → export .nbvpn.json / optional .conf.
+/// Export backup: cleartext .nbvpn.json / optional .conf (contains private keys).
 Future<void> showExportServersSheet(
   BuildContext context, {
   required List<ServerEntry> servers,
@@ -62,8 +62,8 @@ class _ExportServersSheetState extends State<_ExportServersSheet> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(l10n.exportSecretTitle),
-        content: Text(l10n.exportSecretBody),
+        title: Text(l10n.exportBackupTitle),
+        content: Text(l10n.exportBackupBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -100,7 +100,7 @@ class _ExportServersSheetState extends State<_ExportServersSheet> {
             ? '${_safeName(picked.first.localName)}.nbvpn.json'
             : 'netbridge-servers-$stamp.nbvpn.json',
         mimeType: 'application/json',
-        subject: l10n.export,
+        subject: l10n.exportBackup,
       );
       if (_alsoWgConf) {
         final conf = ServerPackCodec.wireGuardBundle(picked);
@@ -141,13 +141,24 @@ class _ExportServersSheetState extends State<_ExportServersSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
               child: Text(
-                l10n.exportServersTitle,
+                l10n.exportBackupTitle,
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: NbColors.warmText,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Text(
+                l10n.exportBackupHint,
+                style: const TextStyle(
+                  color: NbColors.mutedText,
+                  fontSize: 12,
+                  height: 1.4,
                 ),
               ),
             ),
@@ -208,7 +219,7 @@ class _ExportServersSheetState extends State<_ExportServersSheet> {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: FilledButton(
                 onPressed: _busy || _selected.isEmpty ? null : _confirmSecrets,
-                child: Text(_busy ? '…' : l10n.export),
+                child: Text(_busy ? '…' : l10n.exportBackup),
               ),
             ),
           ],

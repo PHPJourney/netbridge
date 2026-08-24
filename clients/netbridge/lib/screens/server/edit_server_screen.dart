@@ -8,7 +8,8 @@ import '../../profile/profile_errors.dart';
 import '../../state/app_controller.dart';
 import '../../theme.dart';
 
-/// Edit local display name + mutable profile fields; private key reveal gated.
+/// Edit local display name + non-secret profile fields.
+/// Private key / server public key / PSK are never shown or editable here.
 class EditServerScreen extends StatefulWidget {
   const EditServerScreen({
     super.key,
@@ -32,11 +33,7 @@ class _EditServerScreenState extends State<EditServerScreen> {
   late final TextEditingController _allowedIps;
   late final TextEditingController _mtu;
   late final TextEditingController _keepalive;
-  late final TextEditingController _privateKey;
-  late final TextEditingController _publicKey;
-  late final TextEditingController _presharedKey;
 
-  bool _showPrivateKey = false;
   bool _saving = false;
   String? _error;
 
@@ -59,10 +56,6 @@ class _EditServerScreenState extends State<EditServerScreen> {
           ? '${p.server.persistentKeepalive}'
           : '$defaultKeepalive',
     );
-    _privateKey = TextEditingController(text: p.client.privateKey);
-    _publicKey = TextEditingController(text: p.server.publicKey);
-    _presharedKey =
-        TextEditingController(text: p.server.presharedKey ?? '');
   }
 
   @override
@@ -75,9 +68,6 @@ class _EditServerScreenState extends State<EditServerScreen> {
     _allowedIps.dispose();
     _mtu.dispose();
     _keepalive.dispose();
-    _privateKey.dispose();
-    _publicKey.dispose();
-    _presharedKey.dispose();
     super.dispose();
   }
 
@@ -86,30 +76,6 @@ class _EditServerScreenState extends State<EditServerScreen> {
       .map((e) => e.trim())
       .where((e) => e.isNotEmpty)
       .toList();
-
-  Future<void> _confirmRevealPrivateKey() async {
-    final l10n = AppLocalizations.of(context);
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.revealPrivateKeyTitle),
-        content: Text(l10n.revealPrivateKeyBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(l10n.reveal),
-          ),
-        ],
-      ),
-    );
-    if (ok == true && mounted) {
-      setState(() => _showPrivateKey = true);
-    }
-  }
 
   Future<void> _save() async {
     final l10n = AppLocalizations.of(context);
@@ -121,23 +87,24 @@ class _EditServerScreenState extends State<EditServerScreen> {
     try {
       final mtuText = _mtu.text.trim();
       final kaText = _keepalive.text.trim();
-      final psk = _presharedKey.text.trim();
+      final old = widget.entry.profile;
+      // Keys stay untouched — never read from UI.
       final profile = NbVpnProfile(
         v: NbVpnProfile.supportedVersion,
         name: _name.text.trim(),
         client: ClientSection(
-          privateKey: _privateKey.text.trim(),
+          privateKey: old.client.privateKey,
           address: _splitList(_address.text),
           dns: _splitList(_dns.text),
           mtu: mtuText.isEmpty ? null : int.tryParse(mtuText),
         ),
         server: ServerSection(
-          publicKey: _publicKey.text.trim(),
+          publicKey: old.server.publicKey,
           endpoint: _endpoint.text.trim(),
           allowedIPs: _splitList(_allowedIps.text),
           persistentKeepalive:
               kaText.isEmpty ? null : int.tryParse(kaText),
-          presharedKey: psk.isEmpty ? null : psk,
+          presharedKey: old.server.presharedKey,
         ),
       );
       ProfileCodec.validate(profile);
@@ -178,7 +145,7 @@ class _EditServerScreenState extends State<EditServerScreen> {
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
         children: [
           Text(
-            l10n.secretWarning,
+            l10n.editKeysLockedHint,
             style: const TextStyle(color: NbColors.mutedText, fontSize: 13),
           ),
           const SizedBox(height: 16),
@@ -194,44 +161,14 @@ class _EditServerScreenState extends State<EditServerScreen> {
             l10n.labelKeepalive,
             keyboard: TextInputType.number,
           ),
-          _field(_publicKey, l10n.labelServerPublicKey),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _privateKey,
-                  obscureText: !_showPrivateKey,
-                  decoration: InputDecoration(
-                    labelText: l10n.labelPrivateKey,
-                    border: const OutlineInputBorder(),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                tooltip: _showPrivateKey ? l10n.hide : l10n.reveal,
-                onPressed: () {
-                  if (_showPrivateKey) {
-                    setState(() => _showPrivateKey = false);
-                  } else {
-                    _confirmRevealPrivateKey();
-                  }
-                },
-                icon: Icon(
-                  _showPrivateKey
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _presharedKey,
-            obscureText: !_showPrivateKey,
-            decoration: InputDecoration(
-              labelText: l10n.labelPresharedKey,
-              border: const OutlineInputBorder(),
+          const SizedBox(height: 8),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.lock_outline, color: NbColors.mutedText),
+            title: Text(l10n.keysConfigured),
+            subtitle: Text(
+              l10n.keysConfiguredSubtitle,
+              style: const TextStyle(color: NbColors.mutedText, fontSize: 12),
             ),
           ),
           if (_error != null) ...[

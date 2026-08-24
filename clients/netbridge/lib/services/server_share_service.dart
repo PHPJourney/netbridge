@@ -9,7 +9,7 @@ import 'package:nfc_manager/nfc_manager_ios.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-/// Cross-device share helpers (system share sheet / temp files / NFC tag write).
+/// Cross-device share helpers (system share sheet / temp files / NFC).
 class ServerShareService {
   ServerShareService._();
 
@@ -26,17 +26,25 @@ class ServerShareService {
     }
   }
 
-  static Future<bool> isNfcAvailable() async {
+  static bool get supportsNfc {
     if (kIsWeb) return false;
     try {
-      if (!Platform.isAndroid && !Platform.isIOS) return false;
+      return Platform.isAndroid || Platform.isIOS;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<bool> isNfcAvailable() async {
+    if (!supportsNfc) return false;
+    try {
       return NfcManager.instance.isAvailable();
     } catch (_) {
       return false;
     }
   }
 
-  /// Practical NFC payload budget for NDEF text (bytes). Larger → use file share.
+  /// Practical NFC payload budget for NDEF text (bytes). Larger → use Bluetooth/file.
   static const nfcSoftLimitBytes = 800;
 
   static Future<void> shareText(String text, {String? subject}) {
@@ -84,8 +92,20 @@ class ServerShareService {
     );
   }
 
+  static String? _parseNdefText(NdefMessage message) {
+    for (final record in message.records) {
+      if (record.typeNameFormat != TypeNameFormat.wellKnown) continue;
+      if (record.type.length != 1 || record.type.first != 0x54) continue;
+      final payload = record.payload;
+      if (payload.isEmpty) continue;
+      final langLen = payload.first & 0x3F;
+      if (payload.length <= langLen) continue;
+      return utf8.decode(payload.sublist(1 + langLen));
+    }
+    return null;
+  }
+
   /// Write [payload] as NDEF Text to the next NFC tag (Android/iOS when available).
-  /// Returns false if NFC unavailable; throws if payload too large or write fails.
   static Future<bool> writeNfcText(String payload) async {
     final available = await isNfcAvailable();
     if (!available) return false;
@@ -115,7 +135,6 @@ class ServerShareService {
             if (ndef == null) {
               throw StateError('nfc_tag_not_writable');
             }
-            // iOS NDEF write status varies; attempt query then write via status.
             if (ndef.status != NdefStatusIos.readWrite) {
               throw StateError('nfc_tag_not_writable');
             }
@@ -131,6 +150,47 @@ class ServerShareService {
       },
     );
     return true;
+  }
+
+  /// Read NDEF Text from the next NFC tag. Returns payload or null if empty.
+  static Future<String?> readNfcText() async {
+    final available = await isNfcAvailable();
+    if (!available) return null;
+
+    String? result;
+    Object? error;
+    await NfcManager.instance.startSession(
+      pollingOptions: {
+        NfcPollingOption.iso14443,
+        NfcPollingOption.iso15693,
+      },
+      onDiscovered: (NfcTag tag) async {
+        try {
+          NdefMessage? message;
+          if (Platform.isAndroid) {
+            final ndef = NdefAndroid.from(tag);
+            if (ndef == null) throw StateError('nfc_no_ndef');
+            message = await ndef.getNdefMessage();
+            message ??= ndef.cachedNdefMessage;
+          } else if (Platform.isIOS) {
+            final ndef = NdefIos.from(tag);
+            if (ndef == null) throw StateError('nfc_no_ndef');
+            message = await ndef.readNdef();
+          } else {
+            throw StateError('nfc_unsupported');
+          }
+          if (message != null) {
+            result = _parseNdefText(message);
+          }
+          await NfcManager.instance.stopSession();
+        } catch (e) {
+          error = e;
+          await NfcManager.instance.stopSession(errorMessageIos: '$e');
+        }
+      },
+    );
+    if (error != null) throw error!;
+    return result;
   }
 
   static Future<void> stopNfc() async {

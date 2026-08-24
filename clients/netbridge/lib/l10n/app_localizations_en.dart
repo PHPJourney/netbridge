@@ -211,23 +211,25 @@ class AppLocalizationsEn extends AppLocalizations {
       'Does not connect to any official node. You import config from your own server.';
 
   @override
-  String get pasteUri => 'Paste URI';
+  String get pasteUri => 'Paste URI / JSON';
 
   @override
-  String get pasteUriSubtitle => 'Paste an nbvpn:1?… link';
+  String get pasteUriSubtitle =>
+      'Plain nbvpn: or encrypted nbvpn-enc: / encrypted JSON';
 
   @override
   String get importFile => 'Import file';
 
   @override
-  String get importFileSubtitle => 'Choose a .nbvpn.json config file';
+  String get importFileSubtitle =>
+      'Plain .nbvpn.json or encrypted .nbvpn.enc.json';
 
   @override
   String get scanQr => 'Scan QR code';
 
   @override
   String get scanQrSubtitleMobile =>
-      'Camera / gallery / paste URI on this screen';
+      'Plain nbvpn: and encrypted nbvpn-enc: (passphrase required)';
 
   @override
   String get scanQrSubtitleDesktop =>
@@ -253,11 +255,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pasteUriTitle => 'Paste URI';
 
   @override
-  String get pasteUriHint => 'nbvpn:1?… or full .nbvpn.json text';
+  String get pasteUriHint => 'nbvpn:1?… / nbvpn-enc:1?… / JSON';
 
   @override
   String get pasteUriHelper =>
-      'Ignores WARNING lines, quotes, newlines, and code fences; JSON paste also works';
+      'Supports plain URI and encrypted URI/JSON (passphrase prompt). Ignores extra whitespace and quotes.';
 
   @override
   String get pasteFromClipboard => 'Paste from clipboard';
@@ -348,7 +350,164 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hide => 'Hide';
 
   @override
-  String get exportServersTitle => 'Export servers';
+  String get editKeysLockedHint =>
+      'Key fields cannot be edited here. Use Export backup to migrate keys.';
+
+  @override
+  String get keysConfigured => 'Keys configured';
+
+  @override
+  String get keysConfiguredSubtitle =>
+      'Client private key and server public key are stored securely and not shown here';
+
+  @override
+  String get exportBackup => 'Export backup (with keys)';
+
+  @override
+  String get exportBackupTitle => 'Export backup (with keys)';
+
+  @override
+  String get exportBackupBody =>
+      'Backup files contain your full private key — equivalent to a password. For trusted local backup or migration only. Never send to WeChat, email, or other public channels.';
+
+  @override
+  String get exportBackupHint =>
+      'Local backup only — cleartext JSON/conf with private keys. For external sharing use encrypted QR/file under Share.';
+
+  @override
+  String get nearFieldSyncTitle => 'Near-field sync';
+
+  @override
+  String get nearFieldSyncHint =>
+      'NFC uses a short plain URI (no passphrase). Bluetooth can optionally encrypt before sending via the system share sheet.';
+
+  @override
+  String get syncViaNfcPlainSubtitle =>
+      'Write plain nbvpn: URI (no passphrase, one server)';
+
+  @override
+  String get syncViaBluetooth => 'Bluetooth / system share';
+
+  @override
+  String get syncViaBluetoothSubtitle =>
+      'Send via system share sheet to Bluetooth / nearby devices';
+
+  @override
+  String get bluetoothUsePassword => 'Encrypt for Bluetooth share';
+
+  @override
+  String get bluetoothUsePasswordSubtitle =>
+      'Off = plain URI file; On = encrypted JSON (recipient needs passphrase)';
+
+  @override
+  String get encryptedShareTitle => 'Encrypted share';
+
+  @override
+  String get encryptedShareHint =>
+      'For WeChat / screenshots — passphrase required; never plain private-key JSON';
+
+  @override
+  String get shareEncryptedFile => 'Encrypted file';
+
+  @override
+  String get shareEncryptedFileSubtitle =>
+      'Passphrase-encrypted .nbvpn.enc.json';
+
+  @override
+  String get importPassphraseTitle => 'Enter decryption passphrase';
+
+  @override
+  String get importPassphraseBody =>
+      'Encrypted config detected. Enter the passphrase set when sharing.';
+
+  @override
+  String get importMethodsHint =>
+      'All methods below support plain and encrypted config. Encrypted content prompts for a passphrase. Multi-server packs import all entries.';
+
+  @override
+  String get importViaNfc => 'Read NFC tag';
+
+  @override
+  String get importViaNfcSubtitle => 'Tap tag to read plain nbvpn: URI';
+
+  @override
+  String get importViaNfcBody =>
+      'Hold an NFC tag containing a NetBridge config near your phone. Tags store a plain nbvpn: URI — no passphrase needed.';
+
+  @override
+  String get nfcStartRead => 'Start reading NFC tag';
+
+  @override
+  String get nfcReadEmpty => 'No valid config found on the tag';
+
+  @override
+  String get importViaBluetooth => 'Bluetooth receive';
+
+  @override
+  String get importViaBluetoothSubtitle =>
+      'Pick a config file received via Bluetooth';
+
+  @override
+  String get importViaBluetoothBody =>
+      'Ask the sender to use Sync → Bluetooth. After receiving the file, tap below to pick the .txt / .json from Downloads. Encrypted files require a passphrase.';
+
+  @override
+  String get importViaBluetoothDesktop =>
+      'On desktop, use Import file to pick the received config.';
+
+  @override
+  String get importBluetoothPickFile => 'Pick received file';
+
+  @override
+  String get nfcTooLargePlainBody =>
+      'Config is too long for an NFC tag. Sync one server at a time, or use Bluetooth / encrypted share.';
+
+  @override
+  String importBatchTitle(int count) {
+    return 'Import $count servers?';
+  }
+
+  @override
+  String get importBatchBody =>
+      'The following servers will be added (duplicates are skipped):';
+
+  @override
+  String importBatchResult(int added, int skipped) {
+    return 'Added $added, skipped $skipped (duplicate)';
+  }
+
+  @override
+  String get torchToggleFailed => 'Could not toggle torch';
+
+  @override
+  String get torchOn => 'Turn torch on';
+
+  @override
+  String get torchOff => 'Turn torch off';
+
+  @override
+  String get qrGalleryNoCode => 'No QR code found in the image';
+
+  @override
+  String get qrGalleryFailed => 'Could not decode QR from image';
+
+  @override
+  String get scanPasteEmpty => 'Paste an nbvpn: or nbvpn-enc: link';
+
+  @override
+  String get scanPasteHint => 'Or paste nbvpn: / nbvpn-enc: link';
+
+  @override
+  String get scanQrCameraHint =>
+      'Plain and encrypted QR supported; encrypted scans prompt for passphrase';
+
+  @override
+  String get scanFromGallery => 'Pick from gallery';
+
+  @override
+  String cameraOpenFailed(String code) {
+    return 'Could not open camera: $code\nAllow camera permission, or use gallery / paste.';
+  }
 
   @override
   String get exportSecretTitle => 'Export contains secrets';
@@ -356,6 +515,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get exportSecretBody =>
       'Exported files include private keys — equivalent to passwords. Do not share publicly.';
+
+  @override
+  String get exportServersTitle => 'Export servers';
 
   @override
   String get exportAlsoWireGuard => 'Also export WireGuard .conf';
@@ -379,7 +541,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get server => 'Server';
 
   @override
-  String get syncTitle => 'Sync to another device';
+  String get syncTitle => 'Near-field sync';
 
   @override
   String get syncPassphraseTitle => 'Encryption passphrase';
@@ -408,7 +570,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncViaNfc => 'NFC tag';
 
   @override
-  String get syncViaNfcSubtitle => 'Write short encrypted payload to a tag';
+  String get syncViaNfcSubtitle => 'Write plain nbvpn: URI (no passphrase)';
 
   @override
   String get syncBluetoothNote =>

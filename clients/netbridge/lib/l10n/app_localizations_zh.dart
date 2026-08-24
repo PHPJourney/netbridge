@@ -206,22 +206,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get noOfficialNodes => '不会连接任何官方节点。配置由你从自建服务器导入。';
 
   @override
-  String get pasteUri => '粘贴 URI';
+  String get pasteUri => '粘贴 URI / JSON';
 
   @override
-  String get pasteUriSubtitle => '粘贴 nbvpn:1?… 链接';
+  String get pasteUriSubtitle => '明文 nbvpn: 或加密 nbvpn-enc: / 加密 JSON';
 
   @override
   String get importFile => '导入文件';
 
   @override
-  String get importFileSubtitle => '选择 .nbvpn.json 配置文件';
+  String get importFileSubtitle => '明文 .nbvpn.json 或加密 .nbvpn.enc.json';
 
   @override
   String get scanQr => '扫描二维码';
 
   @override
-  String get scanQrSubtitleMobile => '摄像头 / 相册选图 / 同页粘贴 URI';
+  String get scanQrSubtitleMobile => '支持明文 nbvpn: 与加密 nbvpn-enc:（需口令）';
 
   @override
   String get scanQrSubtitleDesktop => '桌面端请改用粘贴 URI 或导入文件';
@@ -246,10 +246,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pasteUriTitle => '粘贴 URI';
 
   @override
-  String get pasteUriHint => 'nbvpn:1?… 或 .nbvpn.json 全文';
+  String get pasteUriHint => 'nbvpn:1?… / nbvpn-enc:1?… / JSON';
 
   @override
-  String get pasteUriHelper => '自动忽略 WARNING 行、引号、换行与代码块；也可直接粘贴 JSON';
+  String get pasteUriHelper => '支持明文 URI、加密 URI/JSON（会提示输入口令）；自动忽略多余换行与引号';
 
   @override
   String get pasteFromClipboard => '从剪贴板粘贴';
@@ -337,7 +337,150 @@ class AppLocalizationsZh extends AppLocalizations {
   String get hide => '隐藏';
 
   @override
-  String get exportServersTitle => '导出服务器';
+  String get editKeysLockedHint => '密钥字段不可在此编辑。如需迁移请使用「导出备份」。';
+
+  @override
+  String get keysConfigured => '密钥已配置';
+
+  @override
+  String get keysConfiguredSubtitle => '客户端私钥与服务器公钥已安全存储，不在此显示';
+
+  @override
+  String get exportBackup => '导出备份（含密钥）';
+
+  @override
+  String get exportBackupTitle => '导出备份（含密钥）';
+
+  @override
+  String get exportBackupBody =>
+      '备份文件包含完整私钥，等同账户密码。仅用于本机备份或可信迁移，切勿发到微信/邮件等外部渠道。';
+
+  @override
+  String get exportBackupHint =>
+      '本机备份专用——明文 JSON/conf，含私钥。对外分享请用「分享」里的加密二维码/文件。';
+
+  @override
+  String get nearFieldSyncTitle => '近场同步';
+
+  @override
+  String get nearFieldSyncHint => 'NFC 为明文短 URI（无口令）；蓝牙可选加密后再通过系统分享发送。';
+
+  @override
+  String get syncViaNfcPlainSubtitle => '写入明文 nbvpn: URI（无口令，单台）';
+
+  @override
+  String get syncViaBluetooth => '蓝牙 / 系统分享';
+
+  @override
+  String get syncViaBluetoothSubtitle => '通过系统分享面板发送到蓝牙 / 附近设备';
+
+  @override
+  String get bluetoothUsePassword => '蓝牙分享时加密';
+
+  @override
+  String get bluetoothUsePasswordSubtitle =>
+      '关闭 = 明文 URI 文件；开启 = 加密 JSON（接收端需口令）';
+
+  @override
+  String get encryptedShareTitle => '加密分享';
+
+  @override
+  String get encryptedShareHint => '用于微信/截图等外部渠道——必须设置口令，不含明文私钥 JSON';
+
+  @override
+  String get shareEncryptedFile => '加密文件';
+
+  @override
+  String get shareEncryptedFileSubtitle => '口令加密的 .nbvpn.enc.json';
+
+  @override
+  String get importPassphraseTitle => '输入解密口令';
+
+  @override
+  String get importPassphraseBody => '检测到加密配置。请输入分享时设置的口令。';
+
+  @override
+  String get importMethodsHint => '以下方式均支持明文与加密配置；加密内容会提示输入口令。多台配置将一次性全部导入。';
+
+  @override
+  String get importViaNfc => 'NFC 读取';
+
+  @override
+  String get importViaNfcSubtitle => '贴近标签读取明文 nbvpn: URI';
+
+  @override
+  String get importViaNfcBody =>
+      '将含 NetBridge 配置的 NFC 标签贴近手机背面。标签内容为明文 nbvpn: URI，无需口令。';
+
+  @override
+  String get nfcStartRead => '开始读取 NFC 标签';
+
+  @override
+  String get nfcReadEmpty => '标签中未找到有效配置内容';
+
+  @override
+  String get importViaBluetooth => '蓝牙接收';
+
+  @override
+  String get importViaBluetoothSubtitle => '选择通过蓝牙收到的配置文件';
+
+  @override
+  String get importViaBluetoothBody =>
+      '请让对方在「同步 → 蓝牙」发送配置。收到文件后，点击下方按钮从下载目录选择 .txt / .json 文件。加密文件需输入口令。';
+
+  @override
+  String get importViaBluetoothDesktop => '桌面端请使用「导入文件」选择收到的配置文件。';
+
+  @override
+  String get importBluetoothPickFile => '选择已接收的文件';
+
+  @override
+  String get nfcTooLargePlainBody => '配置过长，无法写入 NFC 标签。请逐台同步，或改用蓝牙/加密分享。';
+
+  @override
+  String importBatchTitle(int count) {
+    return '导入 $count 台服务器？';
+  }
+
+  @override
+  String get importBatchBody => '将添加以下服务器（已存在的会自动跳过）：';
+
+  @override
+  String importBatchResult(int added, int skipped) {
+    return '已添加 $added 台，跳过 $skipped 台（重复）';
+  }
+
+  @override
+  String get torchToggleFailed => '无法切换闪光灯';
+
+  @override
+  String get torchOn => '打开闪光灯';
+
+  @override
+  String get torchOff => '关闭闪光灯';
+
+  @override
+  String get qrGalleryNoCode => '图片中未识别到二维码';
+
+  @override
+  String get qrGalleryFailed => '无法从图片识别二维码';
+
+  @override
+  String get scanPasteEmpty => '请粘贴 nbvpn: 或 nbvpn-enc: 链接';
+
+  @override
+  String get scanPasteHint => '或粘贴 nbvpn: / nbvpn-enc: 链接';
+
+  @override
+  String get scanQrCameraHint => '支持明文与加密二维码；加密码扫到后会提示输入口令';
+
+  @override
+  String get scanFromGallery => '从相册选图';
+
+  @override
+  String cameraOpenFailed(String code) {
+    return '无法打开相机：$code\n请允许相机权限，或改用相册/粘贴。';
+  }
 
   @override
   String get exportSecretTitle => '导出含密钥';
@@ -346,7 +489,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get exportSecretBody => '导出文件包含私钥——等同密码。请勿公开发布。';
 
   @override
-  String get exportAlsoWireGuard => '同时导出 WireGuard .conf';
+  String get exportServersTitle => '导出服务器';
+
+  @override
+  String get exportAlsoWireGuard => 'Also export WireGuard .conf';
 
   @override
   String get exportWireGuard => '导出 WireGuard';
@@ -367,7 +513,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get server => '服务器';
 
   @override
-  String get syncTitle => '同步到其它设备';
+  String get syncTitle => '近场同步';
 
   @override
   String get syncPassphraseTitle => '加密口令';
@@ -394,7 +540,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get syncViaNfc => 'NFC 标签';
 
   @override
-  String get syncViaNfcSubtitle => '将短加密载荷写入标签';
+  String get syncViaNfcSubtitle => '写入明文 nbvpn: URI（无口令）';
 
   @override
   String get syncBluetoothNote => '未内置蓝牙点对点同步；请通过系统分享 / Wi‑Fi Direct 传文件。';

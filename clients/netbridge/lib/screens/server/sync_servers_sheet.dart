@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../models/server_entry.dart';
+import '../../profile/profile_codec.dart';
 import '../../services/server_pack_codec.dart';
 import '../../services/server_share_service.dart';
 import '../../theme.dart';
-import 'encrypted_qr_screen.dart';
 
-/// Sync entry: encrypted QR / file share / NFC (Android when available).
+/// Near-field sync: NFC (plaintext) + Bluetooth (optional passphrase).
 Future<void> showSyncServersSheet(
   BuildContext context, {
   required List<ServerEntry> servers,
@@ -42,6 +42,7 @@ class _SyncServersSheetState extends State<_SyncServersSheet> {
   late String _selectedId;
   bool _nfcChecking = true;
   bool _nfcOk = false;
+  bool _btUsePassword = false;
 
   @override
   void initState() {
@@ -68,17 +69,17 @@ class _SyncServersSheetState extends State<_SyncServersSheet> {
     return widget.servers.isEmpty ? null : widget.servers.first;
   }
 
-  Future<String?> _askPassphrase() async {
+  Future<String?> _askPassphrase({required String title, required String body}) async {
     final l10n = AppLocalizations.of(context);
     final field = TextEditingController();
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(l10n.syncPassphraseTitle),
+        title: Text(title),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(l10n.syncPassphraseBody),
+            Text(body),
             const SizedBox(height: 12),
             TextField(
               controller: field,
@@ -109,42 +110,6 @@ class _SyncServersSheetState extends State<_SyncServersSheet> {
     return text;
   }
 
-  Future<void> _syncQr() async {
-    final entry = _entry;
-    if (entry == null) return;
-    final pass = await _askPassphrase();
-    if (pass == null || !mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => EncryptedQrScreen(entries: [entry], passphrase: pass),
-      ),
-    );
-  }
-
-  Future<void> _syncFile() async {
-    final l10n = AppLocalizations.of(context);
-    final entry = _entry;
-    if (entry == null) return;
-    final pass = await _askPassphrase();
-    if (pass == null || !mounted) return;
-    try {
-      final env = await ServerPackCodec.encryptPack([entry], pass);
-      final json = const JsonEncoder.withIndent('  ').convert(env);
-      await ServerShareService.shareFileBytes(
-        bytes: utf8.encode(json),
-        filename: 'netbridge-sync.nbvpn.enc.json',
-        mimeType: 'application/json',
-        subject: l10n.sync,
-      );
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${l10n.syncFailed}: $e')),
-        );
-      }
-    }
-  }
-
   Future<void> _syncNfc() async {
     final l10n = AppLocalizations.of(context);
     if (!_nfcOk) {
@@ -155,28 +120,19 @@ class _SyncServersSheetState extends State<_SyncServersSheet> {
     }
     final entry = _entry;
     if (entry == null) return;
-    final pass = await _askPassphrase();
-    if (pass == null || !mounted) return;
     try {
-      final uri = await ServerPackCodec.encryptPackUri([entry], pass);
+      final uri = ProfileCodec.encodeUri(entry.profile);
       if (uri.length > ServerShareService.nfcSoftLimitBytes) {
         if (!mounted) return;
         await showDialog<void>(
           context: context,
           builder: (ctx) => AlertDialog(
             title: Text(l10n.nfcTooLargeTitle),
-            content: Text(l10n.nfcTooLargeBody),
+            content: Text(l10n.nfcTooLargePlainBody),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
                 child: Text(l10n.close),
-              ),
-              FilledButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  _syncFile();
-                },
-                child: Text(l10n.syncViaFile),
               ),
             ],
           ),
@@ -197,9 +153,46 @@ class _SyncServersSheetState extends State<_SyncServersSheet> {
       await ServerShareService.stopNfc();
       if (!mounted) return;
       final msg = '$e'.contains('nfc_payload_too_large')
-          ? l10n.nfcTooLargeBody
+          ? l10n.nfcTooLargePlainBody
           : '${l10n.nfcFailed}: $e';
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    }
+  }
+
+  Future<void> _syncBluetooth() async {
+    final l10n = AppLocalizations.of(context);
+    final entry = _entry;
+    if (entry == null) return;
+    try {
+      if (_btUsePassword) {
+        final pass = await _askPassphrase(
+          title: l10n.syncPassphraseTitle,
+          body: l10n.syncPassphraseBody,
+        );
+        if (pass == null || !mounted) return;
+        final env = await ServerPackCodec.encryptPack([entry], pass);
+        final json = const JsonEncoder.withIndent('  ').convert(env);
+        await ServerShareService.shareFileBytes(
+          bytes: utf8.encode(json),
+          filename: 'netbridge-bt.nbvpn.enc.json',
+          mimeType: 'application/json',
+          subject: l10n.syncViaBluetooth,
+        );
+      } else {
+        final uri = ProfileCodec.encodeUri(entry.profile);
+        await ServerShareService.shareFileBytes(
+          bytes: utf8.encode(uri),
+          filename: 'netbridge-bt.nbvpn.txt',
+          mimeType: 'text/plain',
+          subject: l10n.syncViaBluetooth,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${l10n.syncFailed}: $e')),
+        );
+      }
     }
   }
 
@@ -214,13 +207,24 @@ class _SyncServersSheetState extends State<_SyncServersSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
               child: Text(
-                l10n.syncTitle,
+                l10n.nearFieldSyncTitle,
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: NbColors.warmText,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Text(
+                l10n.nearFieldSyncHint,
+                style: const TextStyle(
+                  color: NbColors.mutedText,
+                  fontSize: 12,
+                  height: 1.4,
                 ),
               ),
             ),
@@ -243,18 +247,6 @@ class _SyncServersSheetState extends State<_SyncServersSheet> {
                 ),
               ),
             ListTile(
-              leading: const Icon(Icons.qr_code_2),
-              title: Text(l10n.syncViaQr),
-              subtitle: Text(l10n.syncViaQrSubtitle),
-              onTap: _syncQr,
-            ),
-            ListTile(
-              leading: const Icon(Icons.ios_share_outlined),
-              title: Text(l10n.syncViaFile),
-              subtitle: Text(l10n.syncViaFileSubtitle),
-              onTap: _syncFile,
-            ),
-            ListTile(
               leading: const Icon(Icons.nfc),
               enabled: !_nfcChecking && _nfcOk,
               title: Text(l10n.syncViaNfc),
@@ -262,20 +254,22 @@ class _SyncServersSheetState extends State<_SyncServersSheet> {
                 _nfcChecking
                     ? '…'
                     : _nfcOk
-                        ? l10n.syncViaNfcSubtitle
+                        ? l10n.syncViaNfcPlainSubtitle
                         : l10n.nfcUnsupported,
               ),
               onTap: _nfcOk ? _syncNfc : null,
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-              child: Text(
-                l10n.syncBluetoothNote,
-                style: const TextStyle(
-                  color: NbColors.mutedText,
-                  fontSize: 12,
-                ),
-              ),
+            SwitchListTile(
+              value: _btUsePassword,
+              onChanged: (v) => setState(() => _btUsePassword = v),
+              title: Text(l10n.bluetoothUsePassword),
+              subtitle: Text(l10n.bluetoothUsePasswordSubtitle),
+            ),
+            ListTile(
+              leading: const Icon(Icons.bluetooth),
+              title: Text(l10n.syncViaBluetooth),
+              subtitle: Text(l10n.syncViaBluetoothSubtitle),
+              onTap: _syncBluetooth,
             ),
           ],
         ),

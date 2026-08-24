@@ -1,12 +1,16 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 import '../../config/brand_links.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/server_entry.dart';
+import '../../services/server_pack_codec.dart';
 import '../../services/server_share_service.dart';
 import '../../utils/open_url.dart';
 import 'encrypted_qr_screen.dart';
 
+/// External share: encrypted QR / encrypted file / app link only.
 Future<void> showShareServerMenu(
   BuildContext context, {
   required ServerEntry entry,
@@ -19,11 +23,31 @@ Future<void> showShareServerMenu(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Text(
+              l10n.encryptedShareTitle,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+            child: Text(
+              l10n.encryptedShareHint,
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ),
           ListTile(
             leading: const Icon(Icons.qr_code_2),
             title: Text(l10n.shareEncryptedQr),
             subtitle: Text(l10n.shareEncryptedQrSubtitle),
             onTap: () => Navigator.pop(ctx, 'qr'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.lock_outline),
+            title: Text(l10n.shareEncryptedFile),
+            subtitle: Text(l10n.shareEncryptedFileSubtitle),
+            onTap: () => Navigator.pop(ctx, 'file'),
           ),
           ListTile(
             leading: const Icon(Icons.storefront_outlined),
@@ -68,9 +92,40 @@ Future<void> showShareServerMenu(
     return;
   }
 
-  // Encrypted QR
+  final pass = await _askSharePassphrase(context);
+  if (pass == null || !context.mounted) return;
+
+  if (choice == 'file') {
+    try {
+      final env = await ServerPackCodec.encryptPack([entry], pass);
+      final json = const JsonEncoder.withIndent('  ').convert(env);
+      await ServerShareService.shareFileBytes(
+        bytes: utf8.encode(json),
+        filename: 'netbridge-share.nbvpn.enc.json',
+        mimeType: 'application/json',
+        subject: l10n.shareEncryptedFile,
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${l10n.syncFailed}: $e')),
+        );
+      }
+    }
+    return;
+  }
+
+  await Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) => EncryptedQrScreen(entries: [entry], passphrase: pass),
+    ),
+  );
+}
+
+Future<String?> _askSharePassphrase(BuildContext context) async {
+  final l10n = AppLocalizations.of(context);
   final field = TextEditingController();
-  final passOk = await showDialog<bool>(
+  final ok = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
       title: Text(l10n.syncPassphraseTitle),
@@ -104,11 +159,6 @@ Future<void> showShareServerMenu(
   );
   final pass = field.text;
   field.dispose();
-  if (passOk != true || pass.isEmpty || !context.mounted) return;
-  await Navigator.of(context).push(
-    MaterialPageRoute(
-      builder: (_) => EncryptedQrScreen(entries: [entry], passphrase: pass),
-    ),
-  );
+  if (ok != true || pass.isEmpty) return null;
+  return pass;
 }
-

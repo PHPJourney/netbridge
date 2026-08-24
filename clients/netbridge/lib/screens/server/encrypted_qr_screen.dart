@@ -98,6 +98,8 @@ class _EncryptedQrScreenState extends State<EncryptedQrScreen> {
                           child: QrImageView(
                             data: _uri!,
                             version: QrVersions.auto,
+                            errorCorrectionLevel: QrErrorCorrectLevel.L,
+                            gapless: true,
                             backgroundColor: Colors.white,
                             size: 280,
                             errorStateBuilder: (ctx, err) => Text(

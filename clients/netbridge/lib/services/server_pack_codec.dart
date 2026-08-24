@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import '../models/server_entry.dart';
 import '../profile/nbvpn_profile.dart';
@@ -43,26 +44,44 @@ class ServerPackCodec {
         : jsonEncode(profile.toJson());
   }
 
+  /// Encrypt pack. [compact] gzips plaintext and uses QR-friendly PBKDF iters.
   static Future<Map<String, dynamic>> encryptPack(
     List<ServerEntry> entries,
-    String passphrase,
-  ) async {
-    final plain = utf8.encode(jsonEncode(buildPack(entries)));
-    return ServerPackCrypto.encrypt(plaintext: plain, passphrase: passphrase);
+    String passphrase, {
+    bool compact = false,
+  }) async {
+    final plainJson = utf8.encode(jsonEncode(buildPack(entries)));
+    List<int> plaintext = plainJson;
+    String? comp;
+    if (compact) {
+      plaintext = gzip.encode(plainJson);
+      comp = 'gzip';
+    }
+    final env = await ServerPackCrypto.encrypt(
+      plaintext: plaintext,
+      passphrase: passphrase,
+      // Slightly fewer iters for QR size/time; still strong enough for sync.
+      iterations: compact ? 60000 : ServerPackCrypto.defaultIterations,
+    );
+    if (comp != null) {
+      env['comp'] = comp;
+    }
+    return env;
   }
 
+  /// Encrypted URI for QR / paste. Uses gzip + compact envelope for scannability.
   static Future<String> encryptPackUri(
     List<ServerEntry> entries,
     String passphrase,
   ) async {
-    final env = await encryptPack(entries, passphrase);
+    final env = await encryptPack(entries, passphrase, compact: true);
     final raw = utf8.encode(jsonEncode(env));
     final payload = base64Url.encode(raw).replaceAll('=', '');
     return '$encPrefix$payload';
   }
 
   static bool looksLikeEncryptedUri(String raw) {
-    final s = raw.trim().toLowerCase();
+    final s = raw.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '');
     return s.startsWith('nbvpn-enc:1?');
   }
 
@@ -97,10 +116,14 @@ class ServerPackCodec {
     Map<String, dynamic> envelope,
     String passphrase,
   ) async {
-    final plain = await ServerPackCrypto.decrypt(
+    var plain = await ServerPackCrypto.decrypt(
       envelope: envelope,
       passphrase: passphrase,
     );
+    final comp = envelope['comp']?.toString();
+    if (comp == 'gzip') {
+      plain = gzip.decode(plain);
+    }
     return parseClearPackBytes(plain);
   }
 
@@ -123,6 +146,10 @@ class ServerPackCodec {
     }
     // Single profile object
     if (decoded is Map) {
+      // Encrypted envelope mistaken for clear — reject early
+      if (decoded['alg'] == 'AES-256-GCM' && decoded['ciphertext'] != null) {
+        throw FormatException('encrypted envelope requires passphrase');
+      }
       final profile =
           NbVpnProfile.fromJson(decoded.cast<String, dynamic>());
       ProfileCodec.validate(profile);
