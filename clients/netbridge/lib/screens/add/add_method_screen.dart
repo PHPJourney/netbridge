@@ -37,7 +37,10 @@ class AddMethodScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.addMethodTitle)),
       body: DesktopConstrainedBody(
-        child: ListView(
+        // Column only — DesktopConstrainedBody already scrolls; ListView here
+        // gets unbounded height and renders blank on Android.
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
               l10n.chooseImportMethod,
