@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-20T08:00:00Z",
+  "updatedAt": "2026-08-24T03:40:00Z",
   "meta": {
     "landingPage": "GitHub Pages (apps/store)",
     "artifactStorage": "GitHub Releases (primary); OpenList optional mirror",
@@ -10,7 +10,7 @@
     "openlistBrowse": "http://154.37.213.245:5244/store",
     "downloadUrlHint": "Primary: GitHub Releases latest/download/<filename>. OpenList remains an optional mirror — see docs/delivery/nbvpn/OPENLIST-UPLOAD.md",
     "status": "github_releases_published",
-    "note": "v0.1.8: Server 2012 专用 Setup-win2012 = WireGuard 0.5.3（历史官方 MSI）+ Win32 GUI（无 Fyne/无 MinGW）+ CLI；现代 Setup 仍为 WG 1.1+Fyne（Win10+/2016+）。",
+    "note": "v0.1.11: Linux curl|bash 自动拉取配套脚本并设置 NBVPN_BINARY_URL；Server 2012 主推 Setup-win2012（WG 0.5.3 + Win32 GUI）；现代 Setup 仍为 WG 1.1+Fyne（Win10+/2016+）。",
     "officialSite": "https://phpjourney.github.io/netbridge/",
     "termsUrl": "./terms.html",
     "privacyUrl": "./privacy.html",
@@ -26,14 +26,14 @@
         "url": "#"
       }
     ],
-    "releaseTag": "v0.1.8",
-    "releaseUrl": "https://github.com/PHPJourney/netbridge/releases/tag/v0.1.8"
+    "releaseTag": "v0.1.11",
+    "releaseUrl": "https://github.com/PHPJourney/netbridge/releases/tag/v0.1.11"
   },
   "clients": {
     "windows": {
       "label": "Windows",
-      "version": "0.1.8",
-      "sha256": "c3fb2763e6252f7e6134c7f24dfcd961b8f18c30e2e9f70cf4ad08a712f978f5",
+      "version": "0.1.11",
+      "sha256": "4cb4d845ce7f7763eebc9ed92244dfd16f2b4dfa525b1cd6a76c53980630d9ba",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-windows-setup.exe",
       "filename": "NetBridge-windows-setup.exe",
       "portableUrl": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-windows-portable.zip",
@@ -54,8 +54,8 @@
     },
     "android": {
       "label": "Android",
-      "version": "0.1.8",
-      "sha256": "1b13f12765ac5d100fd94be462099eafd0e660d7d5d338e47dd4848fed627c86",
+      "version": "0.1.11",
+      "sha256": "e607b71998efac5a387c8dad5cf1b462191471d08143ec2722c037584c5f74e8",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-android-arm64.apk",
       "filename": "NetBridge-android-arm64.apk",
       "status": "available",
@@ -74,52 +74,52 @@
   "servers": {
     "debian": {
       "label": "Debian",
-      "version": "0.1.8",
-      "sha256": "157c84ff8e0eaf30793e1f51bfc17c26854c3814afaaeea37482c25501322a9f",
+      "version": "0.1.11",
+      "sha256": "5b36208387ebbe4b7551fceffac57d019e6c775a76eb0f3c57a6bda5c738442e",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-linux-amd64",
       "filename": "nbvpn-linux-amd64",
       "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/debian.sh",
       "installCommand": "curl -fsSL https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/debian.sh | sudo bash",
       "status": "available",
-      "note": "One-liner pulls the install script from GitHub raw. Binary from Releases (set NBVPN_BINARY_URL if needed)."
+      "note": "curl|bash 一行命令：bootstrap 自动从 GitHub 拉取配套脚本；二进制默认 Releases latest（可用 NBVPN_BINARY_URL 覆盖）。"
     },
     "ubuntu": {
       "label": "Ubuntu",
-      "version": "0.1.8",
-      "sha256": "157c84ff8e0eaf30793e1f51bfc17c26854c3814afaaeea37482c25501322a9f",
+      "version": "0.1.11",
+      "sha256": "5b36208387ebbe4b7551fceffac57d019e6c775a76eb0f3c57a6bda5c738442e",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-linux-amd64",
       "filename": "nbvpn-linux-amd64",
       "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/ubuntu.sh",
       "installCommand": "curl -fsSL https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/ubuntu.sh | sudo bash",
       "status": "available",
-      "note": "Shares nbvpn-linux-amd64 with Debian. One-liner includes companion script URL."
+      "note": "与 Debian 共用 nbvpn-linux-amd64。curl|bash 管道安装已支持（bootstrap 拉配套脚本 + NBVPN_BINARY_URL）。"
     },
     "centos": {
       "label": "CentOS",
-      "version": "0.1.8",
-      "sha256": "157c84ff8e0eaf30793e1f51bfc17c26854c3814afaaeea37482c25501322a9f",
+      "version": "0.1.11",
+      "sha256": "5b36208387ebbe4b7551fceffac57d019e6c775a76eb0f3c57a6bda5c738442e",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-linux-amd64",
       "filename": "nbvpn-linux-amd64",
       "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/centos.sh",
       "installCommand": "curl -fsSL https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/centos.sh | sudo bash",
       "status": "available",
-      "note": "Rocky/Alma via rhel-family. One-liner includes companion script URL."
+      "note": "Rocky/Alma 等同 rhel 系。curl|bash 管道安装已支持。"
     },
     "rhel": {
       "label": "RHEL",
-      "version": "0.1.8",
-      "sha256": "157c84ff8e0eaf30793e1f51bfc17c26854c3814afaaeea37482c25501322a9f",
+      "version": "0.1.11",
+      "sha256": "5b36208387ebbe4b7551fceffac57d019e6c775a76eb0f3c57a6bda5c738442e",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-linux-amd64",
       "filename": "nbvpn-linux-amd64",
       "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/rhel.sh",
       "installCommand": "curl -fsSL https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/rhel.sh | sudo bash",
       "status": "available",
-      "note": "linux-amd64 primary; also nbvpn-linux-arm64 and nbvpn-server zip in Release."
+      "note": "linux-amd64 为主；Release 另有 nbvpn-linux-arm64 与 nbvpn-server zip。curl|bash 已支持。"
     },
     "windows": {
       "label": "Windows Server",
-      "version": "0.1.8",
-      "sha256": "0bb1390375ee87f57444183b460d7204aa59a267d0102c24d8c8c48d244b8e3c",
+      "version": "0.1.11",
+      "sha256": "58baa9f3c5574936c3be49befdf21cce693fa54930e4636161822c839ded6c78",
       "setupUrl": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-nbvpn-Setup.exe",
       "setupFilename": "NetBridge-nbvpn-Setup.exe",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-windows-amd64.exe",
@@ -131,16 +131,16 @@
       "bootstrapUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/windows/bootstrap.ps1",
       "installCommand": "irm https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/windows/bootstrap.ps1 | iex",
       "status": "available",
-      "note": "Win10+/2016+：Setup.exe（WG 1.1+Fyne）。Server 2012：双击 Setup-win2012（WG 0.5.3 + Win32 GUI）。v0.1.8。",
-      "noteEn": "Win10+/2016+: Setup.exe (WG 1.1+Fyne). Server 2012: Setup-win2012 (WG 0.5.3 + Win32 GUI). v0.1.8.",
+      "note": "Win10+/2016+：Setup.exe（WG 1.1+Fyne）。Server 2012：主推 Setup-win2012 双击安装（WG 0.5.3 + Win32 GUI）。v0.1.11。",
+      "noteEn": "Win10+/2016+: Setup.exe (WG 1.1+Fyne). Server 2012: prefer Setup-win2012 double-click (WG 0.5.3 + Win32 GUI). v0.1.11.",
       "guiUrl": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-gui-windows-amd64.exe",
       "guiFilename": "nbvpn-gui-windows-amd64.exe",
-      "guiSha256": "e4e74c0dd36fcbe386a06ef9e1f7d2bc6551d18e9f50d90775b33a31a591a203",
-      "cliSha256": "e2996d29de9c7b8c4adcdcdda9783a032c07f753321da9bb29d55371ddbebd46",
-      "win2012Sha256": "be325556e1e040bbb566221348a4cdcf1663e6a227c23b8cc99a80354b655c54",
+      "guiSha256": "e1066a7e87fda637d483fc89afa0255e864f6b9428a63fa8ae386374f433432a",
+      "cliSha256": "bbbf8f0f8cb1a442d3273bbe38dea6bd21c16d3b3d4247791c8b1b597c828706",
+      "win2012Sha256": "82eeca60e92d6ffba7dff256f36bca7ededf555121cf2ac03e70c1f75ab780de",
       "setupWin2012Url": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-nbvpn-Setup-win2012.exe",
       "setupWin2012Filename": "NetBridge-nbvpn-Setup-win2012.exe",
-      "setupWin2012Sha256": "",
+      "setupWin2012Sha256": "0fd365111c6b879cd82557d34f7e05cad63053cca21ce3f4ed98515049ab0682",
       "guiWin2012Url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-gui-win2012.exe"
     }
   }

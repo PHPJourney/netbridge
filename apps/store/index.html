@@ -257,29 +257,27 @@
             <p data-i18n="help.install.intro">当前正式支持的服务端系统：</p>
             <ul class="help-list">
               <li data-i18n-html="help.install.li1">
-                <strong>Debian</strong> / <strong>Ubuntu</strong>（deb 系一键脚本）
+                <strong>Debian</strong> / <strong>Ubuntu</strong>（deb 系一键脚本，支持 <code>curl|bash</code> 管道安装）
               </li>
               <li data-i18n-html="help.install.li2">
                 <strong>CentOS</strong> / <strong>RHEL</strong>（含 Rocky / Alma 等同系）
               </li>
               <li data-i18n-html="help.install.li3">
                 <strong>Windows Server</strong>（Win10+/2016+ 用 <code>Setup.exe</code>；<strong>Server 2012
-                必须用 win2012 exe</strong>，勿下 Setup）
+                主推 <code>Setup-win2012</code></strong>，勿用现代 Setup）
               </li>
             </ul>
             <p data-i18n-html="help.install.body">
               到
               <a href="#servers">部署服务端</a>
               ：Linux 复制一键命令以 root /
-              <code>sudo</code> 执行；Windows（2016+/Win10+）优先下载 Setup.exe 并以管理员运行；若是 Server
-              2012，展开「高级」下载 win2012 exe + install.ps1。安装完成后会配置首个客户端 peer，并尽量启用服务。
+              <code>sudo</code> 执行（<code>curl|bash</code> 会自动拉取配套脚本与 Releases 二进制）；Windows（2016+/Win10+）下载 Setup.exe 并以管理员运行；<strong>Server 2012 优先下载 Setup-win2012 双击安装</strong>（高级区另有 win2012 exe + install.ps1）。安装完成后会配置首个客户端 peer，并尽量启用服务。
             </p>
             <aside class="help-callout" role="note">
               <strong data-i18n="help.install.winTitle">Windows 服务端 MVP</strong>
               <p data-i18n-html="help.install.winBody">
                 在 <a href="#servers">部署服务端</a> 的 Windows 卡片：<strong>Win10 / Server 2016+</strong>
-                用 <strong>Setup.exe</strong>；<strong>Server 2012 / 2012 R2 不要用 Setup / 现代 exe /
-                GUI</strong>——展开「高级」下载 <code>nbvpn-windows-amd64-win2012.exe</code> +
+                用 <strong>Setup.exe</strong>；<strong>Server 2012 / 2012 R2 主推 Setup-win2012 双击安装</strong>（含 WG 0.5.3 + Win32 GUI）。高级裸装：下载 <code>nbvpn-windows-amd64-win2012.exe</code> +
                 <code>install.ps1</code>，管理员执行 <code>install.ps1 -SkipWireGuard</code>。详见
                 <code>WINDOWS.md</code>。
               </p>

@@ -61,15 +61,15 @@ const dict = {
     "help.flow.note": "页顶「使用步骤」是同一流程的摘要；本区有更细的安装与排错说明。",
     "help.install.title": "安装服务端",
     "help.install.intro": "当前正式支持的服务端系统：",
-    "help.install.li1": "<strong>Debian</strong> / <strong>Ubuntu</strong>（deb 系一键脚本）",
+    "help.install.li1": "<strong>Debian</strong> / <strong>Ubuntu</strong>（deb 系一键脚本，支持 <code>curl|bash</code> 管道安装）",
     "help.install.li2": "<strong>CentOS</strong> / <strong>RHEL</strong>（含 Rocky / Alma 等同系）",
     "help.install.li3":
-      "<strong>Windows Server</strong>（Win10+/2016+ 用 <code>Setup.exe</code>；<strong>Server 2012 必须用 win2012 exe</strong>，勿下 Setup）",
+      "<strong>Windows Server</strong>（Win10+/2016+ 用 <code>Setup.exe</code>；<strong>Server 2012 主推 <code>Setup-win2012</code></strong>，勿用现代 Setup）",
     "help.install.body":
-      "到 <a href=\"#servers\">部署服务端</a>：Linux 复制一键命令以 root / <code>sudo</code> 执行；Windows（2016+/Win10+）优先下载 Setup.exe 并以管理员运行；若是 Server 2012，展开「高级」下载 win2012 exe + install.ps1。安装完成后会配置首个客户端 peer，并尽量启用服务。",
+      "到 <a href=\"#servers\">部署服务端</a>：Linux 复制一键命令以 root / <code>sudo</code> 执行（<code>curl|bash</code> 会自动拉取配套脚本与 Releases 二进制）；Windows（2016+/Win10+）下载 Setup.exe 并以管理员运行；<strong>Server 2012 优先下载 Setup-win2012 双击安装</strong>（高级区另有 win2012 exe + install.ps1）。安装完成后会配置首个客户端 peer，并尽量启用服务。",
     "help.install.winTitle": "Windows 服务端 MVP",
     "help.install.winBody":
-      "在 <a href=\"#servers\">部署服务端</a> 的 Windows 卡片：<strong>Win10 / Server 2016+</strong> 下载 <strong>服务端 Setup.exe</strong> 并以管理员运行（自动装 WireGuard；可用 Fyne GUI）。<strong>Server 2012 / 2012 R2 不要用服务端 Setup、客户端「网桥 VPN」Setup、现代 exe / GUI</strong>——展开「高级」下载 <code>nbvpn-windows-amd64-win2012.exe</code> + <code>install.ps1</code>，管理员执行 <code>install.ps1 -SkipWireGuard</code>（无 GUI；官方 WG 无真隧道，仅导出配置）。详见 <code>WINDOWS.md</code>。",
+      "在 <a href=\"#servers\">部署服务端</a> 的 Windows 卡片：<strong>Win10 / Server 2016+</strong> 下载 <strong>服务端 Setup.exe</strong> 并以管理员运行（自动装 WireGuard；可用 Fyne GUI）。<strong>Server 2012 / 2012 R2 主推 Setup-win2012 双击安装</strong>（含 WG 0.5.3 + Win32 GUI）；勿用现代 Setup / 客户端安装包 / 现代 exe。高级裸装：下载 <code>nbvpn-windows-amd64-win2012.exe</code> + <code>install.ps1</code>，管理员执行 <code>install.ps1 -SkipWireGuard</code>。详见 <code>WINDOWS.md</code>。",
     "help.commands.title": "nbvpn 常用命令",
     "help.commands.intro": "安装完成后，在服务器终端执行（多数环境需 <code>sudo</code>）：",
     "help.commands.d1": "首次安装 / 修复配置，生成节点与首个客户端配置并尽量启用服务。",
@@ -243,15 +243,15 @@ const dict = {
       "The top “Get started” strip is the same flow in brief; this section has more install and troubleshooting detail.",
     "help.install.title": "Install the server",
     "help.install.intro": "Currently supported server systems:",
-    "help.install.li1": "<strong>Debian</strong> / <strong>Ubuntu</strong> (deb-family one-liner)",
+    "help.install.li1": "<strong>Debian</strong> / <strong>Ubuntu</strong> (deb-family one-liner; <code>curl|bash</code> piping supported)",
     "help.install.li2": "<strong>CentOS</strong> / <strong>RHEL</strong> (including Rocky / Alma)",
     "help.install.li3":
-      "<strong>Windows Server</strong> (Win10+/2016+: <code>Setup.exe</code>; <strong>Server 2012 must use win2012 exe</strong> — not Setup)",
+      "<strong>Windows Server</strong> (Win10+/2016+: <code>Setup.exe</code>; <strong>Server 2012: prefer <code>Setup-win2012</code></strong> — not modern Setup)",
     "help.install.body":
-      "Go to <a href=\"#servers\">Deploy server</a>: on Linux copy the one-liner and run as root / <code>sudo</code>; on Windows (2016+/Win10+) download Setup.exe as Administrator; on Server 2012 expand Advanced for win2012 exe + install.ps1. Install configures the first client peer and tries to enable the service.",
+      "Go to <a href=\"#servers\">Deploy server</a>: on Linux copy the one-liner and run as root / <code>sudo</code> (<code>curl|bash</code> fetches companion scripts and Releases binary); on Windows (2016+/Win10+) download Setup.exe as Administrator; <strong>on Server 2012 prefer Setup-win2012 double-click</strong> (Advanced: win2012 exe + install.ps1). Install configures the first client peer and tries to enable the service.",
     "help.install.winTitle": "Windows server MVP",
     "help.install.winBody":
-      "On the Windows card under <a href=\"#servers\">Deploy server</a>: <strong>Win10 / Server 2016+</strong> use <strong>server Setup.exe</strong> as Administrator (bundles WireGuard; Fyne GUI). <strong>Server 2012 / 2012 R2: do not use server Setup, client “网桥 VPN” Setup, modern exe / GUI</strong> — expand Advanced, download <code>nbvpn-windows-amd64-win2012.exe</code> + <code>install.ps1</code>, run <code>install.ps1 -SkipWireGuard</code> elevated (no GUI; official WG has no real tunnel). See <code>WINDOWS.md</code>.",
+      "On the Windows card under <a href=\"#servers\">Deploy server</a>: <strong>Win10 / Server 2016+</strong> use <strong>server Setup.exe</strong> as Administrator (bundles WireGuard; Fyne GUI). <strong>Server 2012 / 2012 R2: prefer Setup-win2012 double-click</strong> (WG 0.5.3 + Win32 GUI); do not use modern Setup / client installer / modern exe. Advanced raw install: <code>nbvpn-windows-amd64-win2012.exe</code> + <code>install.ps1</code>, run <code>install.ps1 -SkipWireGuard</code> elevated. See <code>WINDOWS.md</code>.",
     "help.commands.title": "Common nbvpn commands",
     "help.commands.intro":
       "After install, run these in a server shell (most environments need <code>sudo</code>):",
