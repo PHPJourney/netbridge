@@ -49,7 +49,7 @@ Expect: PASS (or PASS with skips only if dry-run / no terminal glyphs). FAIL blo
 | Acceptance | Command / check | Pass when |
 |------------|-----------------|-----------|
 | AC-01 一键安装 | `install.sh` + `nbvpn status` | Interface up (not dry-run); connection info printed |
-| AC-02 终端二维码 | `nbvpn show` | Half-block QR visible; **wide terminal** (≥100 cols) or use PNG |
+| AC-02 终端二维码 | `nbvpn show` | Half-block QR visible (auto-sized to TTY/`COLUMNS`); narrow → `--qr-size` or optional PNG |
 | AC-03 URI + 文件 | `nbvpn show --uri` / `--file` | URI `nbvpn:1?…` on **stdout**; warning on stderr; `.nbvpn.json` under data dir |
 | AC-04 config | `nbvpn config` | Endpoint/public key; **no** server private key |
 | AC-05 服务管理 | `nbvpn stop` → `status` → `start` → `restart` | States match; errors readable |
@@ -63,8 +63,8 @@ After `nbvpn show` / `peer add`:
 |----------|--------------|--------|
 | URI | stdout | Same payload as QR |
 | Profile JSON | `/var/lib/nbvpn/peers/<id>.nbvpn.json` | mode 0600 |
-| **QR PNG** | `/var/lib/nbvpn/peers/<id>.png` | mode 0600; **prefer for phone scan** if SSH wraps |
-| Terminal QR | stdout ANSI half-blocks | Forced light bg / dark modules |
+| Terminal QR | stdout half-blocks | **Primary**; auto-sized; ANSI light bg when enabled |
+| **QR PNG** | `/var/lib/nbvpn/peers/<id>.png` | mode 0600; **optional** if SSH wraps / camera prefers file |
 
 Fallback printed by CLI: use `--file`, `--uri`, or open the PNG.
 
@@ -84,7 +84,7 @@ nbvpn peer revoke <id>     # removes .nbvpn.json + .png; old profile must not co
 
 ## Client spot-check (after server PASS)
 
-1. Import URI or scan **PNG** (not wrapped terminal) into 网桥 VPN.
+1. Import URI or scan **terminal QR** (or optional PNG if terminal wrapped) into 网桥 VPN.
 2. Connect from at least one platform (Android first — real tunnel ready).
 3. Confirm handshake / traffic; revoke peer and confirm old profile fails.
 

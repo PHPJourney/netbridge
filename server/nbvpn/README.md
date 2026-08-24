@@ -89,7 +89,7 @@ Firewall: open **UDP 51820** on the host **and** the cloud security group. See `
 | Command | Purpose |
 |---------|---------|
 | `install` | Create interface config, first peer, detect endpoint, enable service |
-| `show [--uri\|--qr\|--file\|--all]` | Connection info (default `--all`) |
+| `show [--uri\|--qr\|--file\|--all] [--qr-size N]` | Connection info (default `--all`; terminal QR + optional PNG) |
 | `config` | Node summary without server private key |
 | `config set endpoint <host[:port]>` | Set public endpoint for profiles |
 | `status` / `start` / `stop` / `restart` | Service management |

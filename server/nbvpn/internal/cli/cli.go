@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/netbridge/nbvpn/internal/endpoint"
@@ -81,8 +82,8 @@ func printHelpZh(w *os.File) {
 常用命令:
   version                         打印版本（验证 exe 能否启动）
   install                         安装/配置节点、首个 peer、启用服务
-  show [--uri|--qr|--file|--conf|--all]
-                                  显示客户端连接信息（默认 --all）
+  show [--uri|--qr|--file|--conf|--all] [--qr-size N]
+                                  显示客户端连接信息（默认 --all；终端字符二维码）
   status                          服务 / 隧道状态
   start | stop | restart          管理 WireGuard 服务
   peer add [name]                 新增客户端 peer
@@ -110,7 +111,8 @@ Usage:
 
 Commands:
   install                         Install/configure node, first peer, enable service
-  show [--uri|--qr|--file|--conf|--all]  Show connection info for a peer (default: --all)
+  show [--uri|--qr|--file|--conf|--all] [--qr-size N]
+                                  Show connection info (default --all; terminal QR)
   config                          Show node summary (no server private key)
   config set endpoint <host[:port]>
                                   Set public endpoint used in client profiles
@@ -128,8 +130,9 @@ Environment:
                    (Linux default /var/lib/nbvpn;
                     Windows default %ProgramData%\nbvpn;
                     fallback if unwritable)
-  NBVPN_TERMINAL_QR=1  Force terminal QR on Windows default show
   NO_COLOR / NBVPN_FORCE_ANSI  Disable / force ANSI color in terminal QR
+  COLUMNS            Hint terminal width for QR sizing (else TTY probe)
+  NBVPN_NO_TERMINAL_QR=1  Skip terminal QR (optional PNG / --uri only)
 
 Firewall / endpoint:
   Clients need UDP listen port open on host firewall AND cloud security group
@@ -143,7 +146,8 @@ Dry-run:
 
 Pipe tip:
   nbvpn show --uri   # URI on stdout; secret warning on stderr
-  nbvpn show --qr    # terminal QR (Windows: opt-in; prefer open PNG)
+  nbvpn show --qr    # terminal half-block QR (+ optional PNG path tip)
+  nbvpn show --qr-size 80   # cap terminal QR module width (columns)
 
 `)
 }
@@ -262,19 +266,15 @@ func cmdInstall(args []string) error {
 	}
 	fmt.Println()
 	fmt.Println("Next steps:")
-	if runtime.GOOS == "windows" {
-		fmt.Println("  1. nbvpn show          # URI + files + PNG path (no terminal QR by default)")
-		fmt.Println("     Open the .png in Explorer, or: nbvpn show --uri / nbvpn show --qr")
-	} else {
-		fmt.Println("  1. nbvpn show          # URI + QR + profile file (secrets!)")
-	}
+	fmt.Println("  1. nbvpn show          # URI + terminal QR + files (secrets!)")
+	fmt.Println("     Optional: nbvpn show --qr-size 80   # fit narrow SSH; PNG is supplemental")
 	fmt.Println("  2. Download a client from your NetBridge store page")
-	fmt.Println("  3. Import the URI / QR PNG / .nbvpn.json, or WireGuard .conf (nbvpn show --conf)")
+	fmt.Println("  3. Import the URI / scan terminal QR / .nbvpn.json, or WireGuard .conf (nbvpn show --conf)")
 	fmt.Println()
 
 	// show first active peer
 	if len(peers) > 0 {
-		return showPeer(s, st, peers[0], showModeAll)
+		return showPeer(s, st, peers[0], showModeAll, 0)
 	}
 	return nil
 }
@@ -413,20 +413,40 @@ const (
 func cmdShow(args []string) error {
 	mode := showModeAll
 	peerRef := ""
-	for _, a := range args {
-		switch a {
-		case "--all":
+	qrSize := 0 // 0 = auto (COLUMNS / TTY / default)
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		switch {
+		case a == "--all":
 			mode = showModeAll
-		case "--uri":
+		case a == "--uri":
 			mode = showModeURI
-		case "--qr":
+		case a == "--qr":
 			mode = showModeQR
-		case "--file":
+		case a == "--file":
 			mode = showModeFile
-		case "--conf":
+		case a == "--conf":
 			mode = showModeConf
-		case "-h", "--help":
-			fmt.Println("Usage: nbvpn show [--uri|--qr|--file|--conf|--all] [peer-id|name]")
+		case a == "--qr-size":
+			if i+1 >= len(args) {
+				return fmt.Errorf("--qr-size requires an integer (terminal columns)")
+			}
+			i++
+			n, err := strconv.Atoi(args[i])
+			if err != nil || n <= 0 {
+				return fmt.Errorf("invalid --qr-size %q", args[i])
+			}
+			qrSize = qr.ClampMaxCols(n)
+		case strings.HasPrefix(a, "--qr-size="):
+			n, err := strconv.Atoi(strings.TrimPrefix(a, "--qr-size="))
+			if err != nil || n <= 0 {
+				return fmt.Errorf("invalid --qr-size %q", a)
+			}
+			qrSize = qr.ClampMaxCols(n)
+		case a == "-h", a == "--help":
+			fmt.Println("Usage: nbvpn show [--uri|--qr|--file|--conf|--all] [--qr-size N] [peer-id|name]")
+			fmt.Println("  Terminal half-block QR is always printed for --all / --qr (unless NBVPN_NO_TERMINAL_QR=1).")
+			fmt.Println("  Optional PNG beside the peer profile is supplemental, not a substitute.")
 			return nil
 		default:
 			if strings.HasPrefix(a, "-") {
@@ -459,10 +479,10 @@ func cmdShow(args []string) error {
 			return fmt.Errorf("peer %s is revoked", peerRef)
 		}
 	}
-	return showPeer(s, st, p, mode)
+	return showPeer(s, st, p, mode, qrSize)
 }
 
-func showPeer(s *state.Store, st *state.ServerState, p *state.PeerRecord, mode showMode) error {
+func showPeer(s *state.Store, st *state.ServerState, p *state.PeerRecord, mode showMode, qrSize int) error {
 	prof := buildProfile(st, p)
 	if err := prof.Validate(); err != nil {
 		return err
@@ -496,7 +516,7 @@ func showPeer(s *state.Store, st *state.ServerState, p *state.PeerRecord, mode s
 		fmt.Fprintf(os.Stderr, "ERROR: could not write QR PNG to %s: %v\n", s.PeerQRPath(p.ID), err)
 		fmt.Fprintln(os.Stderr, "ERROR: 无法写入二维码 PNG（路径不可写或磁盘错误）。请检查权限 / NBVPN_DATA_DIR。")
 	} else if mode == showModeAll || mode == showModeQR {
-		// Interactive modes: copy to Desktop + reveal. Machine modes (--uri/--file) stay quiet.
+		// Interactive modes: optional Desktop copies; no auto-open image viewer.
 		pngAnnounce = qr.AfterWrite(pngPath)
 	}
 
@@ -517,26 +537,18 @@ func showPeer(s *state.Store, st *state.ServerState, p *state.PeerRecord, mode s
 		fmt.Println()
 		fmt.Println("--- WireGuard .conf (official WireGuard / wg-quick) ---")
 		fmt.Println(confPath)
+		fmt.Println()
+		fmt.Println("--- QR (scan with NetBridge client; terminal half-block) ---")
+		fmt.Println("二维码内容 = 完整 nbvpn: URI（与上方 URI 相同，以 nbvpn:1? 开头）")
+		fmt.Println("QR payload = full nbvpn: URI (same as URI section; starts with nbvpn:1?)")
+		fmt.Printf("payload prefix: %s…\n", qrPayloadPrefix(uri))
+		printTerminalQR(uri, qrSize)
 		if pngPath != "" {
 			fmt.Println()
-			fmt.Println("--- QR PNG (preferred on Windows / narrow consoles) ---")
-			fmt.Println("(filename uses peer id; PNG pixels encode the full URI above)")
 			qr.PrintAfterWrite(os.Stdout, pngPath, pngAnnounce)
 		} else if pngWriteErr != nil {
 			fmt.Println()
-			fmt.Println("--- QR PNG FAILED ---")
-			fmt.Printf("error: %v\n", pngWriteErr)
-		}
-		if wantTerminalQR(false) {
-			fmt.Println()
-			fmt.Println("--- QR (scan with NetBridge client) ---")
-			fmt.Println("二维码内容 = 完整 nbvpn: URI（与上方 URI 相同，以 nbvpn:1? 开头）")
-			fmt.Println("QR payload = full nbvpn: URI (same as URI section; starts with nbvpn:1?)")
-			fmt.Printf("payload prefix: %s…\n", qrPayloadPrefix(uri))
-			printTerminalQR(uri)
-		} else if runtime.GOOS == "windows" {
-			fmt.Println()
-			fmt.Println(qr.WindowsDefaultHint)
+			fmt.Printf("Optional QR PNG failed: %v\n", pngWriteErr)
 		}
 		return nil
 	}
@@ -563,34 +575,33 @@ func showPeer(s *state.Store, st *state.ServerState, p *state.PeerRecord, mode s
 	case showModeQR:
 		fmt.Fprintln(os.Stderr, "二维码内容 = 完整 nbvpn: URI（以 nbvpn:1? 开头；不是 peer 数字 id）")
 		fmt.Fprintf(os.Stderr, "payload prefix: %s…\n", qrPayloadPrefix(uri))
+		printTerminalQR(uri, qrSize)
 		if pngPath != "" {
-			fmt.Println(pngPath)
 			qr.PrintAfterWrite(os.Stderr, pngPath, pngAnnounce)
 		} else if pngWriteErr != nil {
-			return fmt.Errorf("QR PNG write failed: %w", pngWriteErr)
+			fmt.Fprintf(os.Stderr, "Optional QR PNG failed: %v\n", pngWriteErr)
 		}
-		printTerminalQR(uri)
 	}
 	return nil
 }
 
-// wantTerminalQR: on Windows, terminal block QR is opt-in (--qr or NBVPN_TERMINAL_QR=1).
-func wantTerminalQR(forceQRMode bool) bool {
-	if forceQRMode {
-		return true
-	}
-	if runtime.GOOS == "windows" {
-		return os.Getenv("NBVPN_TERMINAL_QR") == "1"
-	}
-	return true
+// wantTerminalQR: always true unless operator opts out (NBVPN_NO_TERMINAL_QR=1).
+func wantTerminalQR() bool {
+	v := strings.TrimSpace(os.Getenv("NBVPN_NO_TERMINAL_QR"))
+	return v != "1" && !strings.EqualFold(v, "true")
 }
 
-func printTerminalQR(uri string) {
-	q, err := qr.RenderTerminal(uri)
+func printTerminalQR(uri string, qrSize int) {
+	if !wantTerminalQR() {
+		fmt.Fprintln(os.Stderr, "Terminal QR skipped (NBVPN_NO_TERMINAL_QR=1). Use --uri / optional PNG / --file.")
+		return
+	}
+	maxCols := qr.EffectiveMaxCols(qrSize)
+	q, err := qr.RenderTerminalOpts(uri, qr.RenderOptions{UseANSI: qr.ColorEnabled(), MaxCols: maxCols})
 	if err != nil {
 		if qr.IsTooWide(err) {
 			fmt.Fprintf(os.Stderr, "warning: %v\n", err)
-			fmt.Fprintln(os.Stderr, "Terminal QR skipped (too dense for ~48–56 columns). Use the PNG path above / --file.")
+			fmt.Fprintf(os.Stderr, "Terminal QR skipped (needs ≤%d cols; try wider SSH or --qr-size). Optional PNG / --uri still available.\n", maxCols)
 			fmt.Println(qr.FallbackHint)
 			return
 		}
@@ -598,6 +609,7 @@ func printTerminalQR(uri string) {
 		fmt.Println(qr.FallbackHint)
 		return
 	}
+	fmt.Printf("(terminal QR width budget: %d cols; COLUMNS/TTY/--qr-size)\n", maxCols)
 	fmt.Print(q)
 	fmt.Println(qr.FallbackHint)
 }
@@ -777,7 +789,7 @@ func cmdPeerAdd(name string) error {
 		return err
 	}
 	fmt.Printf("added peer %s (%s)\n\n", p.Name, p.ID)
-	return showPeer(s, st, p, showModeAll)
+	return showPeer(s, st, p, showModeAll, 0)
 }
 
 func cmdPeerList() error {

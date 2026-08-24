@@ -118,7 +118,7 @@ nbvpn show phone         # re-export one peer
 nbvpn peer revoke phone  # removes export files; old profiles stop working
 ```
 
-- Prefer **QR PNG** (`/var/lib/nbvpn/peers/<id>.png`) over terminal QR when SSH columns wrap.
+- Terminal half-block QR is primary; if SSH columns wrap, widen the session, use `nbvpn show --qr-size N`, or open the optional **QR PNG** (`/var/lib/nbvpn/peers/<id>.png`).
 - `nbvpn show --uri` is pipe-friendly: only the URI is on stdout; the secret warning is on stderr.
 - Never commit URIs, peer JSON, or VPS passwords into git.
 

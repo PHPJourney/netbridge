@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"unsafe"
 
+	"github.com/netbridge/nbvpn/internal/qr"
 	qrcode "github.com/skip2/go-qrcode"
 )
 
@@ -228,7 +229,7 @@ func createControls(parent syscall.Handle) {
 	mkBtn(idBtnPeers, "Peer 列表", 296, 12, 100, 28)
 	mkBtn(idBtnURI, "显示 URI", 404, 12, 100, 28)
 	mkBtn(idBtnCopyURI, "复制 URI", 12, 48, 100, 28)
-	mkBtn(idBtnQR, "打开 QR", 120, 48, 80, 28)
+	mkBtn(idBtnQR, "显示 QR", 120, 48, 80, 28)
 	mkBtn(idBtnData, "数据目录", 208, 48, 100, 28)
 	mkBtn(idBtnAddPeer, "添加 Peer", 316, 48, 100, 28)
 	mkBtn(idBtnHelp, "说明", 424, 48, 80, 28)
@@ -324,16 +325,26 @@ func openQR() {
 	out, err := runNbvpn("show", "--uri")
 	uri := strings.TrimSpace(firstLine(out))
 	if uri == "" || err != nil {
-		msgBox("打开 QR", "无法获取 URI: "+fmt.Sprint(err))
+		msgBox("显示 QR", "无法获取 URI: "+fmt.Sprint(err))
 		return
 	}
 	lastURI = uri
-	pngPath := filepath.Join(os.TempDir(), "nbvpn-peer-qr.png")
-	if err := qrcode.WriteFile(uri, qrcode.Medium, 256, pngPath); err != nil {
-		msgBox("打开 QR", err.Error())
-		return
+	// Render half-block QR inside the GUI text pane (no external PNG viewer).
+	q, qerr := qr.RenderTerminalOpts(uri, qr.RenderOptions{UseANSI: false, MaxCols: 96})
+	var text strings.Builder
+	text.WriteString("窗口内二维码（字符块；与 nbvpn show --qr 相同载荷）\r\n")
+	text.WriteString("QR payload = full nbvpn: URI\r\n\r\n")
+	if qerr != nil {
+		text.WriteString("[terminal QR] " + qerr.Error() + "\r\n")
+		text.WriteString("可改用「显示 URI」或数据目录中的 peers\\*.png 作为附件。\r\n")
+	} else {
+		text.WriteString(strings.ReplaceAll(q, "\n", "\r\n"))
 	}
-	procShellExecute.Call(0, uintptr(unsafe.Pointer(utf16Ptr("open"))), uintptr(unsafe.Pointer(utf16Ptr(pngPath))), 0, 0, swShow)
+	pngPath := filepath.Join(os.TempDir(), "nbvpn-peer-qr.png")
+	if err := qrcode.WriteFile(uri, qrcode.Medium, 256, pngPath); err == nil {
+		text.WriteString("\r\n可选 PNG 附件: " + pngPath + "\r\n")
+	}
+	setEditText(text.String())
 }
 
 func openDataDir() {

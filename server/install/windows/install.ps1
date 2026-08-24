@@ -575,8 +575,8 @@ Write-Host ""
 Write-Host "=== Windows install finished ==="
 Write-Host "Binary: $TargetExe"
 Write-Host 'PATH: open a NEW terminal (or log off/on) if nbvpn is not found in an old window.'
-Write-Host "Show URI / files / PNG:  nbvpn show"
-Write-Host "  (terminal QR skipped on Windows by default; open the .png or use --uri)"
+Write-Host "Show URI / terminal QR / files:  nbvpn show"
+Write-Host "  (PNG is optional; narrow console: nbvpn show --qr-size 80  or set COLUMNS)"
 Write-Host "CLI status (profiles / dry-run):  nbvpn status"
 Write-Host '  NOTE: nbvpn is a CLI — it is NOT a Windows Service by itself.'
 Write-Host '  The tunnel service is WireGuardTunnel$nbvpn (needs WireGuard for Windows).'

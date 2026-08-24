@@ -100,35 +100,65 @@ func TestRenderTerminal_tooWide(t *testing.T) {
 	}
 }
 
-func TestRenderTerminal_defaultClampRejectsDenseURI(t *testing.T) {
-	// Real nbvpn URIs are dense (~80+ modules). Default MaxTerminalCols must refuse them.
-	_, err := RenderTerminal(sampleURI)
-	if !IsTooWide(err) {
-		t.Fatalf("want TooWideError for sample URI under default clamp, got %v", err)
+func TestRenderTerminal_fitsTypicalSSH(t *testing.T) {
+	// Real nbvpn URIs are ~73–89 modules. An 80-col SSH session must still get a
+	// terminal QR (compact ECC + optional border drop), not PNG-only fallback.
+	out, err := RenderTerminalOpts(sampleURI, RenderOptions{UseANSI: false, MaxCols: 80})
+	if err != nil {
+		t.Fatalf("want terminal QR under 80 cols, got %v", err)
 	}
-	tw, ok := err.(*TooWideError)
-	if !ok {
-		t.Fatal("expected *TooWideError")
+	width := 0
+	for _, line := range strings.Split(strings.TrimRight(out, "\n"), "\n") {
+		n := len([]rune(line))
+		if width == 0 {
+			width = n
+		}
+		if n > 80 {
+			t.Fatalf("line width %d exceeds 80-col terminal", n)
+		}
 	}
-	if tw.Max != MaxTerminalCols {
-		t.Fatalf("max=%d want %d", tw.Max, MaxTerminalCols)
+	if width < 21 || width > 80 {
+		t.Fatalf("unexpected width %d", width)
 	}
-	if tw.Max < MinTerminalCols || tw.Max > MaxTerminalColsCap {
-		t.Fatalf("MaxTerminalCols %d outside 48–56 band", tw.Max)
+	t.Logf("80-col fit: %d modules", width)
+}
+
+func TestRenderTerminal_defaultEffectiveFits(t *testing.T) {
+	t.Setenv("COLUMNS", "100")
+	out, err := RenderTerminal(sampleURI)
+	if err != nil {
+		t.Fatalf("default RenderTerminal with COLUMNS=100: %v", err)
+	}
+	if !strings.Contains(out, "█") && !strings.Contains(out, "▀") && !strings.Contains(out, "▄") {
+		t.Fatal("expected half-block glyphs")
+	}
+}
+
+func TestDetectTerminalCols_COLUMNS(t *testing.T) {
+	t.Setenv("COLUMNS", "97")
+	if got := DetectTerminalCols(); got != 97 {
+		t.Fatalf("DetectTerminalCols=%d want 97", got)
+	}
+	if got := EffectiveMaxCols(0); got != 96 {
+		t.Fatalf("EffectiveMaxCols=%d want 96 (97-1 margin)", got)
+	}
+	if got := EffectiveMaxCols(64); got != 64 {
+		t.Fatalf("override EffectiveMaxCols=%d want 64", got)
 	}
 }
 
 func TestClampMaxCols(t *testing.T) {
-	if ClampMaxCols(0) != MaxTerminalCols {
-		t.Fatalf("0 → default")
+	t.Setenv("COLUMNS", "")
+	if ClampMaxCols(0) != DefaultMaxTerminalCols && ClampMaxCols(0) < MinTerminalCols {
+		t.Fatalf("0 → default or detected, got %d", ClampMaxCols(0))
 	}
-	if ClampMaxCols(40) != MinTerminalCols {
-		t.Fatalf("below band → %d", MinTerminalCols)
+	if ClampMaxCols(10) != MinTerminalCols {
+		t.Fatalf("below min → %d", MinTerminalCols)
 	}
-	if ClampMaxCols(80) != MaxTerminalColsCap {
-		t.Fatalf("above band → %d", MaxTerminalColsCap)
+	if ClampMaxCols(999) != MaxTerminalColsCap {
+		t.Fatalf("above cap → %d", MaxTerminalColsCap)
 	}
-	if ClampMaxCols(52) != 52 {
+	if ClampMaxCols(80) != 80 {
 		t.Fatalf("in-band passthrough")
 	}
 }

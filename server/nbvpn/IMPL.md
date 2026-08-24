@@ -43,10 +43,13 @@
 ## Terminal QR limitations
 
 - Payload is always the full `nbvpn:1?<base64url>` URI (contract-valid); do not shorten the URI for density
-- Half-block packing (`█▀▄`) keeps modules roughly square on typical ~2:1 terminal cells; double-width full blocks would exceed ~80 columns for real URIs
-- ANSI forces white background / near-black foreground so dark themes do not invert modules
-- Real profiles still yield ~90+ column QR matrices — **narrow SSH sessions may wrap and break scanning**; use PNG / `--file` / `--uri`
-- Terminal encode uses Medium ECC (smaller matrix); PNG uses High/Q (more robust for camera)
+- Half-block packing (`█▀▄`) keeps modules roughly square on typical ~2:1 terminal cells
+- Width budget: `COLUMNS` / TTY size / `--qr-size N` via `EffectiveMaxCols` (default 120 when undetectable) — **not** a hard 48–56 clamp
+- `--all` / `--qr` always print terminal QR unless `NBVPN_NO_TERMINAL_QR=1`; PNG is supplemental
+- ANSI forces white background / near-black foreground so dark themes do not invert modules (Windows: ANSI off unless `NBVPN_FORCE_ANSI=1` / `FORCE_COLOR`)
+- Real profiles ~73–89 modules after compact ECC — **very narrow SSH may still wrap**; widen terminal, `--qr-size`, or use optional PNG / `--file` / `--uri`
+- Terminal encode uses Medium ECC (smaller matrix); PNG uses High (more robust for camera)
+- win2012 GUI (`nbvpn-gui-win2012`): renders character QR in the text pane (does not auto-open Photos)
 
 ## Dry-run
 

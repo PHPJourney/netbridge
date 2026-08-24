@@ -17,9 +17,9 @@ type AfterWriteResult struct {
 	OpenErr       error
 }
 
-// AfterWrite copies the PNG to a few visible locations (Windows), prints operator hints,
-// and on Windows tries explorer /select (or the default image viewer).
-// Linux/macOS: no GUI pop-ups; only returns soft notes.
+// AfterWrite copies the PNG to a few visible locations (Windows) and returns soft notes.
+// It does not open an image viewer — terminal half-block QR is the primary CLI display;
+// PNG is an optional on-disk supplement for camera scan / attachments.
 func AfterWrite(canonicalPath string) AfterWriteResult {
 	var r AfterWriteResult
 	if strings.TrimSpace(canonicalPath) == "" {
@@ -33,27 +33,22 @@ func AfterWrite(canonicalPath string) AfterWriteResult {
 	return r
 }
 
-// PrintAfterWrite writes a conspicuous block to w (usually stdout) after a successful PNG write.
+// PrintAfterWrite writes a short supplemental note after a successful PNG write.
+// Prefer printing the terminal QR first; call this only as an extra tip.
 func PrintAfterWrite(w io.Writer, canonicalPath string, r AfterWriteResult) {
 	if w == nil {
 		w = os.Stdout
 	}
-	fmt.Fprintln(w)
-	fmt.Fprintln(w, "=== QR PNG written ===")
-	fmt.Fprintf(w, "Wrote QR PNG: %s\n", canonicalPath)
+	fmt.Fprintf(w, "Optional QR PNG (supplement; scan terminal QR above when possible): %s\n", canonicalPath)
+	for _, c := range r.VisibleCopies {
+		fmt.Fprintf(w, "  also: %s\n", c)
+	}
+	if r.SelectCmd != "" {
+		fmt.Fprintf(w, "  reveal: %s\n", r.SelectCmd)
+	}
 	for _, n := range r.Notes {
 		fmt.Fprintln(w, n)
 	}
-	if r.SelectCmd != "" {
-		fmt.Fprintf(w, "Reveal in Explorer:\n  %s\n", r.SelectCmd)
-	}
-	for _, c := range r.VisibleCopies {
-		fmt.Fprintf(w, "Also copied (non-hidden):\n  %s\n", c)
-	}
-	if r.OpenErr != nil {
-		fmt.Fprintf(w, "(could not auto-open PNG: %v)\n", r.OpenErr)
-	}
-	fmt.Fprintln(w, "=== end QR PNG ===")
 }
 
 func copyFile(src, dst string) error {

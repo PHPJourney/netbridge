@@ -26,7 +26,7 @@ Download from [GitHub Releases](https://github.com/PHPJourney/netbridge/releases
 ```powershell
 # Open a NEW PowerShell / cmd (PATH refresh). Then:
 where.exe nbvpn
-nbvpn show          # URI + file paths + QR PNG (no terminal QR on Windows by default)
+nbvpn show          # URI + terminal half-block QR + file paths + optional PNG
 explorer $env:ProgramData\nbvpn   # ProgramData is often HIDDEN
 nbvpn status        # CLI status — NOT the same as a Windows Service named "nbvpn"
 nbvpn start         # elevates tunnel via WireGuardTunnel$nbvpn (WG must be installed)
@@ -69,7 +69,7 @@ After a successful WG install you should be able to run `nbvpn start` in a **new
 | Native `nbvpn-gui-windows-amd64.exe` | Yes (**Fyne** window + tray; built on windows-2022 with CGO; shells out to `nbvpn`) |
 | Cross-compile `nbvpn-windows-amd64-win2012.exe` | Yes (**Go 1.20**; GUI not required on 2012) |
 | `nbvpn install` / `show` (URI + PNG + `.nbvpn.json` + `.conf`) | Yes — even without WireGuard (dry-run / 2012) |
-| Terminal QR in console | **Skipped by default on Windows** (`nbvpn show --qr` opt-in; no ANSI unless forced) |
+| Terminal QR in console | **Always on** for `show` / `show --qr` (sizes to console width; ANSI off on classic conhost unless `NBVPN_FORCE_ANSI=1`) |
 | Tunnel via **WireGuard for Windows** | Auto-installed on Win10+/2016+; then `nbvpn start` |
 | Host firewall UDP **51820** | Setup / `install.ps1` |
 | IPv4 forwarding | Yes |
@@ -183,11 +183,11 @@ explorer C:\ProgramData\nbvpn
 dir $env:ProgramData\nbvpn\peers
 ```
 
-After `nbvpn show` / `show --qr`, nbvpn also:
+After `nbvpn show` / `show --qr`, nbvpn:
 
-- Prints a conspicuous **Wrote QR PNG** block + `explorer /select,"…"` hint
-- Tries to open/reveal the PNG
-- Copies to **Desktop** (`nbvpn-peer-*.png`) and `%PUBLIC%\Documents\nbvpn\` (non-hidden)
+- Prints a **terminal half-block QR** first (primary; same payload as the URI)
+- Optionally writes PNG + Desktop / `%PUBLIC%\Documents\nbvpn\` copies (supplement only; no auto-open Photos)
+- Narrow consoles: widen the window, set `COLUMNS`, or `nbvpn show --qr-size N`
 
 Files after install: `server.json`, `nbvpn.conf`, `peers\<id>.nbvpn.json`, `.png`, `.conf`.
 
@@ -247,10 +247,12 @@ GUI shells out to the installed `nbvpn.exe` with a **hidden console** (no black 
 
 | Command | Behavior |
 |---------|----------|
-| `nbvpn show` | URI + paths + **PNG** (Desktop copy + reveal on Windows); **no** terminal block QR |
+| `nbvpn show` | URI + paths + **terminal half-block QR** + optional PNG tip (Desktop copy) |
 | `nbvpn show --uri` | URI only |
-| `nbvpn show --qr` | Terminal QR **opt-in**; still **clamped** (~48–56 cols); dense URIs → skip + recommend PNG |
-| Open `.png` | Preferred for phone scan (Desktop copy or ProgramData) |
+| `nbvpn show --qr` | Terminal QR (auto-sized to console / `COLUMNS`); optional PNG tip |
+| `nbvpn show --qr-size N` | Cap terminal QR module width (columns) for narrow SSH/conhost |
+| `NBVPN_NO_TERMINAL_QR=1` | Skip terminal QR (PNG / `--uri` / `--file` only) |
+| Open `.png` | Optional camera-scan attachment when terminal wraps |
 
 ## Cross-compile — Docker (Mac)
 

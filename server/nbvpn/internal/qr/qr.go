@@ -4,27 +4,32 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 
 	qrcode "github.com/skip2/go-qrcode"
+	"golang.org/x/term"
 )
 
-// Terminal half-block QR: keep output within ~48–56 console columns so SSH /
-// narrow Windows terminals do not wrap (independent of PNG size).
-// PNG: High recovery for camera scans; absolute side pngSizePx (~256–384 band).
-// Former -10 module scale produced ~1010px for typical nbvpn URIs.
+// Terminal half-block QR: size to the current console (COLUMNS / term.GetSize),
+// so SSH and narrow Windows terminals can show a scannable code without wrapping.
+// PNG remains an optional on-disk copy (High recovery, ~320px) — not a substitute
+// for printing the terminal QR on stdout.
 const (
 	terminalRecoveryPreferred = qrcode.Medium
 	terminalRecoveryCompact   = qrcode.Low
 	pngRecovery               = qrcode.High
 	pngSizePx                 = 320 // absolute PNG side (quiet zone included)
-	// MaxTerminalCols: hard max module/glyph width for half-block rendering.
-	// Target band is 48–56; pick 52 as default clamp.
-	MaxTerminalCols = 52
-	// MinTerminalCols / MaxTerminalColsCap document the accepted band.
-	MinTerminalCols    = 48
-	MaxTerminalColsCap = 56
+	// DefaultMaxTerminalCols when COLUMNS / TTY size cannot be detected.
+	// Typical nbvpn: URI matrices are ~73–89 modules after compact ECC.
+	DefaultMaxTerminalCols = 120
+	// Absolute bounds for --qr-size / DetectedCols.
+	MinTerminalCols    = 21 // QR version-1 side
+	MaxTerminalColsCap = 256
 )
+
+// MaxTerminalCols is the historical default clamp name; Prefer EffectiveMaxCols(0).
+const MaxTerminalCols = DefaultMaxTerminalCols
 
 // ANSI: force light background + dark modules so dark terminal themes do not invert the code.
 const (
@@ -33,10 +38,8 @@ const (
 )
 
 // FallbackHint tells operators what to use when the terminal QR may wrap or is too dense.
-const FallbackHint = "Prefer the QR PNG (or --uri / --file) when the terminal QR is skipped, wraps, or is too dense to scan. Peer numeric id / PNG filename is NOT the QR payload — payload is always the full nbvpn:1?… URI."
+const FallbackHint = "If the terminal QR wraps or will not scan: widen the terminal, set COLUMNS / --qr-size, or use the optional PNG / --uri / --file. Peer numeric id / PNG filename is NOT the QR payload — payload is always the full nbvpn:1?… URI."
 
-// WindowsDefaultHint is printed when terminal QR is skipped on Windows (default).
-const WindowsDefaultHint = "Windows: terminal QR skipped by default (narrow/old consoles). Use the QR PNG block above (Desktop copy + explorer /select), or: nbvpn show --uri. Opt-in terminal QR: nbvpn show --qr"
 // ColorEnabled reports whether ANSI color escapes should be emitted.
 // Disabled on Windows unless FORCE_COLOR=1 or NBVPN_FORCE_ANSI=1; always off if NO_COLOR is set.
 func ColorEnabled() bool {
@@ -56,13 +59,33 @@ func ColorEnabled() bool {
 // RenderOptions controls terminal QR rendering.
 type RenderOptions struct {
 	UseANSI bool
-	MaxCols int // 0 = MaxTerminalCols; clamped to [MinTerminalCols, MaxTerminalColsCap] when set via ClampMaxCols
+	MaxCols int // 0 = EffectiveMaxCols(0)
 }
 
-// ClampMaxCols normalizes a requested max into the 48–56 band (or default 52).
+// DetectTerminalCols returns the current terminal width, or 0 if unknown.
+// Order: COLUMNS env, then term.GetSize(stdout), then stderr.
+func DetectTerminalCols() int {
+	if c := strings.TrimSpace(os.Getenv("COLUMNS")); c != "" {
+		if n, err := strconv.Atoi(c); err == nil && n > 0 {
+			return n
+		}
+	}
+	for _, f := range []*os.File{os.Stdout, os.Stderr} {
+		if f == nil {
+			continue
+		}
+		w, _, err := term.GetSize(int(f.Fd()))
+		if err == nil && w > 0 {
+			return w
+		}
+	}
+	return 0
+}
+
+// ClampMaxCols normalizes an explicit --qr-size into a sane band.
 func ClampMaxCols(n int) int {
 	if n <= 0 {
-		return MaxTerminalCols
+		return EffectiveMaxCols(0)
 	}
 	if n < MinTerminalCols {
 		return MinTerminalCols
@@ -73,29 +96,46 @@ func ClampMaxCols(n int) int {
 	return n
 }
 
-// RenderTerminal returns a half-block Unicode QR for content (full URI).
-// Two QR rows pack into one terminal row (▀▄█) so modules stay roughly square on ~2:1 cells.
-// Colors are forced to dark-on-light when UseANSI; encoder quiet zone is kept when possible.
+// EffectiveMaxCols picks the module-width budget for terminal rendering.
+// override > 0 wins (already clamped by callers via ClampMaxCols when from flags).
+// Otherwise: detected terminal width (minus 1 col margin), else DefaultMaxTerminalCols.
+func EffectiveMaxCols(override int) int {
+	if override > 0 {
+		return ClampMaxCols(override)
+	}
+	if d := DetectTerminalCols(); d > 0 {
+		max := d - 1
+		if max < MinTerminalCols {
+			max = d
+		}
+		return ClampMaxCols(max)
+	}
+	return DefaultMaxTerminalCols
+}
+
+// RenderTerminal returns a half-block Unicode QR for content (full URI),
+// sized to the current terminal (or DefaultMaxTerminalCols).
 func RenderTerminal(content string) (string, error) {
-	return RenderTerminalOpts(content, RenderOptions{UseANSI: ColorEnabled(), MaxCols: MaxTerminalCols})
+	return RenderTerminalOpts(content, RenderOptions{UseANSI: ColorEnabled(), MaxCols: EffectiveMaxCols(0)})
 }
 
 // RenderTerminalOpts encodes content with explicit options.
-// Returns ErrTooWide when the bitmap cannot fit MaxCols even after compact recovery
-// (caller should point users at PNG/URI).
+// Returns TooWideError when the bitmap cannot fit MaxCols even after compact recovery
+// (caller should still print optional PNG path / --uri).
 func RenderTerminalOpts(content string, opts RenderOptions) (string, error) {
 	maxCols := opts.MaxCols
 	if maxCols <= 0 {
-		maxCols = MaxTerminalCols
+		maxCols = EffectiveMaxCols(0)
 	}
 
 	attempts := []struct {
 		level  qrcode.RecoveryLevel
 		border bool
 	}{
-		{terminalRecoveryPreferred, false}, // DisableBorder=false → quiet zone
+		{terminalRecoveryPreferred, false}, // quiet zone
+		{terminalRecoveryPreferred, true},  // drop encoder quiet zone
 		{terminalRecoveryCompact, false},
-		{terminalRecoveryCompact, true}, // last resort: drop encoder quiet zone
+		{terminalRecoveryCompact, true},
 	}
 
 	var lastCols int
@@ -124,7 +164,7 @@ type TooWideError struct {
 }
 
 func (e *TooWideError) Error() string {
-	return fmt.Sprintf("terminal QR too wide (%d cols > max %d); open the PNG or use --uri", e.Cols, e.Max)
+	return fmt.Sprintf("terminal QR too wide (%d cols > max %d); widen terminal, pass --qr-size, or use optional PNG / --uri", e.Cols, e.Max)
 }
 
 // IsTooWide reports whether err is a TooWideError.

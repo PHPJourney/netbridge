@@ -27,8 +27,8 @@ func TestAfterWrite_nonWindowsQuiet(t *testing.T) {
 	var b strings.Builder
 	PrintAfterWrite(&b, path, r)
 	out := b.String()
-	if !strings.Contains(out, "Wrote QR PNG:") {
-		t.Fatalf("missing wrote line: %s", out)
+	if !strings.Contains(out, "Optional QR PNG") {
+		t.Fatalf("missing optional PNG tip: %s", out)
 	}
 	if !strings.Contains(out, path) {
 		t.Fatalf("missing path: %s", out)

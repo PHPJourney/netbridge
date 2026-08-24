@@ -35,3 +35,16 @@ cd clients/netbridge
 | `NetBridge-iOS.ipa` | 无 Team 时为 UNSIGNED stub；CI 跳过签名 |
 
 试用步骤：`docs/delivery/nbvpn/TRY-CONNECT.md`
+
+## 已知限制（编辑 / 导出 / 同步 / 分享）
+
+功能已合入（`c3d1a46`）：主页可编辑、导出、同步、分享。
+
+| 限制 | 说明 |
+|------|------|
+| 加密多台包粘贴导入 | 「粘贴 URI」解密 `nbvpn-enc:…` 后**只取第一台**（添加流返回单个 profile）；多台请用导出的 JSON 文件逐台导入，或分多次同步 |
+| 扫码 `nbvpn-enc` | 相机扫码路径按明文 `nbvpn:` URI 解析，**不**提示口令解密加密包；请用粘贴 URI / 文件 |
+| NFC / 蓝牙直连同步 | 未实现；跨设备用系统分享加密文件或加密 QR |
+
+切换服务器：`b18be0a` 已在 main（disconnect → 等待 → connect + epoch），见 `test/app_controller_switch_test.dart`。
+
