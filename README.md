@@ -6,7 +6,10 @@
 
 去中心化自建节点 VPN：Linux / Windows 服务端 `nbvpn` + 四端客户端 + Store 下载页。无官方节点、无强制账号。
 
-- **仓库**：https://github.com/PHPJourney/netbridge
+本仓库为 **公开 MIT** 版。付费商业交付（Private）见另仓与 [`docs/COMMERCIAL.md`](docs/COMMERCIAL.md) / [`LICENSE-COMMERCIAL.md`](LICENSE-COMMERCIAL.md)。
+
+- **仓库（公开）**：https://github.com/PHPJourney/netbridge
+- **商业私有仓**：https://github.com/PHPJourney/netbridge-commercial （需授权）
 - **Store（GitHub Pages）**：https://phpjourney.github.io/netbridge/
 - **安装包（GitHub Releases）**：https://github.com/PHPJourney/netbridge/releases
 
@@ -106,6 +109,7 @@ cd clients/netbridge && flutter pub get && flutter run
 - OpenList / Releases：`docs/delivery/nbvpn/OPENLIST-UPLOAD.md`
 - 规格：`docs/delivery/nbvpn/01-spec.md`
 - 契约：`docs/delivery/nbvpn/03-contract.md`
+- 商业版另仓：`docs/COMMERCIAL.md`
 
 ## 安全提示
 

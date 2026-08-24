@@ -15,6 +15,10 @@ import '../widgets/common_widgets.dart';
 import '../widgets/status_banner.dart';
 import 'add/add_method_screen.dart';
 import 'add/confirm_add_screen.dart';
+import 'server/edit_server_screen.dart';
+import 'server/export_servers_sheet.dart';
+import 'server/share_server_menu.dart';
+import 'server/sync_servers_sheet.dart';
 import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -131,6 +135,37 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _edit(BuildContext context, ServerEntry entry) async {
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => EditServerScreen(
+          controller: controller,
+          entry: entry,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _export(BuildContext context, ServerEntry entry) {
+    return showExportServersSheet(
+      context,
+      servers: controller.servers,
+      initialSelectedId: entry.id,
+    );
+  }
+
+  Future<void> _sync(BuildContext context, ServerEntry entry) {
+    return showSyncServersSheet(
+      context,
+      servers: controller.servers,
+      initialSelectedId: entry.id,
+    );
+  }
+
+  Future<void> _share(BuildContext context, ServerEntry entry) {
+    return showShareServerMenu(context, entry: entry);
+  }
+
   ServerEntry? _resolveSelected(AppController c) {
     if (c.servers.isEmpty) return null;
     final id = _selectedId ?? c.activeServerId ?? c.servers.first.id;
@@ -193,6 +228,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                 onDisconnect: c.disconnect,
                                 onRename: (s) => _rename(context, s),
                                 onDelete: (s) => _delete(context, s),
+                                onEdit: (s) => _edit(context, s),
+                                onExport: (s) => _export(context, s),
+                                onSync: (s) => _sync(context, s),
+                                onShare: (s) => _share(context, s),
                               )
                             : _MobileServerList(
                                 controller: c,
@@ -200,6 +239,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                 onDisconnect: c.disconnect,
                                 onRename: (s) => _rename(context, s),
                                 onDelete: (s) => _delete(context, s),
+                                onEdit: (s) => _edit(context, s),
+                                onExport: (s) => _export(context, s),
+                                onSync: (s) => _sync(context, s),
+                                onShare: (s) => _share(context, s),
                               ),
               ),
             ],
@@ -226,6 +269,10 @@ class _MobileServerList extends StatelessWidget {
     required this.onDisconnect,
     required this.onRename,
     required this.onDelete,
+    required this.onEdit,
+    required this.onExport,
+    required this.onSync,
+    required this.onShare,
   });
 
   final AppController controller;
@@ -233,6 +280,10 @@ class _MobileServerList extends StatelessWidget {
   final VoidCallback onDisconnect;
   final ValueChanged<ServerEntry> onRename;
   final ValueChanged<ServerEntry> onDelete;
+  final ValueChanged<ServerEntry> onEdit;
+  final ValueChanged<ServerEntry> onExport;
+  final ValueChanged<ServerEntry> onSync;
+  final ValueChanged<ServerEntry> onShare;
 
   @override
   Widget build(BuildContext context) {
@@ -258,6 +309,10 @@ class _MobileServerList extends StatelessWidget {
           onDisconnect: onDisconnect,
           onRename: () => onRename(s),
           onDelete: () => onDelete(s),
+          onEdit: () => onEdit(s),
+          onExport: () => onExport(s),
+          onSync: () => onSync(s),
+          onShare: () => onShare(s),
         );
       },
     );
@@ -273,6 +328,10 @@ class _DesktopSplit extends StatelessWidget {
     required this.onDisconnect,
     required this.onRename,
     required this.onDelete,
+    required this.onEdit,
+    required this.onExport,
+    required this.onSync,
+    required this.onShare,
   });
 
   final AppController controller;
@@ -282,6 +341,10 @@ class _DesktopSplit extends StatelessWidget {
   final VoidCallback onDisconnect;
   final ValueChanged<ServerEntry> onRename;
   final ValueChanged<ServerEntry> onDelete;
+  final ValueChanged<ServerEntry> onEdit;
+  final ValueChanged<ServerEntry> onExport;
+  final ValueChanged<ServerEntry> onSync;
+  final ValueChanged<ServerEntry> onShare;
 
   @override
   Widget build(BuildContext context) {
@@ -318,6 +381,10 @@ class _DesktopSplit extends StatelessWidget {
                   onDisconnect: onDisconnect,
                   onRename: () => onRename(s),
                   onDelete: () => onDelete(s),
+                  onEdit: () => onEdit(s),
+                  onExport: () => onExport(s),
+                  onSync: () => onSync(s),
+                  onShare: () => onShare(s),
                 );
               },
             ),
@@ -339,6 +406,10 @@ class _DesktopSplit extends StatelessWidget {
                   onDisconnect: onDisconnect,
                   onRename: () => onRename(selected!),
                   onDelete: () => onDelete(selected!),
+                  onEdit: () => onEdit(selected!),
+                  onExport: () => onExport(selected!),
+                  onSync: () => onSync(selected!),
+                  onShare: () => onShare(selected!),
                 ),
         ),
       ],
@@ -354,6 +425,10 @@ class _DesktopDetailPane extends StatelessWidget {
     required this.onDisconnect,
     required this.onRename,
     required this.onDelete,
+    required this.onEdit,
+    required this.onExport,
+    required this.onSync,
+    required this.onShare,
   });
 
   final ServerEntry entry;
@@ -362,6 +437,10 @@ class _DesktopDetailPane extends StatelessWidget {
   final VoidCallback onDisconnect;
   final VoidCallback onRename;
   final VoidCallback onDelete;
+  final VoidCallback onEdit;
+  final VoidCallback onExport;
+  final VoidCallback onSync;
+  final VoidCallback onShare;
 
   @override
   Widget build(BuildContext context) {
@@ -408,7 +487,9 @@ class _DesktopDetailPane extends StatelessWidget {
                 value: entry.profile.client.dns.join(', '),
               ),
               const SizedBox(height: 28),
-              Row(
+              Wrap(
+                spacing: 12,
+                runSpacing: 10,
                 children: [
                   if (connected || busy)
                     OutlinedButton(
@@ -420,12 +501,26 @@ class _DesktopDetailPane extends StatelessWidget {
                       onPressed: onConnect,
                       child: Text(l10n.connect),
                     ),
-                  const SizedBox(width: 12),
+                  OutlinedButton(
+                    onPressed: onEdit,
+                    child: Text(l10n.edit),
+                  ),
                   OutlinedButton(
                     onPressed: onRename,
                     child: Text(l10n.rename),
                   ),
-                  const SizedBox(width: 12),
+                  OutlinedButton(
+                    onPressed: onExport,
+                    child: Text(l10n.export),
+                  ),
+                  OutlinedButton(
+                    onPressed: onSync,
+                    child: Text(l10n.sync),
+                  ),
+                  OutlinedButton(
+                    onPressed: onShare,
+                    child: Text(l10n.share),
+                  ),
                   TextButton(
                     onPressed: onDelete,
                     style: TextButton.styleFrom(foregroundColor: NbColors.danger),
@@ -482,6 +577,10 @@ class _ServerTile extends StatelessWidget {
     required this.onDisconnect,
     required this.onRename,
     required this.onDelete,
+    required this.onEdit,
+    required this.onExport,
+    required this.onSync,
+    required this.onShare,
     this.selected = false,
     this.compactActions = false,
     this.onTap,
@@ -497,6 +596,10 @@ class _ServerTile extends StatelessWidget {
   final VoidCallback onDisconnect;
   final VoidCallback onRename;
   final VoidCallback onDelete;
+  final VoidCallback onEdit;
+  final VoidCallback onExport;
+  final VoidCallback onSync;
+  final VoidCallback onShare;
 
   @override
   Widget build(BuildContext context) {
@@ -569,6 +672,10 @@ class _ServerTile extends StatelessWidget {
                 onSelected: (v) {
                   if (v == 'connect') onConnect();
                   if (v == 'disconnect') onDisconnect();
+                  if (v == 'edit') onEdit();
+                  if (v == 'export') onExport();
+                  if (v == 'sync') onSync();
+                  if (v == 'share') onShare();
                   if (v == 'rename') onRename();
                   if (v == 'delete') onDelete();
                 },
@@ -581,6 +688,10 @@ class _ServerTile extends StatelessWidget {
                       enabled: !busy,
                       child: Text(l10n.disconnect),
                     ),
+                  PopupMenuItem(value: 'edit', child: Text(l10n.edit)),
+                  PopupMenuItem(value: 'export', child: Text(l10n.export)),
+                  PopupMenuItem(value: 'sync', child: Text(l10n.sync)),
+                  PopupMenuItem(value: 'share', child: Text(l10n.share)),
                   PopupMenuItem(value: 'rename', child: Text(l10n.rename)),
                   PopupMenuItem(value: 'delete', child: Text(l10n.delete)),
                 ],

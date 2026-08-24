@@ -607,6 +607,342 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add'**
   String get add;
+
+  /// No description provided for @edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get edit;
+
+  /// No description provided for @editServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit server'**
+  String get editServer;
+
+  /// No description provided for @export.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get export;
+
+  /// No description provided for @sync.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync'**
+  String get sync;
+
+  /// No description provided for @share.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get share;
+
+  /// No description provided for @saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get saved;
+
+  /// No description provided for @profileName.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile name'**
+  String get profileName;
+
+  /// No description provided for @labelEndpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Endpoint'**
+  String get labelEndpoint;
+
+  /// No description provided for @labelAllowedIps.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed IPs'**
+  String get labelAllowedIps;
+
+  /// No description provided for @labelMtu.
+  ///
+  /// In en, this message translates to:
+  /// **'MTU'**
+  String get labelMtu;
+
+  /// No description provided for @labelKeepalive.
+  ///
+  /// In en, this message translates to:
+  /// **'Keepalive'**
+  String get labelKeepalive;
+
+  /// No description provided for @labelServerPublicKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Server public key'**
+  String get labelServerPublicKey;
+
+  /// No description provided for @labelPrivateKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Client private key'**
+  String get labelPrivateKey;
+
+  /// No description provided for @labelPresharedKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Preshared key (optional)'**
+  String get labelPresharedKey;
+
+  /// No description provided for @revealPrivateKeyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show private key?'**
+  String get revealPrivateKeyTitle;
+
+  /// No description provided for @revealPrivateKeyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The private key is equivalent to full access. Only reveal on a trusted screen.'**
+  String get revealPrivateKeyBody;
+
+  /// No description provided for @reveal.
+  ///
+  /// In en, this message translates to:
+  /// **'Reveal'**
+  String get reveal;
+
+  /// No description provided for @hide.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide'**
+  String get hide;
+
+  /// No description provided for @exportServersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export servers'**
+  String get exportServersTitle;
+
+  /// No description provided for @exportSecretTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export contains secrets'**
+  String get exportSecretTitle;
+
+  /// No description provided for @exportSecretBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Exported files include private keys — equivalent to passwords. Do not share publicly.'**
+  String get exportSecretBody;
+
+  /// No description provided for @exportAlsoWireGuard.
+  ///
+  /// In en, this message translates to:
+  /// **'Also export WireGuard .conf'**
+  String get exportAlsoWireGuard;
+
+  /// No description provided for @exportWireGuard.
+  ///
+  /// In en, this message translates to:
+  /// **'Export WireGuard'**
+  String get exportWireGuard;
+
+  /// No description provided for @exportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed'**
+  String get exportFailed;
+
+  /// No description provided for @selectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get selectAll;
+
+  /// No description provided for @selectNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get selectNone;
+
+  /// No description provided for @continueAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get continueAction;
+
+  /// No description provided for @server.
+  ///
+  /// In en, this message translates to:
+  /// **'Server'**
+  String get server;
+
+  /// No description provided for @syncTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync to another device'**
+  String get syncTitle;
+
+  /// No description provided for @syncPassphraseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Encryption passphrase'**
+  String get syncPassphraseTitle;
+
+  /// No description provided for @syncPassphraseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a passphrase the receiving device will need. Config is encrypted with AES-GCM.'**
+  String get syncPassphraseBody;
+
+  /// No description provided for @passphrase.
+  ///
+  /// In en, this message translates to:
+  /// **'Passphrase'**
+  String get passphrase;
+
+  /// No description provided for @syncViaQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted QR code'**
+  String get syncViaQr;
+
+  /// No description provided for @syncViaQrSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan on the other device (or share the image)'**
+  String get syncViaQrSubtitle;
+
+  /// No description provided for @syncViaFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted file share'**
+  String get syncViaFile;
+
+  /// No description provided for @syncViaFileSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'System share sheet — works across phones'**
+  String get syncViaFileSubtitle;
+
+  /// No description provided for @syncViaNfc.
+  ///
+  /// In en, this message translates to:
+  /// **'NFC tag'**
+  String get syncViaNfc;
+
+  /// No description provided for @syncViaNfcSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Write short encrypted payload to a tag'**
+  String get syncViaNfcSubtitle;
+
+  /// No description provided for @syncBluetoothNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth peer sync is not built in; use file share / Wi‑Fi Direct via the system share sheet.'**
+  String get syncBluetoothNote;
+
+  /// No description provided for @syncFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync failed'**
+  String get syncFailed;
+
+  /// No description provided for @nfcUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'NFC is not available on this device'**
+  String get nfcUnsupported;
+
+  /// No description provided for @nfcTooLargeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payload too large for NFC'**
+  String get nfcTooLargeTitle;
+
+  /// No description provided for @nfcTooLargeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted config exceeds the practical NFC size limit. Use file share or QR instead.'**
+  String get nfcTooLargeBody;
+
+  /// No description provided for @nfcHoldTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold an NFC tag to the device…'**
+  String get nfcHoldTag;
+
+  /// No description provided for @nfcWriteOk.
+  ///
+  /// In en, this message translates to:
+  /// **'Written to NFC tag'**
+  String get nfcWriteOk;
+
+  /// No description provided for @nfcFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'NFC failed'**
+  String get nfcFailed;
+
+  /// No description provided for @encryptedQrTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted QR'**
+  String get encryptedQrTitle;
+
+  /// No description provided for @encryptedQrHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipient needs the same passphrase to decrypt.'**
+  String get encryptedQrHint;
+
+  /// No description provided for @qrTooDenseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'QR is dense — prefer file share if scanning fails.'**
+  String get qrTooDenseHint;
+
+  /// No description provided for @qrEncodeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not encode QR'**
+  String get qrEncodeFailed;
+
+  /// No description provided for @shareEncryptedQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted QR'**
+  String get shareEncryptedQr;
+
+  /// No description provided for @shareEncryptedQrSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Passphrase-encrypted server config'**
+  String get shareEncryptedQrSubtitle;
+
+  /// No description provided for @shareApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Share app'**
+  String get shareApp;
+
+  /// No description provided for @shareAppSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Download page / store link'**
+  String get shareAppSubtitle;
+
+  /// No description provided for @shareAppConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Share download link?\n{url}'**
+  String shareAppConfirm(String url);
+
+  /// No description provided for @shareAppMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Download NetBridge VPN:'**
+  String get shareAppMessage;
 }
 
 class _AppLocalizationsDelegate

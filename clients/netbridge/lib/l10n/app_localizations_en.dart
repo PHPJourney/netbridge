@@ -291,4 +291,182 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get add => 'Add';
+
+  @override
+  String get edit => 'Edit';
+
+  @override
+  String get editServer => 'Edit server';
+
+  @override
+  String get export => 'Export';
+
+  @override
+  String get sync => 'Sync';
+
+  @override
+  String get share => 'Share';
+
+  @override
+  String get saved => 'Saved';
+
+  @override
+  String get profileName => 'Profile name';
+
+  @override
+  String get labelEndpoint => 'Endpoint';
+
+  @override
+  String get labelAllowedIps => 'Allowed IPs';
+
+  @override
+  String get labelMtu => 'MTU';
+
+  @override
+  String get labelKeepalive => 'Keepalive';
+
+  @override
+  String get labelServerPublicKey => 'Server public key';
+
+  @override
+  String get labelPrivateKey => 'Client private key';
+
+  @override
+  String get labelPresharedKey => 'Preshared key (optional)';
+
+  @override
+  String get revealPrivateKeyTitle => 'Show private key?';
+
+  @override
+  String get revealPrivateKeyBody =>
+      'The private key is equivalent to full access. Only reveal on a trusted screen.';
+
+  @override
+  String get reveal => 'Reveal';
+
+  @override
+  String get hide => 'Hide';
+
+  @override
+  String get exportServersTitle => 'Export servers';
+
+  @override
+  String get exportSecretTitle => 'Export contains secrets';
+
+  @override
+  String get exportSecretBody =>
+      'Exported files include private keys — equivalent to passwords. Do not share publicly.';
+
+  @override
+  String get exportAlsoWireGuard => 'Also export WireGuard .conf';
+
+  @override
+  String get exportWireGuard => 'Export WireGuard';
+
+  @override
+  String get exportFailed => 'Export failed';
+
+  @override
+  String get selectAll => 'Select all';
+
+  @override
+  String get selectNone => 'Clear';
+
+  @override
+  String get continueAction => 'Continue';
+
+  @override
+  String get server => 'Server';
+
+  @override
+  String get syncTitle => 'Sync to another device';
+
+  @override
+  String get syncPassphraseTitle => 'Encryption passphrase';
+
+  @override
+  String get syncPassphraseBody =>
+      'Choose a passphrase the receiving device will need. Config is encrypted with AES-GCM.';
+
+  @override
+  String get passphrase => 'Passphrase';
+
+  @override
+  String get syncViaQr => 'Encrypted QR code';
+
+  @override
+  String get syncViaQrSubtitle =>
+      'Scan on the other device (or share the image)';
+
+  @override
+  String get syncViaFile => 'Encrypted file share';
+
+  @override
+  String get syncViaFileSubtitle => 'System share sheet — works across phones';
+
+  @override
+  String get syncViaNfc => 'NFC tag';
+
+  @override
+  String get syncViaNfcSubtitle => 'Write short encrypted payload to a tag';
+
+  @override
+  String get syncBluetoothNote =>
+      'Bluetooth peer sync is not built in; use file share / Wi‑Fi Direct via the system share sheet.';
+
+  @override
+  String get syncFailed => 'Sync failed';
+
+  @override
+  String get nfcUnsupported => 'NFC is not available on this device';
+
+  @override
+  String get nfcTooLargeTitle => 'Payload too large for NFC';
+
+  @override
+  String get nfcTooLargeBody =>
+      'Encrypted config exceeds the practical NFC size limit. Use file share or QR instead.';
+
+  @override
+  String get nfcHoldTag => 'Hold an NFC tag to the device…';
+
+  @override
+  String get nfcWriteOk => 'Written to NFC tag';
+
+  @override
+  String get nfcFailed => 'NFC failed';
+
+  @override
+  String get encryptedQrTitle => 'Encrypted QR';
+
+  @override
+  String get encryptedQrHint =>
+      'Recipient needs the same passphrase to decrypt.';
+
+  @override
+  String get qrTooDenseHint =>
+      'QR is dense — prefer file share if scanning fails.';
+
+  @override
+  String get qrEncodeFailed => 'Could not encode QR';
+
+  @override
+  String get shareEncryptedQr => 'Encrypted QR';
+
+  @override
+  String get shareEncryptedQrSubtitle => 'Passphrase-encrypted server config';
+
+  @override
+  String get shareApp => 'Share app';
+
+  @override
+  String get shareAppSubtitle => 'Download page / store link';
+
+  @override
+  String shareAppConfirm(String url) {
+    return 'Share download link?\n$url';
+  }
+
+  @override
+  String get shareAppMessage => 'Download NetBridge VPN:';
 }

@@ -281,4 +281,174 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get add => '添加';
+
+  @override
+  String get edit => '编辑';
+
+  @override
+  String get editServer => '编辑服务器';
+
+  @override
+  String get export => '导出';
+
+  @override
+  String get sync => '同步';
+
+  @override
+  String get share => '分享';
+
+  @override
+  String get saved => '已保存';
+
+  @override
+  String get profileName => '配置名称';
+
+  @override
+  String get labelEndpoint => 'Endpoint';
+
+  @override
+  String get labelAllowedIps => 'Allowed IPs';
+
+  @override
+  String get labelMtu => 'MTU';
+
+  @override
+  String get labelKeepalive => 'Keepalive';
+
+  @override
+  String get labelServerPublicKey => '服务器公钥';
+
+  @override
+  String get labelPrivateKey => '客户端私钥';
+
+  @override
+  String get labelPresharedKey => '预共享密钥（可选）';
+
+  @override
+  String get revealPrivateKeyTitle => '显示私钥？';
+
+  @override
+  String get revealPrivateKeyBody => '私钥等同完整访问权限。请仅在可信屏幕上查看。';
+
+  @override
+  String get reveal => '显示';
+
+  @override
+  String get hide => '隐藏';
+
+  @override
+  String get exportServersTitle => '导出服务器';
+
+  @override
+  String get exportSecretTitle => '导出含密钥';
+
+  @override
+  String get exportSecretBody => '导出文件包含私钥——等同密码。请勿公开发布。';
+
+  @override
+  String get exportAlsoWireGuard => '同时导出 WireGuard .conf';
+
+  @override
+  String get exportWireGuard => '导出 WireGuard';
+
+  @override
+  String get exportFailed => '导出失败';
+
+  @override
+  String get selectAll => '全选';
+
+  @override
+  String get selectNone => '清空';
+
+  @override
+  String get continueAction => '继续';
+
+  @override
+  String get server => '服务器';
+
+  @override
+  String get syncTitle => '同步到其它设备';
+
+  @override
+  String get syncPassphraseTitle => '加密口令';
+
+  @override
+  String get syncPassphraseBody => '请设置接收端需要输入的口令。配置将使用 AES-GCM 加密。';
+
+  @override
+  String get passphrase => '口令';
+
+  @override
+  String get syncViaQr => '加密二维码';
+
+  @override
+  String get syncViaQrSubtitle => '在其它设备扫描（或分享图片）';
+
+  @override
+  String get syncViaFile => '加密文件分享';
+
+  @override
+  String get syncViaFileSubtitle => '系统分享面板——可跨手机传输';
+
+  @override
+  String get syncViaNfc => 'NFC 标签';
+
+  @override
+  String get syncViaNfcSubtitle => '将短加密载荷写入标签';
+
+  @override
+  String get syncBluetoothNote => '未内置蓝牙点对点同步；请通过系统分享 / Wi‑Fi Direct 传文件。';
+
+  @override
+  String get syncFailed => '同步失败';
+
+  @override
+  String get nfcUnsupported => '本设备不支持 NFC';
+
+  @override
+  String get nfcTooLargeTitle => '载荷过大，无法写入 NFC';
+
+  @override
+  String get nfcTooLargeBody => '加密配置超过 NFC 实用长度限制。请改用文件分享或二维码。';
+
+  @override
+  String get nfcHoldTag => '请将 NFC 标签靠近设备…';
+
+  @override
+  String get nfcWriteOk => '已写入 NFC 标签';
+
+  @override
+  String get nfcFailed => 'NFC 失败';
+
+  @override
+  String get encryptedQrTitle => '加密二维码';
+
+  @override
+  String get encryptedQrHint => '接收方需使用相同口令解密。';
+
+  @override
+  String get qrTooDenseHint => '二维码较密——扫码失败时请改用文件分享。';
+
+  @override
+  String get qrEncodeFailed => '无法生成二维码';
+
+  @override
+  String get shareEncryptedQr => '加密二维码';
+
+  @override
+  String get shareEncryptedQrSubtitle => '口令加密的服务器配置';
+
+  @override
+  String get shareApp => '分享应用';
+
+  @override
+  String get shareAppSubtitle => '下载页 / 商店链接';
+
+  @override
+  String shareAppConfirm(String url) {
+    return '分享下载链接？\n$url';
+  }
+
+  @override
+  String get shareAppMessage => '下载网桥 VPN：';
 }
