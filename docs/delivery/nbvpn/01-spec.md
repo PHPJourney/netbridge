@@ -61,8 +61,9 @@
 | `nbvpn start` / `stop` / `restart` | 服务管理 |
 | `nbvpn peer add [name]` | 新增客户端 peer 并输出该 peer 的三形态信息 |
 | `nbvpn peer list` | 列出 peer |
-| `nbvpn peer revoke <id\|name>` | 吊销 peer |
-| `nbvpn uninstall` | 卸载 |
+| `nbvpn peer revoke <id\|name>` | 吊销 peer（凭证失效，列表保留 revoked） |
+| `nbvpn peer delete <id\|name> [--yes]` | 永久删除 peer（记录与导出文件全删） |
+| `nbvpn uninstall [--yes] [--keep-data]` | 完全卸载（默认删全部产物；`--keep-data` 保留数据目录） |
 | `nbvpn help` | 帮助 |
 
 > 允许增加只读别名（如 `info`→`config`），不得删减上表 must 能力。

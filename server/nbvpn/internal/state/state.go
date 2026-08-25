@@ -15,6 +15,8 @@ const (
 	DefaultDataDir     = "/var/lib/nbvpn"
 	FallbackDataDir    = "/usr/local/var/lib/nbvpn"
 	EnvDataDir         = "NBVPN_DATA_DIR"
+	// EnvSplitTunnel: when "1"/"true"/"yes", new installs use VPN-subnet-only client AllowedIPs.
+	EnvSplitTunnel = "NBVPN_SPLIT_TUNNEL"
 	InterfaceName      = "nbvpn"
 	DefaultListenPort  = 51820
 	DefaultServerAddr  = "10.8.0.1/24"
@@ -51,6 +53,10 @@ type ServerState struct {
 	PublicKey    string   `json:"publicKey"`
 	Address      string   `json:"address"`
 	Endpoint     string   `json:"endpoint"`
+	// EndpointV6 is an optional alternate public endpoint (IPv6 literal or host:port).
+	EndpointV6 string `json:"endpointV6,omitempty"`
+	// IPv6Enabled marks whether clients should prefer EndpointV6 when connecting.
+	IPv6Enabled bool `json:"ipv6Enabled,omitempty"`
 	DNS          []string `json:"dns"`
 	AllowedIPs   []string `json:"allowedIPs"`
 	NextClientIP int      `json:"nextClientIP"`
@@ -261,6 +267,29 @@ func (s *Store) WritePeerWGConf(id string, conf string) error {
 		return err
 	}
 	return os.WriteFile(s.PeerWGConfPath(id), []byte(conf), 0o600)
+}
+
+// DeletePeer removes peer metadata and all export artifacts (profile, WG conf, QR).
+// The peer's VPN address is not recycled into NextClientIP (same as revoke).
+func (s *Store) DeletePeer(id string) error {
+	if _, err := s.LoadPeer(id); err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("peer not found: %s", id)
+		}
+		return err
+	}
+	var firstErr error
+	for _, p := range []string{
+		s.peerMetaPath(id),
+		s.PeerProfilePath(id),
+		s.PeerWGConfPath(id),
+		s.PeerQRPath(id),
+	} {
+		if err := os.Remove(p); err != nil && !os.IsNotExist(err) && firstErr == nil {
+			firstErr = err
+		}
+	}
+	return firstErr
 }
 
 func (s *Store) RemoveAll() error {

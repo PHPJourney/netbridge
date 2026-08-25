@@ -7,7 +7,11 @@ abstract class VpnTunnel {
   Future<void> initialize();
 
   /// Start tunnel for [profile]. Implementations must not log private keys.
-  Future<void> connect(NbVpnProfile profile, {required bool killSwitch});
+  Future<void> connect(
+    NbVpnProfile profile, {
+    required bool killSwitch,
+    bool excludePrivateNetworks = false,
+  });
 
   Future<void> disconnect();
 

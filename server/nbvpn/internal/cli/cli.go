@@ -81,17 +81,22 @@ func printHelpZh(w *os.File) {
 
 常用命令:
   version                         打印版本（验证 exe 能否启动）
-  install                         安装/配置节点、首个 peer、启用服务
+  install [--split-tunnel]        安装/配置节点、首个 peer、启用服务
+                                  （或 NBVPN_SPLIT_TUNNEL=1：客户端仅路由 VPN 网段）
   show [--uri|--qr|--file|--conf|--all] [--qr-size N]
                                   显示客户端连接信息（默认 --all；终端字符二维码）
   status                          服务 / 隧道状态
   start | stop | restart          管理 WireGuard 服务
   peer add [name]                 新增客户端 peer
   peer list                       列出 peer
-  peer revoke <id|name>           吊销 peer
+  peer revoke <id|name>           吊销 peer（保留记录，立即失效凭证）
+  peer delete <id|name> [--yes]   永久删除 peer（从列表移除）
   config set endpoint <host[:port]>
-                                  设置对外 endpoint
-  uninstall [--yes]               停止服务并清理数据
+                                  设置对外 endpoint（主地址，通常 IPv4）
+  config set endpoint-v6 <[ipv6]|host[:port]>
+                                  设置 IPv6 endpoint（写入 profile 可选字段）
+  config set ipv6 on|off          标记 IPv6 启用状态（客户端连接时优先用 endpoint-v6）
+  uninstall [--yes] [--keep-data] 完全卸载（默认删除全部 nbvpn 产物；--keep-data 保留数据目录）
   help                            显示帮助
 
 Windows Server 2012 / 2012 R2:
@@ -110,34 +115,42 @@ Usage:
   nbvpn <command> [arguments]
 
 Commands:
-  install                         Install/configure node, first peer, enable service
+  install [--split-tunnel]        Install/configure node, first peer, enable service
+                                  (or NBVPN_SPLIT_TUNNEL=1: client routes VPN subnet only)
   show [--uri|--qr|--file|--conf|--all] [--qr-size N]
                                   Show connection info (default --all; terminal QR)
   config                          Show node summary (no server private key)
   config set endpoint <host[:port]>
-                                  Set public endpoint used in client profiles
+                                  Set primary public endpoint used in client profiles
+  config set endpoint-v6 <[ipv6]|host[:port]>
+                                  Set optional IPv6 endpoint (written into profiles)
+  config set ipv6 on|off          Mark IPv6 enabled (clients prefer endpoint-v6 when on)
   status                          Service / tunnel status
   start | stop | restart          Manage WireGuard service
   peer add [name]                 Add a client peer and show its URI/QR/file
   peer list                       List peers
-  peer revoke <id|name>           Revoke a peer (old profiles stop working)
-  uninstall [--yes]               Stop service and remove nbvpn data
+  peer revoke <id|name>           Revoke a peer (disable creds; keep audit record)
+  peer delete <id|name> [--yes]   Permanently delete a peer (remove from list)
+  uninstall [--yes] [--keep-data] Full uninstall (removes all nbvpn artifacts; --keep-data keeps profiles)
   version                         Print version
   help                            Show this help
 
 Environment:
-  NBVPN_DATA_DIR   Override state directory
-                   (Linux default /var/lib/nbvpn;
-                    Windows default %ProgramData%\nbvpn;
-                    fallback if unwritable)
+  NBVPN_DATA_DIR        Override state directory
+                        (Linux default /var/lib/nbvpn;
+                         Windows default %ProgramData%\nbvpn;
+                         fallback if unwritable)
+  NBVPN_SPLIT_TUNNEL=1  New installs: client AllowedIPs = VPN subnet only (not 0.0.0.0/0)
   NO_COLOR / NBVPN_FORCE_ANSI  Disable / force ANSI color in terminal QR
   COLUMNS            Hint terminal width for QR sizing (else TTY probe)
   NBVPN_NO_TERMINAL_QR=1  Skip terminal QR (optional PNG / --uri only)
 
 Firewall / endpoint:
   Clients need UDP listen port open on host firewall AND cloud security group
-  (default 51820). See server/install/FIREWALL.md
+  (default 51820), including IPv6 if using endpoint-v6. See server/install/FIREWALL.md
   If public IP detect fails:  nbvpn config set endpoint <host[:port]>
+  Dual-stack / second IP: set primary with endpoint; optional IPv6 with endpoint-v6 + ipv6 on
+  (second IPv4: switch primary via config set endpoint — WireGuard uses one Endpoint at a time)
 
 Dry-run:
   On macOS, hosts without wg-quick, or Windows without WireGuard for Windows,
@@ -157,7 +170,12 @@ func store() *state.Store {
 }
 
 func cmdInstall(args []string) error {
-	_ = args
+	splitTunnel := wg.SplitTunnelFromEnv()
+	for _, a := range args {
+		if a == "--split-tunnel" {
+			splitTunnel = true
+		}
+	}
 	dir, err := state.PreferWritableDataDir()
 	if err != nil {
 		return err
@@ -184,7 +202,11 @@ func cmdInstall(args []string) error {
 		ip := endpoint.DetectPublicIP()
 		ep := ""
 		if ip != "" {
-			ep = fmt.Sprintf("%s:%d", ip, state.DefaultListenPort)
+			ep, _ = endpoint.NormalizeEndpoint(ip, state.DefaultListenPort)
+		}
+		epV6 := ""
+		if ip6 := endpoint.DetectPublicIPv6(); ip6 != "" {
+			epV6, _ = endpoint.NormalizeEndpoint(ip6, state.DefaultListenPort)
 		}
 		st = &state.ServerState{
 			Version:      1,
@@ -194,8 +216,10 @@ func cmdInstall(args []string) error {
 			PublicKey:    pub,
 			Address:      state.DefaultServerAddr,
 			Endpoint:     ep,
+			EndpointV6:   epV6,
+			IPv6Enabled:  false, // operator enables via: nbvpn config set ipv6 on
 			DNS:          []string{profile.DefaultDNS1, profile.DefaultDNS2},
-			AllowedIPs:   []string{"0.0.0.0/0", "::/0"},
+			AllowedIPs:   wg.DefaultClientAllowedIPs(state.DefaultServerAddr, splitTunnel),
 			NextClientIP: state.DefaultClientStart,
 			InstalledAt:  state.NowRFC3339(),
 		}
@@ -235,12 +259,22 @@ func cmdInstall(args []string) error {
 	printDataDirVerify(s)
 	fmt.Printf("publicKey: %s\n", st.PublicKey)
 	fmt.Printf("listenPort: %d\n", st.ListenPort)
+	fmt.Printf("client allowedIPs: %s\n", strings.Join(st.AllowedIPs, ", "))
+	if splitTunnel {
+		fmt.Println("split-tunnel: client profiles route VPN subnet only (not public internet via VPN)")
+		fmt.Println("  For full-tunnel clients: reinstall without --split-tunnel / NBVPN_SPLIT_TUNNEL, or edit server.json allowedIPs")
+	}
 	if st.Endpoint == "" {
 		fmt.Println()
 		fmt.Println("Could not detect public IP for endpoint.")
 		fmt.Println("Set it with:  nbvpn config set endpoint <your-public-ip-or-dns>")
 	} else {
 		fmt.Printf("endpoint: %s\n", st.Endpoint)
+	}
+	if st.EndpointV6 != "" {
+		fmt.Printf("endpointV6: %s (detected; ipv6Enabled=off — enable with: nbvpn config set ipv6 on)\n", st.EndpointV6)
+	} else {
+		fmt.Println("endpointV6: (not detected — optional: nbvpn config set endpoint-v6 <[ipv6]>)")
 	}
 	if caps.DryRun {
 		fmt.Println()
@@ -381,6 +415,17 @@ func buildProfile(st *state.ServerState, p *state.PeerRecord) *profile.NbVpnProf
 	if ep == "" {
 		ep = fmt.Sprintf("0.0.0.0:%d", st.ListenPort)
 	}
+	srv := profile.ServerSection{
+		PublicKey:           st.PublicKey,
+		Endpoint:            ep,
+		AllowedIPs:          append([]string{}, st.AllowedIPs...),
+		PersistentKeepalive: profile.DefaultKA,
+		PresharedKey:        nil,
+	}
+	if v6 := strings.TrimSpace(st.EndpointV6); v6 != "" {
+		srv.EndpointV6 = v6
+		srv.IPv6Enabled = st.IPv6Enabled
+	}
 	return &profile.NbVpnProfile{
 		V:    1,
 		Name: p.Name,
@@ -390,13 +435,7 @@ func buildProfile(st *state.ServerState, p *state.PeerRecord) *profile.NbVpnProf
 			DNS:        append([]string{}, st.DNS...),
 			MTU:        profile.DefaultMTU,
 		},
-		Server: profile.ServerSection{
-			PublicKey:           st.PublicKey,
-			Endpoint:            ep,
-			AllowedIPs:          append([]string{}, st.AllowedIPs...),
-			PersistentKeepalive: profile.DefaultKA,
-			PresharedKey:        nil,
-		},
+		Server: srv,
 	}
 }
 
@@ -640,6 +679,8 @@ func cmdConfig(args []string) error {
 	fmt.Printf("  address:     %s\n", st.Address)
 	fmt.Printf("  publicKey:   %s\n", st.PublicKey)
 	fmt.Printf("  endpoint:    %s\n", emptyDash(st.Endpoint))
+	fmt.Printf("  endpointV6:  %s\n", emptyDashV6(st.EndpointV6))
+	fmt.Printf("  ipv6Enabled: %s\n", boolOnOff(st.IPv6Enabled))
 	fmt.Printf("  dns:         %s\n", strings.Join(st.DNS, ", "))
 	fmt.Printf("  allowedIPs:  %s\n", strings.Join(st.AllowedIPs, ", "))
 	fmt.Printf("  peers:       %d active / %d total\n", len(active), len(all))
@@ -655,25 +696,94 @@ func emptyDash(s string) string {
 	return s
 }
 
-func cmdConfigSet(args []string) error {
-	if len(args) < 2 || args[0] != "endpoint" {
-		return fmt.Errorf("usage: nbvpn config set endpoint <host[:port]>")
+func emptyDashV6(s string) string {
+	if s == "" {
+		return "(not set — run: nbvpn config set endpoint-v6 <[ipv6]|host[:port]>)"
 	}
+	return s
+}
+
+func boolOnOff(v bool) string {
+	if v {
+		return "on"
+	}
+	return "off"
+}
+
+func cmdConfigSet(args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("usage: nbvpn config set endpoint|endpoint-v6|ipv6 <value>")
+	}
+	key := args[0]
 	raw := args[1]
 	s := store()
 	st, err := s.LoadServer()
 	if err != nil {
 		return err
 	}
-	ep, err := endpoint.NormalizeEndpoint(raw, st.ListenPort)
-	if err != nil {
-		return err
+	switch key {
+	case "endpoint":
+		ep, err := endpoint.NormalizeEndpoint(raw, st.ListenPort)
+		if err != nil {
+			return err
+		}
+		st.Endpoint = ep
+		if err := s.SaveServer(st); err != nil {
+			return err
+		}
+		if err := refreshActivePeerProfiles(s, st); err != nil {
+			return err
+		}
+		fmt.Printf("endpoint set to %s\n", ep)
+	case "endpoint-v6":
+		ep, err := endpoint.NormalizeEndpoint(raw, st.ListenPort)
+		if err != nil {
+			return err
+		}
+		st.EndpointV6 = ep
+		st.IPv6Enabled = true
+		if err := s.SaveServer(st); err != nil {
+			return err
+		}
+		if err := refreshActivePeerProfiles(s, st); err != nil {
+			return err
+		}
+		fmt.Printf("endpoint-v6 set to %s (ipv6Enabled=on)\n", ep)
+	case "ipv6":
+		on, err := parseOnOff(raw)
+		if err != nil {
+			return err
+		}
+		if on && strings.TrimSpace(st.EndpointV6) == "" {
+			return fmt.Errorf("cannot enable ipv6: endpoint-v6 is not set; run: nbvpn config set endpoint-v6 <[ipv6]|host[:port]>")
+		}
+		st.IPv6Enabled = on
+		if err := s.SaveServer(st); err != nil {
+			return err
+		}
+		if err := refreshActivePeerProfiles(s, st); err != nil {
+			return err
+		}
+		fmt.Printf("ipv6Enabled set to %s\n", boolOnOff(on))
+	default:
+		return fmt.Errorf("usage: nbvpn config set endpoint|endpoint-v6|ipv6 <value>")
 	}
-	st.Endpoint = ep
-	if err := s.SaveServer(st); err != nil {
-		return err
+	fmt.Println("Re-run nbvpn show to export updated profiles.")
+	return nil
+}
+
+func parseOnOff(raw string) (bool, error) {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "on", "1", "true", "yes", "enable", "enabled":
+		return true, nil
+	case "off", "0", "false", "no", "disable", "disabled":
+		return false, nil
+	default:
+		return false, fmt.Errorf("usage: nbvpn config set ipv6 on|off")
 	}
-	// refresh peer profile JSON files with new endpoint
+}
+
+func refreshActivePeerProfiles(s *state.Store, st *state.ServerState) error {
 	peers, err := s.ListPeers()
 	if err != nil {
 		return err
@@ -697,9 +807,14 @@ func cmdConfigSet(args []string) error {
 		if err := qr.WritePNG(uri, s.PeerQRPath(p.ID)); err != nil {
 			fmt.Fprintf(os.Stderr, "warning: QR PNG for %s: %v\n", p.ID, err)
 		}
+		conf, err := profile.ToWireGuardConf(prof)
+		if err != nil {
+			return err
+		}
+		if err := s.WritePeerWGConf(p.ID, conf); err != nil {
+			return err
+		}
 	}
-	fmt.Printf("endpoint set to %s\n", ep)
-	fmt.Println("Re-run nbvpn show to export updated profiles.")
 	return nil
 }
 
@@ -757,7 +872,7 @@ func cmdRestart() error {
 
 func cmdPeer(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("usage: nbvpn peer <add|list|revoke> ...")
+		return fmt.Errorf("usage: nbvpn peer <add|list|revoke|delete> ...")
 	}
 	switch args[0] {
 	case "add":
@@ -773,6 +888,18 @@ func cmdPeer(args []string) error {
 			return fmt.Errorf("usage: nbvpn peer revoke <id|name>")
 		}
 		return cmdPeerRevoke(args[1])
+	case "delete":
+		if len(args) < 2 {
+			return fmt.Errorf("usage: nbvpn peer delete <id|name> [--yes]")
+		}
+		yes := false
+		idOrName := args[1]
+		for _, a := range args[2:] {
+			if a == "--yes" || a == "-y" {
+				yes = true
+			}
+		}
+		return cmdPeerDelete(idOrName, yes)
 	default:
 		return fmt.Errorf("unknown peer subcommand %q", args[0])
 	}
@@ -826,6 +953,9 @@ func cmdPeerList() error {
 		fmt.Print("  |  endpoint NOT SET — nbvpn config set endpoint <host[:port]>")
 	} else {
 		fmt.Printf("  |  endpoint %s", st.Endpoint)
+	}
+	if st.EndpointV6 != "" {
+		fmt.Printf("  |  endpointV6 %s (ipv6 %s)", st.EndpointV6, boolOnOff(st.IPv6Enabled))
 	}
 	fmt.Println()
 	fmt.Println("Tip: nbvpn show <name|id>   # re-export URI/QR/file for one peer")
@@ -884,17 +1014,18 @@ func cmdPeerRevoke(idOrName string) error {
 	return nil
 }
 
-func cmdUninstall(args []string) error {
-	yes := false
-	for _, a := range args {
-		if a == "--yes" || a == "-y" {
-			yes = true
-		}
-	}
+func cmdPeerDelete(idOrName string, yes bool) error {
 	s := store()
-	fmt.Println("This will stop the VPN service and delete nbvpn data under:")
-	fmt.Println(" ", s.DataDir)
-	fmt.Println("WireGuard system config /etc/wireguard/nbvpn.conf will also be removed if present.")
+	st, err := s.LoadServer()
+	if err != nil {
+		return err
+	}
+	p, err := s.FindPeer(idOrName)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("This will permanently delete peer %s (%s) and all export files.\n", p.Name, p.ID)
+	fmt.Println("The peer will be removed from WireGuard. Its VPN IP will NOT be reused.")
 	if !yes {
 		fmt.Print("Type 'yes' to confirm: ")
 		var line string
@@ -904,11 +1035,107 @@ func cmdUninstall(args []string) error {
 			return nil
 		}
 	}
-	_, _, _ = wg.Stop()
-	wg.RemoveSystemConf()
-	if err := s.RemoveAll(); err != nil {
+	if err := s.DeletePeer(p.ID); err != nil {
 		return err
 	}
-	fmt.Println("uninstalled")
+	if err := wg.Sync(s, st, mustAllPeers(s)); err != nil {
+		fmt.Fprintf(os.Stderr, "warning: sync wg config: %v\n", err)
+	}
+	fmt.Printf("deleted peer %s (%s)\n", p.Name, p.ID)
 	return nil
+}
+
+func cmdUninstall(args []string) error {
+	yes := false
+	keepData := false
+	for _, a := range args {
+		switch a {
+		case "--yes", "-y":
+			yes = true
+		case "--keep-data":
+			keepData = true
+		case "-h", "--help":
+			printUninstallHelp()
+			return nil
+		default:
+			return fmt.Errorf("unknown uninstall flag %q (try: nbvpn uninstall --help)", a)
+		}
+	}
+	s := store()
+	targets := wg.ListUninstallTargets(s)
+
+	fmt.Println("nbvpn 将执行完全卸载 / nbvpn full uninstall")
+	fmt.Println()
+	if keepData {
+		fmt.Println("模式: --keep-data（保留数据目录，便于重装；仍停止服务并清理系统配置）")
+		fmt.Println("Mode: --keep-data (preserve data dir for reinstall; still stops service and removes system config)")
+	} else {
+		fmt.Println("模式: 完全清理（默认；删除密钥、peer、配置与系统产物）")
+		fmt.Println("Mode: full clean (default; deletes keys, peers, configs, and system artifacts)")
+	}
+	fmt.Println()
+	fmt.Println("将处理以下 nbvpn 管理项 / Artifacts:")
+	for _, t := range targets {
+		if keepData && t.Kind == "data" {
+			fmt.Printf("  (skip) %s — kept for reinstall\n", t.Path)
+			continue
+		}
+		mark := " "
+		if t.Present {
+			mark = "*"
+		}
+		line := fmt.Sprintf("  %s %s", mark, t.Path)
+		if t.Note != "" {
+			line += " — " + t.Note
+		}
+		fmt.Println(line)
+	}
+	fmt.Println("  * = present on this host")
+	fmt.Println()
+	if !yes {
+		fmt.Print("Type 'yes' to confirm / 输入 yes 确认: ")
+		var line string
+		_, _ = fmt.Scanln(&line)
+		if strings.TrimSpace(line) != "yes" {
+			fmt.Println("aborted / 已取消")
+			return nil
+		}
+	}
+	log, err := wg.Uninstall(s, wg.UninstallOpts{KeepData: keepData})
+	for _, line := range log {
+		fmt.Println(line)
+	}
+	if err != nil {
+		return err
+	}
+	fmt.Println("uninstalled / 卸载完成")
+	return nil
+}
+
+func printUninstallHelp() {
+	fmt.Println(`Usage: nbvpn uninstall [--yes] [--keep-data]
+
+完全卸载 nbvpn 服务端管理的所有产物（默认行为）。
+Full uninstall of all nbvpn-managed artifacts (default).
+
+  --yes, -y       Skip interactive confirmation
+  --keep-data     Keep the data directory (keys/peers/profiles) for reinstall;
+                  still stops the tunnel and removes system WireGuard config,
+                  systemd unit enablement, sysctl drop-in, and iptables rules.
+
+默认删除 / Removed by default (Linux):
+  • wg-quick@nbvpn service (stop + disable)
+  • /etc/wireguard/nbvpn.conf
+  • /var/lib/nbvpn (or NBVPN_DATA_DIR) — unless --keep-data
+  • /etc/sysctl.d/99-nbvpn-forward.conf (only if nbvpn-managed)
+  • iptables FORWARD/NAT rules for the tunnel (best-effort, incl. duplicates)
+
+Windows also removes:
+  • WireGuardTunnel$nbvpn service
+  • NetNat "nbvpnNat" and firewall rule from install.ps1 (best-effort)
+
+Examples:
+  sudo nbvpn uninstall              # preview + confirm
+  sudo nbvpn uninstall --yes        # full clean uninstall
+  sudo nbvpn uninstall --yes --keep-data   # reinstall later without re-keying`)
 }

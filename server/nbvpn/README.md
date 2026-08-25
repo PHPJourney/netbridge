@@ -74,15 +74,19 @@ nbvpn show                  # URI + file + PNG path + terminal QR (secrets!)
 nbvpn show --uri            # URI on stdout; secret warning on stderr (pipe-friendly)
 nbvpn config                # node summary (no server private key)
 nbvpn config set endpoint 203.0.113.10   # if public IP was not detected
+nbvpn config set endpoint-v6 2001:db8::1 # optional IPv6 (enables ipv6 flag)
+nbvpn config set ipv6 on|off            # toggle IPv6 prefer without clearing address
 nbvpn status
 nbvpn peer add phone
 nbvpn peer list
-nbvpn peer revoke phone
+nbvpn peer revoke phone    # disable creds; keep revoked record in list
+nbvpn peer delete phone --yes   # remove peer entirely (typo / cleanup)
 sudo nbvpn start|stop|restart
-sudo nbvpn uninstall --yes
+sudo nbvpn uninstall --yes        # full clean uninstall (default)
+sudo nbvpn uninstall --yes --keep-data   # stop service, keep keys/peers for reinstall
 ```
 
-Firewall: open **UDP 51820** on the host **and** the cloud security group. See `server/install/FIREWALL.md`.
+Firewall: open **UDP 51820** on the host **and** the cloud security group (IPv4 + IPv6 if using endpoint-v6). See `server/install/FIREWALL.md`.
 
 ## Commands
 
@@ -90,11 +94,25 @@ Firewall: open **UDP 51820** on the host **and** the cloud security group. See `
 |---------|---------|
 | `install` | Create interface config, first peer, detect endpoint, enable service |
 | `show [--uri\|--qr\|--file\|--all] [--qr-size N]` | Connection info (default `--all`; terminal QR + optional PNG) |
-| `config` | Node summary without server private key |
-| `config set endpoint <host[:port]>` | Set public endpoint for profiles |
+| `config` | Node summary without server private key (includes endpointV6 / ipv6Enabled) |
+| `config set endpoint <host[:port]>` | Set primary public endpoint for profiles |
+| `config set endpoint-v6 <[ipv6]\|host[:port]>` | Set optional IPv6 endpoint (enables ipv6 flag) |
+| `config set ipv6 on\|off` | Mark whether clients prefer endpoint-v6 |
 | `status` / `start` / `stop` / `restart` | Service management |
-| `peer add [name]` / `list` / `revoke <id\|name>` | Client peers |
-| `uninstall` | Stop service and remove data (confirm or `--yes`) |
+| `peer add [name]` / `list` / `revoke <id\|name>` / `delete <id\|name> [--yes]` | Client peers |
+
+### `peer revoke` vs `peer delete`
+
+| | `peer revoke` | `peer delete` |
+|---|---------------|---------------|
+| Effect | Disable credentials immediately | Remove peer record entirely |
+| `peer list` | Shows as **revoked** (audit trail) | Gone from list |
+| Files | Removes export JSON / `.conf` / PNG; keeps `peers/<id>.json` | Removes **all** peer files |
+| WireGuard | Removed from active WG config | Removed from active WG config |
+| VPN IP | Not recycled (`NextClientIP` unchanged) | Not recycled (same) |
+| Use when | Phone lost, URI leaked, disable without forgetting who had access | Typo peer, clean up revoked entries, no history needed |
+
+| `uninstall` | Full uninstall: stop/disable service, remove system config, sysctl, iptables rules, data dir (confirm, `--yes`, or `--keep-data`) |
 | `help` | Help |
 
 ## State & secrets

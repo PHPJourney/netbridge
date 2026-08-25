@@ -45,9 +45,13 @@ class FakeVpnTunnel implements VpnTunnel {
   Future<VpnTunnelStage> currentStage() async => _stage;
 
   @override
-  Future<void> connect(NbVpnProfile profile, {required bool killSwitch}) async {
+  Future<void> connect(
+    NbVpnProfile profile, {
+    required bool killSwitch,
+    bool excludePrivateNetworks = false,
+  }) async {
     connectCount++;
-    connectedEndpoints.add(profile.server.endpoint);
+    connectedEndpoints.add(profile.server.activeEndpoint);
     _emit(VpnTunnelStage.connecting);
     await Future<void>.delayed(connectDelay);
     if (failConnect) {

@@ -122,6 +122,53 @@ func TestToWireGuardConf(t *testing.T) {
 	}
 }
 
+func TestEndpointV6OptionalRoundTrip(t *testing.T) {
+	p := sampleProfile(t)
+	p.Server.EndpointV6 = "[2001:db8::1]:51820"
+	p.Server.IPv6Enabled = true
+	uri, err := profile.EncodeURI(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := profile.DecodeURI(uri)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Server.EndpointV6 != p.Server.EndpointV6 {
+		t.Fatalf("endpointV6: %q", got.Server.EndpointV6)
+	}
+	if !got.Server.IPv6Enabled {
+		t.Fatal("expected ipv6Enabled")
+	}
+	if got.Server.ActiveEndpoint() != "[2001:db8::1]:51820" {
+		t.Fatalf("ActiveEndpoint: %q", got.Server.ActiveEndpoint())
+	}
+	conf, err := profile.ToWireGuardConf(got)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(conf, "Endpoint = [2001:db8::1]:51820") {
+		t.Fatalf("conf should use IPv6 endpoint:\n%s", conf)
+	}
+}
+
+func TestActiveEndpoint_IPv6Off(t *testing.T) {
+	p := sampleProfile(t)
+	p.Server.EndpointV6 = "[2001:db8::1]:51820"
+	p.Server.IPv6Enabled = false
+	if p.Server.ActiveEndpoint() != p.Server.Endpoint {
+		t.Fatalf("got %q", p.Server.ActiveEndpoint())
+	}
+}
+
+func TestValidateRejectsBadEndpointV6(t *testing.T) {
+	p := sampleProfile(t)
+	p.Server.EndpointV6 = "2001:db8::1" // missing brackets/port form for validator
+	if err := p.Validate(); err == nil {
+		t.Fatal("expected bad endpointV6 to fail")
+	}
+}
+
 func min(a, b int) int {
 	if a < b {
 		return a

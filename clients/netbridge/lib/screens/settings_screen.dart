@@ -34,6 +34,12 @@ class SettingsScreen extends StatelessWidget {
             value: c.killSwitch,
             onChanged: (v) => c.setKillSwitch(v),
           ),
+          SwitchListTile(
+            title: Text(l10n.splitTunnelTitle),
+            subtitle: Text(l10n.splitTunnelSubtitle),
+            value: c.excludePrivateNetworks,
+            onChanged: (v) => c.setExcludePrivateNetworks(v),
+          ),
           const Divider(height: 1),
           ListTile(
             title: Text(l10n.tunnelCapability),
@@ -48,6 +54,12 @@ class SettingsScreen extends StatelessWidget {
           ListTile(
             title: Text(l10n.cantConnectTitle),
             subtitle: Text(l10n.cantConnectBody),
+            isThreeLine: true,
+          ),
+          const Divider(height: 1),
+          ListTile(
+            title: Text(l10n.fullTunnelCarTitle),
+            subtitle: Text(l10n.fullTunnelCarHint),
             isThreeLine: true,
           ),
           const Divider(height: 1),

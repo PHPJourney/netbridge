@@ -92,14 +92,31 @@ ssh netbridge-vps 'nbvpn peer add --name try-$(date +%Y%m%d)'
 ssh netbridge-vps 'nbvpn show --uri'
 ```
 
+**吊销 vs 删除：** `peer revoke <id|name>` 立即失效 URI/QR，但 `peer list` 仍显示为 revoked（留审计）；`peer delete <id|name> [--yes]` 永久删除记录与全部导出文件。两者都不会回收该 peer 的 VPN IP。
+
 URI 形如：`nbvpn:1?<base64url>…`（只复制 stdout；stderr 可能有提示）。
 
 ## 3. 客户端导入并连接
 
 1. 打开客户端 → **添加** → **粘贴 URI**（推荐）或 **扫描二维码**
-2. 确认节点信息（endpoint 应为 VPS 公网 IP:51820）
+2. 确认节点信息（endpoint 应为 VPS 公网 IP:51820；若服务端启用了 IPv6，可看到 endpointV6 与「IPv6 已启用/未启用」）
 3. 点连接；Android 首次会弹出系统 VPN 授权，需允许
-4. 预期：状态变为已连接；可用 `ssh netbridge-vps 'nbvpn status'` 看握手
+4. 预期：状态先显示「正在验证握手…」，通过后变为已连接；若约 25 秒内握手/出口探测失败，会断开并提示「握手失败，可能被机房封禁 UDP 或 NAT 未配置」
+5. 服务端可用 `ssh netbridge-vps 'nbvpn status'` / `sudo wg show` 看握手
+
+### 3.0 启用 IPv6（可选）
+
+服务器有 IPv6 公网地址时：
+
+```bash
+ssh netbridge-vps 'sudo nbvpn config set endpoint-v6 YOUR_IPV6'
+# 或显式端口 / 开关：
+# sudo nbvpn config set endpoint-v6 '[2001:db8::1]:51820'
+# sudo nbvpn config set ipv6 on|off
+ssh netbridge-vps 'nbvpn show --uri'   # 重新导出；URI 含 endpointV6 + ipv6Enabled
+```
+
+同时确认云安全组与主机防火墙放行 **UDP 51820（IPv6）**。客户端编辑服务器页可查看/切换「使用 IPv6 endpoint」。WireGuard **同时只连一个 Endpoint**（启用 IPv6 时用 V6，否则用主 endpoint）。
 
 ### 3.1 扫码说明（终端 QR 较密）
 
@@ -137,7 +154,8 @@ sudo ./server/install/install.sh
 | 现象 | 检查 |
 |------|------|
 | 一直连不上 | 云安全组 / ufw 是否放行 **UDP 51820** |
-| **有 VPN 钥匙图标 + 流量在跳，但 App 没网** | **服务端缺 IP 转发 / NAT（最常见）** — 见下方 §5.1 |
+| **App 提示握手失败** | 客户端在隧道接口 up 后会做 HTTP 出口探测（约 25s）。无握手 / UDP 被封 / NAT 未配时会断开并提示；VPS 上查 `wg show` 是否无 recent handshake、`MASQUERADE` 是否为 0 |
+| **有 VPN 钥匙图标 + 流量在跳，但 App 没网** | **服务端缺 IP 转发 / NAT（最常见）** — 见 §5.1、§5.4；**不是**分流导致 |
 | Android 无授权框 | OEM 权限；重装 APK |
 | 状态栏完全没有 VPN 图标 | 隧道可能未真正 up；与「有图标没网」不同，先看系统 VPN 授权 |
 | macOS Flutter 能导入不能真连 | 预期（无 NE）；改用「本机 macOS 业务」路径 B（官方 WireGuard + `.conf`）或 Android |
@@ -176,6 +194,101 @@ sudo systemctl restart wg-quick@nbvpn
 ```
 
 重测：手机断开再连 → 能打开网页；`wg show` 中 **sent** 与 **received** 都在增加。
+
+### 5.2 VPN 与车机 / 局域网冲突
+
+默认 peer / 客户端配置里 **`AllowedIPs = 0.0.0.0/0, ::/0`** 表示 **全隧道（full tunnel）**：除极少数例外，**所有** IPv4/IPv6 流量都会经 VPN 出去，不再走本机直连的局域网路由。
+
+因此，VPN **已连接** 时常见现象：
+
+| 场景 | 可能表现 |
+|------|----------|
+| 连 **车机热点** / 车内 Wi‑Fi | 手机与车机在同一局域网，但流量被送进隧道，车机 App、投屏、OTA 等异常 |
+| **蓝牙 PAN** / 手机互联（CarPlay、HiCar 等） | 依赖本地链路的镜像、通知、控车指令被 VPN 路由干扰 |
+| **遥控解锁 / 本地控车 App** | 需访问厂商局域网或近场服务时失败或极慢 |
+| 普通 **家庭 / 办公 Wi‑Fi** 下的局域网设备 | 打印机、NAS、智能家居等同理（非车机也会中招） |
+
+**当前产品内置可选「自动分流（排除私网）」**（设置 → **默认关闭**，全隧道）：开启后，连接时若配置含 `0.0.0.0/0` / `::/0`，客户端会改写 AllowedIPs，私网 / 车机 / 蓝牙不走隧道，**公网仍经 VPN**。修改开关后需 **断开再连** 生效。
+
+仍可选做法：
+
+1. **用车前断开 VPN**（最简单、最稳）。
+2. **设置 → 开启「自动分流（排除私网）」**（推荐有车机/局域网需求时）。
+3. **macOS / iOS 官方 WireGuard**：导入 `.conf` 后勾选 **Exclude private networks**（若客户端提供），私网流量不走隧道。
+4. **在本应用缩小 Allowed IPs（仅 VPN 网段）**：打开节点 → **编辑服务器** → **Allowed IPs** 字段，例如改为仅 VPN 内网 `10.8.0.0/24`（及你的节点网段），**不要**保留 `0.0.0.0/0`。保存后断开再连生效。  
+   - 效果：只有访问该网段走 VPN，公网也不经 VPN。  
+   - 代价：其余公网流量不再经 VPN（需自行权衡）。
+5. **关闭自动分流**：设置 → 关闭「自动分流（排除私网）」→ 断开再连，恢复全隧道（默认即如此）。
+
+**服务端安装可选分流**（新机器）：`NBVPN_SPLIT_TUNNEL=1 sudo ./server/install/install.sh` 或 `nbvpn install --split-tunnel`，新 peer 的 profile 中 `allowedIPs` 仅为 VPN 网段（如 `10.8.0.0/24`），公网不经 VPN。与客户端「自动分流」不同：服务端分流在 profile 层缩小路由，客户端分流在连接时改写全隧道 CIDR。
+
+若你刚排查完 §5.1「有 VPN 图标但没网」，请先确认服务端 NAT；本节解决的是 **隧道已通，但本地 / 车机侧功能不可用** 的另一类问题。
+
+### 5.3 三种「没网」如何区分
+
+| 类型 | 症状 | 根因 | 与分流的关系 |
+|------|------|------|--------------|
+| **A. 全隧道 + 服务端 NAT 故障** | VPN 图标在、流量计数动，**公网网页/App 全打不开** | VPS 未转发 / 无 MASQUERADE / ufw FORWARD=DROP | **无关**。分流开或关，公网仍走 VPN；NAT 坏了就没公网 |
+| **B. 全隧道 + 本地/车机** | 公网可能正常，**车机/蓝牙/局域网设备异常** | `0.0.0.0/0` 劫持私网路由 | **有关**。开启 §5.2 自动分流或缩小 AllowedIPs |
+| **C. 分流已开但仍无公网** | 私网可能正常，**公网仍打不开** | 仍是 §5.1 NAT/出口问题 | **不是分流导致**；按 §5.4 查服务端出口 |
+
+**你现在的「连上 nbvpn 完全没网」**：若 VPN 图标在且流量在跳，**优先按 A/C 查服务端 NAT 与出口**（§5.1、§5.4），不要先关分流。分流只解决私网/车机冲突，不会让公网 magically 恢复。
+
+### 5.4 服务端出口 / NAT 诊断（在 VPS 上执行）
+
+在 **已 SSH 登录的 VPS** 上运行以下命令，确认节点自身能上网、且 VPN 客户端流量能被 NAT 出去。
+
+```bash
+# --- 1) 节点自身能否访问公网（不经 VPN 客户端）---
+curl -4 -sS --max-time 5 ifconfig.me && echo
+curl -4 -sS --max-time 5 icanhazip.com && echo
+# 若这里就失败：VPS 本身无公网出口 / DNS / 上游防火墙问题，先修主机联网
+
+# --- 2) 路由与转发 ---
+ip route
+sysctl net.ipv4.ip_forward          # 必须为 1
+
+# --- 3) WireGuard 接口 ---
+sudo wg show
+ip addr show nbvpn 2>/dev/null || ip addr show wg0 2>/dev/null
+
+# --- 4) NAT / MASQUERADE（全隧道客户端上网的关键）---
+sudo iptables -t nat -L POSTROUTING -n -v | grep -i MASQUERADE
+# 若系统用 nftables：
+sudo nft list ruleset 2>/dev/null | grep -i masquerade
+
+# --- 5) ufw / firewalld ---
+sudo ufw status verbose 2>/dev/null || true
+grep DEFAULT_FORWARD_POLICY /etc/default/ufw 2>/dev/null   # 期望 ACCEPT（全隧道时）
+sudo firewall-cmd --list-all 2>/dev/null || true
+
+# --- 6) nbvpn 配置摘要 ---
+nbvpn config
+nbvpn status
+```
+
+**解读要点**
+
+- `curl ifconfig.me` 在 VPS 上成功 → 节点有公网出口；客户端仍无网 → 多半是 **NAT/转发未对 wg 子网生效**（§5.1 修复）。
+- `wg show` 有 **recent handshake**，但 **transfer 只有 received、sent≈0** → 客户端发包到了节点，节点未把回程/NAT 做好。
+- `MASQUERADE` 规则缺失 → 执行 §5.1 临时修复后 `sudo systemctl restart wg-quick@nbvpn`，手机 **断开再连** 重测。
+
+**客户端侧（手机已连 VPN 时）**
+
+- 手机不便跑 curl；看 **VPN 图标 + 流量计数** 是否在动。
+- 图标在、计数动、网页仍打不开 → **先 VPS 上跑上面命令**，不要先改分流。
+- 公网正常但车机/打印机不行 → 开 **设置 → 自动分流（排除私网）** 或 §5.2 缩小 AllowedIPs。
+
+## 6. 分流 / 全隧道配置速查
+
+| 层级 | 做法 | 效果 |
+|------|------|------|
+| **客户端（推荐）** | 设置 → **自动分流（排除私网）** 开关 | 默认关（全隧道）；开启后私网直连、公网仍走 VPN |
+| **客户端** | 编辑节点 → Allowed IPs 改为 `10.8.0.0/24` | 仅 VPN 网段走隧道，公网不经 VPN |
+| **服务端（新装）** | `NBVPN_SPLIT_TUNNEL=1` 或 `nbvpn install --split-tunnel` | 新 peer profile 仅含 VPN 网段 |
+| **服务端（已装）** | 编辑 `server.json` 的 `allowedIPs`，再 `nbvpn install` 修复配置 | 影响新导出 profile；已有 URI 需重新 `show` 导入 |
+
+修改任一侧后，客户端需 **断开再连**（或重新导入 URI）生效。
 
 ## 产物路径速查
 

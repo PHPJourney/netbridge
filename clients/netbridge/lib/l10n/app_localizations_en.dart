@@ -46,6 +46,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'Check endpoint, UDP 51820 (host firewall + cloud security group), and re-import with a fresh nbvpn show.';
 
   @override
+  String get fullTunnelCarTitle => 'Car / local network issues?';
+
+  @override
+  String get fullTunnelCarHint =>
+      'If car hotspot, Bluetooth, or LAN devices break while connected, turn on automatic split tunnel below; public internet still uses the VPN. Reconnect after changing.';
+
+  @override
+  String get splitTunnelTitle => 'Automatic split tunnel';
+
+  @override
+  String get splitTunnelSubtitle =>
+      'Optional. When on, private networks (10.x, 192.168.x, link-local, etc.) bypass the VPN; public internet still uses the tunnel. Default off (full tunnel). Reconnect to apply.';
+
+  @override
   String get language => 'Language';
 
   @override
@@ -192,6 +206,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statusReconnectingDetail => 'Network interrupted, reconnecting…';
 
   @override
+  String get statusVerifyingHandshake => 'Verifying handshake…';
+
+  @override
+  String get handshakeFailedError =>
+      'Handshake failed. The provider may block UDP forwarding, or server NAT may be misconfigured.';
+
+  @override
   String get statusErrorFallback => 'Connection failed';
 
   @override
@@ -319,7 +340,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelEndpoint => 'Endpoint';
 
   @override
+  String get labelEndpointV6 => 'IPv6 endpoint';
+
+  @override
+  String get endpointV6Helper =>
+      'Optional. Use [ipv6]:port form, e.g. [2001:db8::1]:51820. From server: nbvpn config set endpoint-v6 …';
+
+  @override
+  String get ipv6EnabledTitle => 'Use IPv6 endpoint';
+
+  @override
+  String get ipv6EnabledOnHint =>
+      'Connect via IPv6 endpoint (WireGuard uses one Endpoint at a time)';
+
+  @override
+  String get ipv6EnabledOffHint =>
+      'IPv6 endpoint saved but disabled — connecting via primary endpoint';
+
+  @override
+  String get ipv6EnabledNeedEndpointHint =>
+      'Set an IPv6 endpoint first to enable';
+
+  @override
+  String get ipv6StatusLabel => 'IPv6';
+
+  @override
+  String get ipv6StatusEnabled => 'IPv6 enabled';
+
+  @override
+  String get ipv6StatusDisabled => 'IPv6 disabled';
+
+  @override
   String get labelAllowedIps => 'Allowed IPs';
+
+  @override
+  String get allowedIpsHelper =>
+      'Default 0.0.0.0/0 is full tunnel. Enable Settings → Automatic split tunnel to bypass private LAN, or set e.g. 10.8.0.0/24 here to route only the VPN subnet.';
 
   @override
   String get labelMtu => 'MTU';

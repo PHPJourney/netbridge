@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:netbridge/models/server_entry.dart';
 import 'package:netbridge/profile/nbvpn_profile.dart';
+import 'package:netbridge/services/vpn/vpn_connectivity_verifier.dart';
 import 'package:netbridge/state/app_controller.dart';
 
 import 'services/fake_vpn_tunnel.dart';
@@ -41,7 +42,10 @@ void main() {
       connectDelay: const Duration(milliseconds: 50),
       disconnectDelay: const Duration(milliseconds: 40),
     );
-    final c = AppController(tunnel: tunnel);
+    final c = AppController(
+      tunnel: tunnel,
+      connectivityVerifier: VpnConnectivityVerifier.testing(succeed: true),
+    );
     c.loading = false;
     c.servers = [
       _entry('s1', 'Server1', '1.1.1.1:51820'),
@@ -69,7 +73,10 @@ void main() {
       connectDelay: const Duration(milliseconds: 80),
       disconnectDelay: const Duration(milliseconds: 50),
     );
-    final c = AppController(tunnel: tunnel);
+    final c = AppController(
+      tunnel: tunnel,
+      connectivityVerifier: VpnConnectivityVerifier.testing(succeed: true),
+    );
     c.loading = false;
     c.servers = [
       _entry('s1', 'Server1', '1.1.1.1:51820'),
@@ -97,7 +104,10 @@ void main() {
       connectDelay: const Duration(milliseconds: 20),
       disconnectDelay: const Duration(milliseconds: 60),
     );
-    final c = AppController(tunnel: tunnel);
+    final c = AppController(
+      tunnel: tunnel,
+      connectivityVerifier: VpnConnectivityVerifier.testing(succeed: true),
+    );
     c.loading = false;
     c.servers = [
       _entry('s1', 'Server1', '1.1.1.1:51820'),

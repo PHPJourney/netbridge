@@ -77,6 +77,18 @@ class _ConfirmAddScreenState extends State<ConfirmAddScreen> {
             ),
             const SizedBox(height: 16),
             _SummaryRow(label: l10n.labelNode, value: p.server.endpoint),
+            if ((p.server.endpointV6?.trim() ?? '').isNotEmpty) ...[
+              _SummaryRow(
+                label: l10n.labelEndpointV6,
+                value: p.server.endpointV6!,
+              ),
+              _SummaryRow(
+                label: l10n.ipv6StatusLabel,
+                value: p.server.ipv6Enabled
+                    ? l10n.ipv6StatusEnabled
+                    : l10n.ipv6StatusDisabled,
+              ),
+            ],
             _SummaryRow(label: l10n.labelAddress, value: p.client.address.join(', ')),
             _SummaryRow(label: l10n.labelDns, value: p.client.dns.join(', ')),
             const SizedBox(height: 8),

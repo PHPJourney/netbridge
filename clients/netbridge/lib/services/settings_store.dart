@@ -1,5 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../config/build_flags.dart';
+
 /// Locale preference: follow system, or force zh / en.
 enum AppLocaleMode {
   system,
@@ -23,6 +25,7 @@ class SettingsStore {
   static const killSwitchKey = 'nbvpn.killSwitch';
   static const killSwitchPromptedKey = 'nbvpn.killSwitch.prompted';
   static const localeModeKey = 'nbvpn.localeMode';
+  static const excludePrivateNetworksKey = 'nbvpn.splitTunnel.excludePrivate';
 
   Future<bool> getKillSwitch() async {
     final prefs = await SharedPreferences.getInstance();
@@ -53,5 +56,17 @@ class SettingsStore {
   Future<void> setLocaleMode(AppLocaleMode mode) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(localeModeKey, mode.storageValue);
+  }
+
+  /// Automatic split tunnel: rewrite `0.0.0.0/0` / `::/0` to exclude-private CIDRs.
+  Future<bool> getExcludePrivateNetworks() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(excludePrivateNetworksKey) ??
+        BuildFlags.defaultExcludePrivateNetworks;
+  }
+
+  Future<void> setExcludePrivateNetworks(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(excludePrivateNetworksKey, value);
   }
 }

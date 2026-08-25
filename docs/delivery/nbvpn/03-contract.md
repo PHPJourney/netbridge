@@ -11,6 +11,7 @@
 |------|------|------|
 | 2026-08-14 | 初冻 Profile v1、URI、二维码、文件、CLI 命令面 | spec |
 | 2026-08-14 | §4 补充：终端 QR 渲染要求（方模块/可扫）+ 可选旁路导出 `peers/<id>.png`（内容仍为完整 URI；不改变 URI/JSON 契约） | impl+qa |
+| 2026-08-25 | §1 可选字段 `server.endpointV6` / `server.ipv6Enabled`；CLI `config set endpoint-v6` / `config set ipv6`；连接时单 Endpoint（启用则优先 V6） | impl |
 
 ---
 
@@ -33,6 +34,8 @@
   "server": {
     "publicKey": "base64-wireguard-public-key",
     "endpoint": "203.0.113.10:51820",
+    "endpointV6": "[2001:db8::1]:51820",
+    "ipv6Enabled": true,
     "allowedIPs": ["0.0.0.0/0", "::/0"],
     "persistentKeepalive": 25,
     "presharedKey": null
@@ -49,18 +52,25 @@
 | `client.dns` | string[] | 是 | 至少 1 个 |
 | `client.mtu` | number | 否 | 缺省由客户端/平台默认；建议 1280 |
 | `server.publicKey` | string | 是 | 节点公钥 |
-| `server.endpoint` | string | 是 | `host:port`（host 可为域名或 IP） |
+| `server.endpoint` | string | 是 | 主 `host:port`（host 可为域名或 IP；通常 IPv4） |
+| `server.endpointV6` | string | 否 | 可选 IPv6（或备用）endpoint；须为 `host:port`，IPv6 字面量用 `[addr]:port` |
+| `server.ipv6Enabled` | boolean | 否 | 缺省/省略 = false；为 true 且 `endpointV6` 非空时，客户端连接使用 `endpointV6` 作为唯一 WireGuard Endpoint |
 | `server.allowedIPs` | string[] | 是 | 路由 |
 | `server.persistentKeepalive` | number | 否 | 默认 25 |
 | `server.presharedKey` | string\|null | 否 | 可选 PSK |
 
 **禁止**在 Profile 中放入服务端私钥。
 
+**向后兼容：** 旧客户端/旧 profile 无 `endpointV6`/`ipv6Enabled` 时行为不变。WireGuard 每个 peer **仅一个** Endpoint；双栈不是同时连两个地址，而是由启用状态选择其一。
+
+第二公网 IPv4：仍通过 `nbvpn config set endpoint` 切换主 endpoint（无独立 `endpoint-v4-2` 字段）。
+
 ### 1.2 校验规则
 
 - JSON 解析失败 → 拒绝导入  
 - `v !== 1` → 若 `v > 1` 提示升级客户端；若 `v < 1` 或缺失 → 拒绝  
 - 缺必填字段 / 密钥长度非法 / `endpoint` 无端口 → 拒绝并给出字段级错误  
+- 若存在 `endpointV6`：须为合法 `host:port`（IPv6 须 `[addr]:port`）  
 - `allowedIPs`、`address`、`dns` 不得为空数组  
 
 ### 1.3 等价性
@@ -126,9 +136,12 @@ nbvpn:1?eyJ2IjoxLCJuYW1lIjoiTXktTm9kZSIsImNsaWVudCI6e30sInNlcnZlciI6e319
 
 与 `01-spec.md` FR-S 命令表一致，作为契约能力列表：
 
-`install` · `show` · `config` · `status` · `start` · `stop` · `restart` · `peer add` · `peer list` · `peer revoke` · `uninstall` · `help`
+`install` · `show` · `config` · `status` · `start` · `stop` · `restart` · `peer add` · `peer list` · `peer revoke` · `peer delete` · `uninstall` · `help`
 
-另：**设置 endpoint** 能力必须具备（建议子命令 `nbvpn config set endpoint <host[:port]>`，名称微调须在 impl-notes 声明并回写本契约变更记录）。
+**`peer revoke` vs `peer delete`:** revoke disables credentials and keeps a revoked row in `peer list` (audit); delete removes the peer record and all files. Neither recycles the peer's VPN IP into `NextClientIP`.
+
+另：**设置 endpoint** 能力必须具备（`nbvpn config set endpoint <host[:port]>`）。  
+可选双栈：`nbvpn config set endpoint-v6 <[ipv6]|host[:port]>`、`nbvpn config set ipv6 on|off`；`nbvpn config` 须显示主 endpoint、endpointV6 与 ipv6 启用状态。
 
 ### 5.1 `show` 输出约定
 

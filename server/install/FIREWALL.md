@@ -20,6 +20,14 @@ sudo ufw reload
 sudo ufw status | grep 51820
 ```
 
+`ufw allow 51820/udp` typically opens the port for **both IPv4 and IPv6** when the host has IPv6 enabled. Verify with `sudo ufw status verbose` (look for `51820/udp` under IPv6 / `Anywhere (v6)`).
+
+If you use raw **ip6tables** instead of ufw:
+
+```bash
+sudo ip6tables -I INPUT -p udp --dport 51820 -j ACCEPT
+```
+
 ### firewalld (RHEL / Rocky / Alma / CentOS)
 
 ```bash
@@ -51,16 +59,17 @@ See also `server/install/windows/WINDOWS.md` (forwarding / NetNat / RRAS).
 Many providers (阿里云 / AWS / GCP / 腾讯云 / …) filter **before** the host firewall.
 
 - Inbound rule: **UDP 51820** from the clients you expect (`0.0.0.0/0` for public self-hosted, or tighter CIDRs).
+- **IPv6 clients:** also allow **UDP 51820** for IPv6 (`::/0` or your IPv6 CIDRs) in the cloud security group / ACL. Some panels have a separate IPv6 rule set.
 - Opening only TCP 22/80/443 is **not** enough for WireGuard.
 
 If `nbvpn status` shows the interface up but phones never get a handshake, check the **cloud** panel first.
 
 ## 3. Public endpoint
 
-Client profiles embed `server.endpoint` (host:port). After install, verify:
+Client profiles embed `server.endpoint` (host:port). Optional dual-stack fields: `server.endpointV6` + `server.ipv6Enabled`. After install, verify:
 
 ```bash
-nbvpn config          # look at endpoint:
+nbvpn config          # endpoint / endpointV6 / ipv6Enabled
 nbvpn show --uri      # URI must contain that host:port (warning goes to stderr)
 ```
 
@@ -70,8 +79,29 @@ If public IP detection failed or you use a DNS name / floating IP:
 sudo nbvpn config set endpoint YOUR_PUBLIC_IP_OR_DNS
 # optional explicit port:
 sudo nbvpn config set endpoint vpn.example.com:51820
+```
+
+### Dual IP / IPv6
+
+WireGuard listens dual-stack by default on Linux (`ListenPort` accepts IPv4 + IPv6). Profiles still carry **one active Endpoint** at connect time:
+
+```bash
+# Primary (usually IPv4) — also use this to switch among multiple IPv4 addresses
+sudo nbvpn config set endpoint 203.0.113.10
+
+# Optional IPv6 (auto-enables ipv6Enabled=on)
+sudo nbvpn config set endpoint-v6 2001:db8::1
+# or: sudo nbvpn config set endpoint-v6 '[2001:db8::1]:51820'
+
+# Toggle without clearing the stored IPv6 address
+sudo nbvpn config set ipv6 on
+sudo nbvpn config set ipv6 off
+
 nbvpn show            # re-export URI / QR / JSON for peers
 ```
+
+- Second **IPv4**: change the primary with `config set endpoint` (no separate `endpoint-v4-2` field).
+- Client: when `ipv6Enabled` and `endpointV6` are present, connect uses the IPv6 endpoint; otherwise the primary.
 
 NAT / CGNAT: the VPS must have a **reachable** UDP address; home CGNAT often cannot host inbound WireGuard without a relay (out of scope for nbvpn).
 
@@ -184,10 +214,34 @@ nbvpn status
 
 `install.sh`, `debian.sh` / `ubuntu.sh`, and `centos.sh` / `rhel.sh` all call shared `preflight_linux` (`_common.sh`), then family remediation:
 
-- **Debian/Ubuntu:** apt `wireguard` / tools / `wireguard-dkms` + headers when `modprobe` fails
+- **Debian/Ubuntu:** apt `wireguard` / tools / `wireguard-dkms` + headers when `modprobe` fails; newer kernel package vs running `uname -r` is informational when WireGuard already works
 - **RHEL/Rocky/Alma/CentOS/Stream:** epel/elrepo, kernel update, CentOS EOL vault switch (incl. cloud overlays), `kmod-wireguard`, reboot prompt / migrate fail
 - Host firewall via `configure_host_firewall` (ufw / firewalld)
 - Fail with actionable steps instead of a fake success
 
+If download fails with `curl: (22) …/nbvpn-linux-amd64` **404**, the **filename is correct** but GitHub `releases/latest` is a client-only Release (no server binary). Workaround: `NBVPN_BINARY_URL=…/releases/download/v0.1.11/nbvpn-linux-amd64` — see `LINUX-PREFLIGHT.md` § Binary download.
+
 Full write-up: **`LINUX-PREFLIGHT.md`**.
+
+## 8. Uninstall (full clean)
+
+`nbvpn uninstall` removes **all** nbvpn-managed host artifacts (not a partial uninstall that leaves system config behind):
+
+```bash
+sudo nbvpn uninstall              # preview + type yes
+sudo nbvpn uninstall --yes        # full clean (default)
+sudo nbvpn uninstall --yes --keep-data   # keep /var/lib/nbvpn for reinstall
+```
+
+Removed on Linux:
+
+| Artifact | Notes |
+|----------|--------|
+| `wg-quick@nbvpn` | stop + `systemctl disable` |
+| `/etc/wireguard/nbvpn.conf` | system WireGuard config |
+| `/var/lib/nbvpn` (or `NBVPN_DATA_DIR`) | keys, peers, profiles — skipped with `--keep-data` |
+| `/etc/sysctl.d/99-nbvpn-forward.conf` | only if file contains `# Managed by nbvpn` |
+| iptables FORWARD + MASQUERADE | PostDown + best-effort duplicate cleanup |
+
+`nbvpn` does **not** revert ufw `DEFAULT_FORWARD_POLICY` changes you made manually (see §4).
 

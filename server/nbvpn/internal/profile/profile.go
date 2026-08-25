@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net"
 	"strings"
 )
 
@@ -35,9 +36,22 @@ type ClientSection struct {
 type ServerSection struct {
 	PublicKey           string   `json:"publicKey"`
 	Endpoint            string   `json:"endpoint"`
+	EndpointV6          string   `json:"endpointV6,omitempty"`
+	IPv6Enabled         bool     `json:"ipv6Enabled,omitempty"`
 	AllowedIPs          []string `json:"allowedIPs"`
 	PersistentKeepalive int      `json:"persistentKeepalive,omitempty"`
 	PresharedKey        *string  `json:"presharedKey"`
+}
+
+// ActiveEndpoint returns the WireGuard peer Endpoint to use at connect time.
+// When ipv6Enabled and endpointV6 are set, prefer IPv6; otherwise primary endpoint.
+// WireGuard supports a single Endpoint per peer — not dual simultaneous.
+func (s ServerSection) ActiveEndpoint() string {
+	v6 := strings.TrimSpace(s.EndpointV6)
+	if s.IPv6Enabled && v6 != "" {
+		return v6
+	}
+	return strings.TrimSpace(s.Endpoint)
 }
 
 // Validate checks required fields per contract §1.2.
@@ -75,6 +89,11 @@ func (p *NbVpnProfile) Validate() error {
 	if err := validateEndpoint(p.Server.Endpoint); err != nil {
 		return err
 	}
+	if v6 := strings.TrimSpace(p.Server.EndpointV6); v6 != "" {
+		if err := validateEndpointField(v6, "server.endpointV6"); err != nil {
+			return err
+		}
+	}
 	if len(p.Server.AllowedIPs) == 0 {
 		return fmt.Errorf("E_PROFILE_INVALID: server.allowedIPs must not be empty")
 	}
@@ -94,31 +113,19 @@ func validateKey(k, field string) error {
 }
 
 func validateEndpoint(ep string) error {
-	ep = strings.TrimSpace(ep)
-	if ep == "" {
-		return fmt.Errorf("E_PROFILE_INVALID: server.endpoint is required")
-	}
-	// host:port — last colon separates port (IPv6 bracket form also OK)
-	host, port, ok := splitHostPort(ep)
-	if !ok || host == "" || port == "" {
-		return fmt.Errorf("E_PROFILE_INVALID: server.endpoint must be host:port")
-	}
-	return nil
+	return validateEndpointField(ep, "server.endpoint")
 }
 
-func splitHostPort(ep string) (host, port string, ok bool) {
-	if strings.HasPrefix(ep, "[") {
-		idx := strings.LastIndex(ep, "]:")
-		if idx < 0 {
-			return "", "", false
-		}
-		return ep[:idx+1], ep[idx+2:], true
+func validateEndpointField(ep, field string) error {
+	ep = strings.TrimSpace(ep)
+	if ep == "" {
+		return fmt.Errorf("E_PROFILE_INVALID: %s is required", field)
 	}
-	idx := strings.LastIndex(ep, ":")
-	if idx <= 0 || idx == len(ep)-1 {
-		return "", "", false
+	host, port, err := net.SplitHostPort(ep)
+	if err != nil || host == "" || port == "" {
+		return fmt.Errorf("E_PROFILE_INVALID: %s must be host:port (IPv6 as [addr]:port)", field)
 	}
-	return ep[:idx], ep[idx+1:], true
+	return nil
 }
 
 // MarshalCanonical returns stable UTF-8 JSON (compact).
@@ -202,7 +209,7 @@ func ToWireGuardConf(p *NbVpnProfile) (string, error) {
 	}
 	b.WriteString("\n[Peer]\n")
 	b.WriteString(fmt.Sprintf("PublicKey = %s\n", p.Server.PublicKey))
-	b.WriteString(fmt.Sprintf("Endpoint = %s\n", p.Server.Endpoint))
+	b.WriteString(fmt.Sprintf("Endpoint = %s\n", p.Server.ActiveEndpoint()))
 	b.WriteString(fmt.Sprintf("AllowedIPs = %s\n", strings.Join(p.Server.AllowedIPs, ", ")))
 	b.WriteString(fmt.Sprintf("PersistentKeepalive = %d\n", ka))
 	if p.Server.PresharedKey != nil && *p.Server.PresharedKey != "" {

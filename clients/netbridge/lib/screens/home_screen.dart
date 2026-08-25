@@ -548,12 +548,26 @@ class _DesktopDetailPane extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                entry.profile.server.endpoint,
+                entry.profile.server.activeEndpoint,
                 style: const TextStyle(
                   color: NbColors.mutedText,
                   fontSize: 15,
                 ),
               ),
+              if ((entry.profile.server.endpointV6?.trim() ?? '').isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  entry.profile.server.ipv6Enabled
+                      ? l10n.ipv6StatusEnabled
+                      : l10n.ipv6StatusDisabled,
+                  style: TextStyle(
+                    color: entry.profile.server.ipv6Enabled
+                        ? NbColors.accent
+                        : NbColors.mutedText,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
               const SizedBox(height: 20),
               _DetailRow(
                 label: l10n.labelAddress,
@@ -563,6 +577,11 @@ class _DesktopDetailPane extends StatelessWidget {
                 label: l10n.labelDns,
                 value: entry.profile.client.dns.join(', '),
               ),
+              if ((entry.profile.server.endpointV6?.trim() ?? '').isNotEmpty)
+                _DetailRow(
+                  label: l10n.labelEndpointV6,
+                  value: entry.profile.server.endpointV6!,
+                ),
               const SizedBox(height: 28),
               Wrap(
                 spacing: 12,
@@ -724,7 +743,7 @@ class _ServerTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      entry.profile.server.endpoint,
+                      entry.profile.server.activeEndpoint,
                       style: const TextStyle(
                         color: NbColors.mutedText,
                         fontSize: 12.5,

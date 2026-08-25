@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
+import '../config/build_flags.dart';
 import '../models/server_entry.dart';
 import '../profile/nbvpn_profile.dart';
 import '../services/server_store.dart';
 import '../services/settings_store.dart';
+import '../services/vpn/vpn_connectivity_verifier.dart';
 import '../services/vpn/vpn_errors.dart';
 import '../services/vpn/vpn_tunnel.dart';
 import '../services/vpn/wireguard_vpn_tunnel.dart';
@@ -16,18 +18,23 @@ class AppController extends ChangeNotifier {
     ServerStore? serverStore,
     SettingsStore? settingsStore,
     VpnTunnel? tunnel,
+    VpnConnectivityVerifier? connectivityVerifier,
   })  : _serverStore = serverStore ?? ServerStore(),
         _settingsStore = settingsStore ?? SettingsStore(),
-        _tunnel = tunnel ?? createVpnTunnel();
+        _tunnel = tunnel ?? createVpnTunnel(),
+        _connectivityVerifier =
+            connectivityVerifier ?? const VpnConnectivityVerifier();
 
   final ServerStore _serverStore;
   final SettingsStore _settingsStore;
   final VpnTunnel _tunnel;
+  final VpnConnectivityVerifier _connectivityVerifier;
   final _uuid = const Uuid();
 
   List<ServerEntry> servers = [];
   bool loading = true;
   bool killSwitch = true;
+  bool excludePrivateNetworks = BuildFlags.defaultExcludePrivateNetworks;
   AppLocaleMode localeMode = AppLocaleMode.system;
   /// Resolved UI language for errors / snackbars without BuildContext (`zh`|`en`).
   String languageCode = 'zh';
@@ -47,6 +54,8 @@ class AppController extends ChangeNotifier {
   /// When true, ignore disconnected stage clearing of [activeServerId]
   /// (used during intentional switch / reconnect).
   bool _suppressDisconnectClear = false;
+  /// Blocks plugin "connected" from promoting UI until handshake probe passes.
+  int? _handshakeVerifyEpoch;
 
   static const Duration _disconnectWaitTimeout = Duration(seconds: 8);
 
@@ -73,6 +82,7 @@ class AppController extends ChangeNotifier {
     try {
       servers = await _serverStore.load();
       killSwitch = await _settingsStore.getKillSwitch();
+      excludePrivateNetworks = await _settingsStore.getExcludePrivateNetworks();
       localeMode = await _settingsStore.getLocaleMode();
       refreshResolvedLanguage();
       try {
@@ -98,6 +108,14 @@ class AppController extends ChangeNotifier {
   String get _vpnPermissionDeniedMessage => languageCode == 'en'
       ? 'VPN permission was denied. Allow “NetBridge VPN” in system settings, then tap Connect again.'
       : '系统拒绝了 VPN 权限。请在系统设置中允许「网桥 VPN」，然后再次点击连接。';
+
+  String get _verifyingHandshakeDetail => languageCode == 'en'
+      ? 'Verifying handshake…'
+      : '正在验证握手…';
+
+  String get _handshakeFailedMessage => languageCode == 'en'
+      ? 'Handshake failed. The provider may block UDP forwarding, or server NAT may be misconfigured.'
+      : '握手失败，可能被机房封禁 UDP 或 NAT 未配置。';
 
   /// If the OS tunnel is still up after app restart / lost UI state, reflect it.
   Future<void> _syncFromNativeStage() async {
@@ -222,8 +240,13 @@ class AppController extends ChangeNotifier {
       case VpnTunnelStage.connecting:
         status = VpnUiStatus.connecting;
       case VpnTunnelStage.connected:
-        status = VpnUiStatus.connected;
-        statusDetail = null;
+        if (_handshakeVerifyEpoch != null) {
+          status = VpnUiStatus.connecting;
+          statusDetail = _verifyingHandshakeDetail;
+        } else {
+          status = VpnUiStatus.connected;
+          statusDetail = null;
+        }
       case VpnTunnelStage.reconnecting:
       case VpnTunnelStage.noConnection:
         // Only show reconnect when we already had a live tunnel session.
@@ -362,6 +385,12 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setExcludePrivateNetworks(bool value) async {
+    excludePrivateNetworks = value;
+    await _settingsStore.setExcludePrivateNetworks(value);
+    notifyListeners();
+  }
+
   Future<void> setLocaleMode(AppLocaleMode mode) async {
     localeMode = mode;
     refreshResolvedLanguage();
@@ -492,19 +521,72 @@ class AppController extends ChangeNotifier {
         notifyListeners();
 
         _connectInFlightEpoch = epoch;
+        _handshakeVerifyEpoch = epoch;
         try {
-          await tunnel.connect(entry.profile, killSwitch: killSwitch);
+          await tunnel.connect(
+            entry.profile,
+            killSwitch: killSwitch,
+            excludePrivateNetworks: excludePrivateNetworks,
+          );
           if (epoch != _tunnelEpoch) return;
           // Prefer live stage over assuming connect() completion == connected.
-          final stage = await tunnel.currentStage();
+          var stage = await tunnel.currentStage();
           if (epoch != _tunnelEpoch) return;
-          _applyStage(stage, clearActiveOnDisconnect: true, trusted: true);
-          if (stage == VpnTunnelStage.connected) {
-            activeServerId = serverId;
-            notifyListeners();
-          } else if (stage == VpnTunnelStage.denied) {
+          if (stage == VpnTunnelStage.denied) {
+            _applyStage(stage, clearActiveOnDisconnect: true, trusted: true);
             return;
           }
+          if (stage != VpnTunnelStage.connected) {
+            _applyStage(stage, clearActiveOnDisconnect: true, trusted: true);
+            return;
+          }
+
+          // Plugin "connected" only means interface up — verify handshake/egress.
+          status = VpnUiStatus.connecting;
+          statusDetail = _verifyingHandshakeDetail;
+          notifyListeners();
+
+          final allowedIPs = VpnConnectivityVerifier.effectiveAllowedIPs(
+            entry.profile.server.allowedIPs,
+            excludePrivateNetworks: excludePrivateNetworks,
+          );
+          final verifyResult = await _connectivityVerifier.verify(
+            allowedIPs: allowedIPs,
+            endpoint: entry.profile.server.activeEndpoint,
+            isCancelled: () => epoch != _tunnelEpoch,
+          );
+
+          if (epoch != _tunnelEpoch) return;
+          _handshakeVerifyEpoch = null;
+
+          if (verifyResult == VpnVerificationResult.cancelled) return;
+
+          if (verifyResult != VpnVerificationResult.success) {
+            final handshakeError = _handshakeFailedMessage;
+            try {
+              await _disconnectAndWait(epoch: epoch);
+            } catch (_) {
+              // error already surfaced
+            }
+            if (epoch != _tunnelEpoch) return;
+            status = VpnUiStatus.error;
+            lastError = handshakeError;
+            statusDetail = null;
+            activeServerId = null;
+            notifyListeners();
+            return;
+          }
+
+          stage = await tunnel.currentStage();
+          if (epoch != _tunnelEpoch) return;
+          if (stage == VpnTunnelStage.denied) {
+            _applyStage(stage, clearActiveOnDisconnect: true, trusted: true);
+            return;
+          }
+          activeServerId = serverId;
+          status = VpnUiStatus.connected;
+          statusDetail = null;
+          notifyListeners();
         } catch (e) {
           if (epoch != _tunnelEpoch) return;
           // Apple: do not silently fall back to Stub “connected”.
@@ -522,6 +604,9 @@ class AppController extends ChangeNotifier {
           activeServerId = null;
           notifyListeners();
         } finally {
+          if (_handshakeVerifyEpoch == epoch) {
+            _handshakeVerifyEpoch = null;
+          }
           if (_connectInFlightEpoch == epoch) {
             _connectInFlightEpoch = null;
           }

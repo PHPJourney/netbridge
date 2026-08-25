@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'nbvpn_profile.dart';
 import 'profile_errors.dart';
+import 'split_tunnel.dart';
 
 const uriScheme = 'nbvpn';
 const uriPrefix = 'nbvpn:1?';
@@ -53,7 +54,11 @@ class ProfileCodec {
       );
     }
     _validateKey(p.server.publicKey, 'server.publicKey');
-    _validateEndpoint(p.server.endpoint);
+    _validateEndpoint(p.server.endpoint, field: 'server.endpoint');
+    final v6 = p.server.endpointV6?.trim() ?? '';
+    if (v6.isNotEmpty) {
+      _validateEndpoint(v6, field: 'server.endpointV6');
+    }
     if (p.server.allowedIPs.isEmpty) {
       throw ProfileException(
         ProfileErrorCode.profileInvalid,
@@ -88,31 +93,37 @@ class ProfileCodec {
     }
   }
 
-  static void _validateEndpoint(String ep) {
+  static void _validateEndpoint(String ep, {String field = 'server.endpoint'}) {
     final trimmed = ep.trim();
     if (trimmed.isEmpty) {
       throw ProfileException(
         ProfileErrorCode.profileInvalid,
-        detail: 'server.endpoint 必填',
+        detail: '$field 必填',
       );
     }
     final parts = _splitHostPort(trimmed);
     if (parts == null || parts.$1.isEmpty || parts.$2.isEmpty) {
       throw ProfileException(
         ProfileErrorCode.profileInvalid,
-        detail: 'server.endpoint 须为 host:port',
+        detail: '$field 须为 host:port（IPv6 为 [addr]:port）',
       );
     }
   }
 
-  /// Returns (host, port) or null.
+  /// Returns (host, port) or null. IPv6 must be bracketed: `[addr]:port`.
   static (String, String)? _splitHostPort(String ep) {
     if (ep.startsWith('[')) {
       final idx = ep.lastIndexOf(']:');
       if (idx < 0) return null;
-      return (ep.substring(0, idx + 1), ep.substring(idx + 2));
+      final host = ep.substring(0, idx + 1);
+      final port = ep.substring(idx + 2);
+      if (host.length < 3 || port.isEmpty) return null;
+      return (host, port);
     }
-    final idx = ep.lastIndexOf(':');
+    // Reject bare IPv6 (multiple colons) — require [addr]:port.
+    final colonCount = ':'.allMatches(ep).length;
+    if (colonCount != 1) return null;
+    final idx = ep.indexOf(':');
     if (idx <= 0 || idx == ep.length - 1) return null;
     return (ep.substring(0, idx), ep.substring(idx + 1));
   }
@@ -252,8 +263,19 @@ class ProfileCodec {
   }
 
   /// wg-quick compatible client config.
-  static String toWireGuardConf(NbVpnProfile p) {
+  ///
+  /// When [excludePrivateNetworks] is true, `0.0.0.0/0` / `::/0` in the profile
+  /// are rewritten to the official WireGuard exclude-private CIDR decomposition
+  /// so LAN / car / Bluetooth traffic stays off the tunnel.
+  static String toWireGuardConf(
+    NbVpnProfile p, {
+    bool excludePrivateNetworks = false,
+  }) {
     validate(p);
+    final allowedIPs = SplitTunnel.resolveAllowedIPs(
+      p.server.allowedIPs,
+      excludePrivate: excludePrivateNetworks,
+    );
     final ka = (p.server.persistentKeepalive == null ||
             p.server.persistentKeepalive == 0)
         ? defaultKeepalive
@@ -270,8 +292,8 @@ class ProfileCodec {
       ..writeln()
       ..writeln('[Peer]')
       ..writeln('PublicKey = ${p.server.publicKey}')
-      ..writeln('Endpoint = ${p.server.endpoint}')
-      ..writeln('AllowedIPs = ${p.server.allowedIPs.join(', ')}')
+      ..writeln('Endpoint = ${p.server.activeEndpoint}')
+      ..writeln('AllowedIPs = ${allowedIPs.join(', ')}')
       ..writeln('PersistentKeepalive = $ka');
     final psk = p.server.presharedKey;
     if (psk != null && psk.isNotEmpty) {

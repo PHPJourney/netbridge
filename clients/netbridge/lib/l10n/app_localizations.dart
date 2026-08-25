@@ -164,6 +164,30 @@ abstract class AppLocalizations {
   /// **'Check endpoint, UDP 51820 (host firewall + cloud security group), and re-import with a fresh nbvpn show.'**
   String get cantConnectBody;
 
+  /// No description provided for @fullTunnelCarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Car / local network issues?'**
+  String get fullTunnelCarTitle;
+
+  /// No description provided for @fullTunnelCarHint.
+  ///
+  /// In en, this message translates to:
+  /// **'If car hotspot, Bluetooth, or LAN devices break while connected, turn on automatic split tunnel below; public internet still uses the VPN. Reconnect after changing.'**
+  String get fullTunnelCarHint;
+
+  /// No description provided for @splitTunnelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic split tunnel'**
+  String get splitTunnelTitle;
+
+  /// No description provided for @splitTunnelSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. When on, private networks (10.x, 192.168.x, link-local, etc.) bypass the VPN; public internet still uses the tunnel. Default off (full tunnel). Reconnect to apply.'**
+  String get splitTunnelSubtitle;
+
   /// No description provided for @language.
   ///
   /// In en, this message translates to:
@@ -422,6 +446,18 @@ abstract class AppLocalizations {
   /// **'Network interrupted, reconnecting…'**
   String get statusReconnectingDetail;
 
+  /// No description provided for @statusVerifyingHandshake.
+  ///
+  /// In en, this message translates to:
+  /// **'Verifying handshake…'**
+  String get statusVerifyingHandshake;
+
+  /// No description provided for @handshakeFailedError.
+  ///
+  /// In en, this message translates to:
+  /// **'Handshake failed. The provider may block UDP forwarding, or server NAT may be misconfigured.'**
+  String get handshakeFailedError;
+
   /// No description provided for @statusErrorFallback.
   ///
   /// In en, this message translates to:
@@ -656,11 +692,71 @@ abstract class AppLocalizations {
   /// **'Endpoint'**
   String get labelEndpoint;
 
+  /// No description provided for @labelEndpointV6.
+  ///
+  /// In en, this message translates to:
+  /// **'IPv6 endpoint'**
+  String get labelEndpointV6;
+
+  /// No description provided for @endpointV6Helper.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. Use [ipv6]:port form, e.g. [2001:db8::1]:51820. From server: nbvpn config set endpoint-v6 …'**
+  String get endpointV6Helper;
+
+  /// No description provided for @ipv6EnabledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use IPv6 endpoint'**
+  String get ipv6EnabledTitle;
+
+  /// No description provided for @ipv6EnabledOnHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect via IPv6 endpoint (WireGuard uses one Endpoint at a time)'**
+  String get ipv6EnabledOnHint;
+
+  /// No description provided for @ipv6EnabledOffHint.
+  ///
+  /// In en, this message translates to:
+  /// **'IPv6 endpoint saved but disabled — connecting via primary endpoint'**
+  String get ipv6EnabledOffHint;
+
+  /// No description provided for @ipv6EnabledNeedEndpointHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Set an IPv6 endpoint first to enable'**
+  String get ipv6EnabledNeedEndpointHint;
+
+  /// No description provided for @ipv6StatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'IPv6'**
+  String get ipv6StatusLabel;
+
+  /// No description provided for @ipv6StatusEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'IPv6 enabled'**
+  String get ipv6StatusEnabled;
+
+  /// No description provided for @ipv6StatusDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'IPv6 disabled'**
+  String get ipv6StatusDisabled;
+
   /// No description provided for @labelAllowedIps.
   ///
   /// In en, this message translates to:
   /// **'Allowed IPs'**
   String get labelAllowedIps;
+
+  /// No description provided for @allowedIpsHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Default 0.0.0.0/0 is full tunnel. Enable Settings → Automatic split tunnel to bypass private LAN, or set e.g. 10.8.0.0/24 here to route only the VPN subnet.'**
+  String get allowedIpsHelper;
 
   /// No description provided for @labelMtu.
   ///

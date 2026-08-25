@@ -85,6 +85,26 @@ func SubnetCIDR(addr string) string {
 	return ipnet.String()
 }
 
+// SplitTunnelFromEnv reports whether install should default to subnet-only client routes.
+func SplitTunnelFromEnv() bool {
+	v := strings.TrimSpace(os.Getenv(state.EnvSplitTunnel))
+	switch strings.ToLower(v) {
+	case "1", "true", "yes", "on":
+		return true
+	default:
+		return false
+	}
+}
+
+// DefaultClientAllowedIPs returns default client AllowedIPs for new server installs.
+// Full tunnel: 0.0.0.0/0 + ::/0. Split tunnel: VPN subnet only (e.g. 10.8.0.0/24).
+func DefaultClientAllowedIPs(serverAddr string, splitTunnel bool) []string {
+	if splitTunnel {
+		return []string{SubnetCIDR(serverAddr)}
+	}
+	return []string{"0.0.0.0/0", "::/0"}
+}
+
 // BuildServerConf writes a wg-quick / wireguard-windows style server config.
 func BuildServerConf(st *state.ServerState, peers []*state.PeerRecord) string {
 	if runtime.GOOS == "windows" {
@@ -444,6 +464,14 @@ func StatusText(st *state.ServerState) string {
 	if st != nil {
 		b.WriteString(fmt.Sprintf("listenPort: %d\n", st.ListenPort))
 		b.WriteString(fmt.Sprintf("endpoint: %s\n", st.Endpoint))
+		if st.EndpointV6 != "" {
+			b.WriteString(fmt.Sprintf("endpointV6: %s\n", st.EndpointV6))
+			if st.IPv6Enabled {
+				b.WriteString("ipv6Enabled: on\n")
+			} else {
+				b.WriteString("ipv6Enabled: off\n")
+			}
+		}
 		b.WriteString(fmt.Sprintf("publicKey: %s\n", st.PublicKey))
 	}
 	return b.String()
@@ -474,12 +502,3 @@ func actionable(err error, op string) error {
 	}
 }
 
-// RemoveSystemConf removes system WireGuard conf / Windows tunnel service if present.
-func RemoveSystemConf() {
-	if runtime.GOOS == "windows" {
-		_ = run("net", "stop", winTunnelServiceName())
-		_ = runWireGuard("/uninstalltunnelservice", state.InterfaceName)
-		return
-	}
-	_ = os.Remove(filepath.Join(SystemWGDir, "nbvpn.conf"))
-}

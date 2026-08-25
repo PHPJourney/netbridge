@@ -33,7 +33,11 @@ class StubVpnTunnel implements VpnTunnel {
   Future<VpnTunnelStage> currentStage() async => _stage;
 
   @override
-  Future<void> connect(NbVpnProfile profile, {required bool killSwitch}) async {
+  Future<void> connect(
+    NbVpnProfile profile, {
+    required bool killSwitch,
+    bool excludePrivateNetworks = false,
+  }) async {
     _reconnectTimer?.cancel();
     _emit(VpnTunnelStage.connecting);
     await Future<void>.delayed(const Duration(milliseconds: 600));

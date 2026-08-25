@@ -44,6 +44,20 @@ class AppLocalizationsZh extends AppLocalizations {
       '检查 endpoint、UDP 51820（主机防火墙 + 云安全组），并用最新 nbvpn show 重新导入。';
 
   @override
+  String get fullTunnelCarTitle => '车机 / 局域网连不上？';
+
+  @override
+  String get fullTunnelCarHint =>
+      '若车机热点、蓝牙互联或局域网设备异常，可开启下方「自动分流（排除私网）」；公网仍走 VPN。修改后需断开再连。';
+
+  @override
+  String get splitTunnelTitle => '自动分流（排除私网）';
+
+  @override
+  String get splitTunnelSubtitle =>
+      '可选。开启后 10.x、192.168.x、链路本地等私网直连，公网仍走 VPN。默认关闭（全隧道）。修改后需断开再连生效。';
+
+  @override
   String get language => '语言';
 
   @override
@@ -188,6 +202,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get statusReconnectingDetail => '网络中断，正在重连…';
 
   @override
+  String get statusVerifyingHandshake => '正在验证握手…';
+
+  @override
+  String get handshakeFailedError => '握手失败，可能被机房封禁 UDP 或 NAT 未配置。';
+
+  @override
   String get statusErrorFallback => '连接失败';
 
   @override
@@ -307,7 +327,40 @@ class AppLocalizationsZh extends AppLocalizations {
   String get labelEndpoint => 'Endpoint';
 
   @override
+  String get labelEndpointV6 => 'IPv6 endpoint';
+
+  @override
+  String get endpointV6Helper =>
+      '可选。格式 [ipv6]:port，例如 [2001:db8::1]:51820。服务端：nbvpn config set endpoint-v6 …';
+
+  @override
+  String get ipv6EnabledTitle => '使用 IPv6 endpoint';
+
+  @override
+  String get ipv6EnabledOnHint =>
+      '通过 IPv6 endpoint 连接（WireGuard 同时只能用一个 Endpoint）';
+
+  @override
+  String get ipv6EnabledOffHint => '已保存 IPv6 endpoint 但未启用 — 当前用主 endpoint 连接';
+
+  @override
+  String get ipv6EnabledNeedEndpointHint => '请先填写 IPv6 endpoint 再启用';
+
+  @override
+  String get ipv6StatusLabel => 'IPv6';
+
+  @override
+  String get ipv6StatusEnabled => 'IPv6 已启用';
+
+  @override
+  String get ipv6StatusDisabled => 'IPv6 未启用';
+
+  @override
   String get labelAllowedIps => 'Allowed IPs';
+
+  @override
+  String get allowedIpsHelper =>
+      '默认 0.0.0.0/0 为全隧道。可在设置开启「自动分流」让私网不走 VPN；或在此改为如 10.8.0.0/24 仅路由 VPN 网段。';
 
   @override
   String get labelMtu => 'MTU';

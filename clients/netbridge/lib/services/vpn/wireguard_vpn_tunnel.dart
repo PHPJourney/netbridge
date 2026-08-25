@@ -97,16 +97,23 @@ class WireGuardVpnTunnel implements VpnTunnel {
   }
 
   @override
-  Future<void> connect(NbVpnProfile profile, {required bool killSwitch}) async {
+  Future<void> connect(
+    NbVpnProfile profile, {
+    required bool killSwitch,
+    bool excludePrivateNetworks = false,
+  }) async {
     await initialize();
-    final conf = ProfileCodec.toWireGuardConf(profile);
+    final conf = ProfileCodec.toWireGuardConf(
+      profile,
+      excludePrivateNetworks: excludePrivateNetworks,
+    );
     // killSwitch preference is persisted in Settings; OS-level KS varies by
     // platform (see IMPL.md). Parameter kept for future native wiring.
     // ignore: unused_local_variable
     final _ = killSwitch;
     _controller.add(VpnTunnelStage.connecting);
     await WireGuardFlutter.instance.startVpn(
-      serverAddress: profile.server.endpoint,
+      serverAddress: profile.server.activeEndpoint,
       wgQuickConfig: conf,
       providerBundleIdentifier: providerBundleIdentifier,
     );

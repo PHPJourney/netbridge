@@ -11,6 +11,38 @@
 
 商业仓是**独立私有仓库**（不是公开仓的 GitHub Fork——公开仓无法再改为 private fork）。
 
+## v0.1.16 商业版更新（自动分流）
+
+自 **v0.1.16** 起，客户端提供 **可选** 的 **自动分流（排除私网）**（设置 → 默认关闭，全隧道）：
+
+- 开启后：连接时若 profile 含 `0.0.0.0/0, ::/0`，会改写为与官方 WireGuard Android「Exclude private networks」一致的公网 CIDR 列表
+- **公网**仍走 VPN；**10.x / 192.168.x / 链路本地**等私网直连，车机热点、蓝牙互联、本地控车不再被全隧道劫持
+- **设置 → 自动分流（排除私网）** 可开关；修改后需 **断开再连**
+- **服务端无需重装**；`nbvpn show` 仍导出全隧道 URI（除非安装时 `NBVPN_SPLIT_TUNNEL=1`），客户端分流在连接时生效
+
+### IPv6 / 双公网
+
+服务端与客户端支持可选 **IPv6 endpoint** 与 **启用状态**：
+
+- 服务端：`nbvpn config set endpoint-v6 …`、`nbvpn config set ipv6 on|off`；`nbvpn config` 显示状态
+- Profile 可选字段 `endpointV6` / `ipv6Enabled`（向后兼容）；连接时 **单一** WireGuard Endpoint（启用则用 V6）
+- 第二 IPv4：用 `config set endpoint` 切换主地址（详见 `server/install/FIREWALL.md`）
+
+商业交付构建（可选品牌标识 + 车机友好默认分流）：
+
+```bash
+cd clients/netbridge
+flutter build apk --release \
+  --dart-define=COMMERCIAL_BUILD=true \
+  --dart-define=DEFAULT_EXCLUDE_PRIVATE_NETWORKS=true
+```
+
+公开 MIT 仓与商业仓功能一致；`COMMERCIAL_BUILD` 用于白牌 / 交付标识。分流默认关闭，可按需用 `DEFAULT_EXCLUDE_PRIVATE_NETWORKS=true` 开启。
+
+### 明确未包含（截至 v0.1.16）
+
+- **域名 / App 白名单**（按域名或按应用绕过 VPN）：未实现。当前可用替代：手动缩小 Allowed IPs、或开启「自动分流（排除私网）」。若需真正白名单，需另开规格（客户端路由例外 + 可选 DNS 分流）。
+
 ## 交付范围（默认）
 
 一次性交付约定版本的源码 / 构建产物与说明文档，通常包括：

@@ -246,4 +246,79 @@ $uri
       expect(conf.toLowerCase(), isNot(contains('server private')));
     });
   });
+
+  group('optional endpointV6', () {
+    test('roundtrip preserves endpointV6 and ipv6Enabled', () {
+      final p = sampleProfile();
+      final withV6 = NbVpnProfile(
+        v: p.v,
+        name: p.name,
+        client: p.client,
+        server: ServerSection(
+          publicKey: p.server.publicKey,
+          endpoint: p.server.endpoint,
+          endpointV6: '[2001:db8::1]:51820',
+          ipv6Enabled: true,
+          allowedIPs: p.server.allowedIPs,
+          persistentKeepalive: p.server.persistentKeepalive,
+        ),
+      );
+      final got = ProfileCodec.decodeUri(ProfileCodec.encodeUri(withV6));
+      expect(got.server.endpointV6, '[2001:db8::1]:51820');
+      expect(got.server.ipv6Enabled, isTrue);
+      expect(got.server.activeEndpoint, '[2001:db8::1]:51820');
+      final conf = ProfileCodec.toWireGuardConf(got);
+      expect(conf, contains('Endpoint = [2001:db8::1]:51820'));
+    });
+
+    test('legacy profile without endpointV6 still validates', () {
+      final p = sampleProfile();
+      expect(p.server.endpointV6, isNull);
+      expect(p.server.ipv6Enabled, isFalse);
+      expect(p.server.activeEndpoint, p.server.endpoint);
+      ProfileCodec.validate(p);
+      final map = p.toJson()['server'] as Map<String, dynamic>;
+      expect(map.containsKey('endpointV6'), isFalse);
+      expect(map.containsKey('ipv6Enabled'), isFalse);
+    });
+
+    test('ipv6Enabled off uses primary endpoint', () {
+      final p = sampleProfile();
+      final withV6 = NbVpnProfile(
+        v: p.v,
+        name: p.name,
+        client: p.client,
+        server: ServerSection(
+          publicKey: p.server.publicKey,
+          endpoint: p.server.endpoint,
+          endpointV6: '[2001:db8::1]:51820',
+          ipv6Enabled: false,
+          allowedIPs: p.server.allowedIPs,
+        ),
+      );
+      expect(withV6.server.activeEndpoint, p.server.endpoint);
+      final conf = ProfileCodec.toWireGuardConf(withV6);
+      expect(conf, contains('Endpoint = ${p.server.endpoint}'));
+    });
+
+    test('rejects bare IPv6 without brackets', () {
+      final p = sampleProfile();
+      final bad = NbVpnProfile(
+        v: p.v,
+        name: p.name,
+        client: p.client,
+        server: ServerSection(
+          publicKey: p.server.publicKey,
+          endpoint: p.server.endpoint,
+          endpointV6: '2001:db8::1',
+          ipv6Enabled: true,
+          allowedIPs: p.server.allowedIPs,
+        ),
+      );
+      expect(
+        () => ProfileCodec.validate(bad),
+        throwsA(isA<ProfileException>()),
+      );
+    });
+  });
 }

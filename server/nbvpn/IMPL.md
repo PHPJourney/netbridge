@@ -35,10 +35,15 @@
 
 ## CLI notes
 
-- `config set endpoint <host[:port]>` implemented (default port = listenPort, usually 51820); refreshes peer JSON + PNG
+- `config set endpoint <host[:port]>` implemented (default port = listenPort, usually 51820); refreshes peer JSON + PNG + `.conf`
+- `config set endpoint-v6 <[ipv6]|host[:port]>` stores optional IPv6 endpoint and sets `ipv6Enabled=on`; refreshes peer exports
+- `config set ipv6 on|off` toggles prefer-IPv6 without clearing `endpointV6` (on requires endpoint-v6 set)
+- `config` / `status` show endpoint, endpointV6, ipv6Enabled
+- Profile optional fields `endpointV6` / `ipv6Enabled` (omitempty); WireGuard conf uses ActiveEndpoint (single Endpoint)
 - `show` prints secret warning; never prints server private key in `config`/`status`
 - `show` writes terminal QR (half-block + forced light bg) and PNG beside the profile; prints fallback to `--file`/`--uri`/PNG if terminal scan fails; labels that QR payload = full `nbvpn:1?` URI (not numeric peer id / PNG filename)
 - `peer revoke` marks revoked, removes export JSON + PNG, rewrites WG peers so old profiles fail
+- `peer delete` removes peer metadata and all export files; rewrites WG peers; IP not recycled
 
 ## Terminal QR limitations
 

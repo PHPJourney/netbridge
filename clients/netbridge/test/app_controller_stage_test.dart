@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:netbridge/models/server_entry.dart';
 import 'package:netbridge/profile/nbvpn_profile.dart';
 import 'package:netbridge/services/server_store.dart';
+import 'package:netbridge/services/vpn/vpn_connectivity_verifier.dart';
 import 'package:netbridge/services/vpn/vpn_tunnel.dart';
 import 'package:netbridge/state/app_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -32,6 +33,7 @@ Future<AppController> _boot(FakeVpnTunnel tunnel) async {
   final c = AppController(
     tunnel: tunnel,
     serverStore: ServerStore(prefs: prefs),
+    connectivityVerifier: VpnConnectivityVerifier.testing(succeed: true),
   );
   await c.bootstrap();
   return c;
