@@ -268,6 +268,231 @@ require_cmd() {
   command -v "$1" >/dev/null 2>&1 || err "required command missing: $1"
 }
 
+# GitHub repo used for Releases download (owner/name).
+nbvpn_github_repo() {
+  echo "${NBVPN_INSTALL_REPO:-PHPJourney/netbridge}"
+}
+
+# Canonical Linux asset basename for this arch (matches CI: nbvpn-linux-amd64 / arm64).
+nbvpn_linux_asset_name() {
+  case "$(uname -m)" in
+    aarch64|arm64) echo "nbvpn-linux-arm64" ;;
+    *) echo "nbvpn-linux-amd64" ;;
+  esac
+}
+
+# True if URL returns HTTP 200 (follow redirects). Uses HEAD when possible.
+nbvpn_url_ok() {
+  local url="$1"
+  local code
+  code="$(curl -fsSIL -o /dev/null -w '%{http_code}' --connect-timeout 8 --max-time 20 "${url}" 2>/dev/null | tail -1 || true)"
+  [[ "${code}" == "200" ]]
+}
+
+# Find newest non-draft release that publishes $asset via GitHub API.
+# Prints browser_download_url or empty. Soft-fails (no exit).
+nbvpn_api_find_asset_url() {
+  local repo="$1"
+  local asset="$2"
+  local api="https://api.github.com/repos/${repo}/releases?per_page=30"
+  local json
+  json="$(curl -fsSL --connect-timeout 10 --max-time 30 "${api}" 2>/dev/null || true)"
+  [[ -n "${json}" ]] || return 0
+  if command -v python3 >/dev/null 2>&1; then
+    REPO_ASSET="${asset}" python3 -c '
+import json, os, sys
+asset = os.environ["REPO_ASSET"]
+try:
+    rels = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+for r in rels:
+    if r.get("draft"):
+        continue
+    for a in r.get("assets") or []:
+        if a.get("name") == asset:
+            print(a.get("browser_download_url") or "")
+            sys.exit(0)
+' <<<"${json}" 2>/dev/null || true
+    return 0
+  fi
+  # Minimal fallback without python: pick first tag that lists the asset name in JSON.
+  local tag
+  tag="$(printf '%s' "${json}" | grep -oE '"tag_name"[[:space:]]*:[[:space:]]*"v[^"]+"' | head -30 | sed 's/.*"\(v[^"]*\)".*/\1/' || true)"
+  local t
+  for t in ${tag}; do
+    if printf '%s' "${json}" | grep -q "\"name\"[[:space:]]*:[[:space:]]*\"${asset}\""; then
+      # Prefer explicit download URL for this tag+asset if present in blob.
+      local guess="https://github.com/${repo}/releases/download/${t}/${asset}"
+      if nbvpn_url_ok "${guess}"; then
+        echo "${guess}"
+        return 0
+      fi
+    fi
+  done
+}
+
+# Build ordered candidate download URLs (one per line) for the Linux binary.
+nbvpn_binary_candidate_urls() {
+  local repo asset base
+  repo="$(nbvpn_github_repo)"
+  asset="$(nbvpn_linux_asset_name)"
+  base="https://github.com/${repo}/releases"
+
+  # Explicit override wins as first candidate only (still listed alone by caller).
+  if [[ -n "${NBVPN_DOWNLOAD_URL:-}" ]]; then
+    echo "${NBVPN_DOWNLOAD_URL}"
+    return 0
+  fi
+  if [[ -n "${NBVPN_BINARY_URL:-}" ]]; then
+    echo "${NBVPN_BINARY_URL}"
+    return 0
+  fi
+
+  # Pin to a release tag when NBVPN_VERSION looks like a tag (v0.1.11 or 0.1.11).
+  local ver="${NBVPN_VERSION:-}"
+  if [[ -n "${ver}" && "${ver}" != "1.0.0" ]]; then
+    case "${ver}" in
+      v*) echo "${base}/download/${ver}/${asset}" ;;
+      [0-9]*) echo "${base}/download/v${ver}/${asset}" ;;
+    esac
+  fi
+
+  echo "${base}/latest/download/${asset}"
+  # Alternate names occasionally used in docs / mirrors
+  echo "${base}/latest/download/${asset}.tar.gz"
+
+  local api_url
+  api_url="$(nbvpn_api_find_asset_url "${repo}" "${asset}" || true)"
+  if [[ -n "${api_url}" ]]; then
+    echo "${api_url}"
+  fi
+
+  # Last-resort known-good tag (v0.1.12+ client-only releases omitted linux binaries).
+  echo "${base}/download/v0.1.11/${asset}"
+}
+
+# Download URL → dest path. Optional companion .sha256 when published.
+nbvpn_download_url_to() {
+  local url="$1"
+  local dest="$2"
+  curl -fsSL --connect-timeout 15 --max-time 300 "${url}" -o "${dest}"
+}
+
+nbvpn_verify_sha256_if_present() {
+  local bin_path="$1"
+  local url="$2"
+  local sum_url="${url}.sha256"
+  local sum_file
+  sum_file="$(mktemp)"
+  if ! curl -fsSL --connect-timeout 8 --max-time 30 "${sum_url}" -o "${sum_file}" 2>/dev/null; then
+    rm -f "${sum_file}"
+    warn "no checksum at ${sum_url} — skipping sha256 verify"
+    return 0
+  fi
+  # Normalize to "HASH  filename" for sha256sum -c from parent dir.
+  local hash
+  hash="$(awk '{print $1}' "${sum_file}" | head -1)"
+  rm -f "${sum_file}"
+  if [[ -z "${hash}" || "${#hash}" -lt 64 ]]; then
+    warn "checksum file unreadable — skipping sha256 verify"
+    return 0
+  fi
+  local got
+  if command -v sha256sum >/dev/null 2>&1; then
+    got="$(sha256sum "${bin_path}" | awk '{print $1}')"
+  elif command -v shasum >/dev/null 2>&1; then
+    got="$(shasum -a 256 "${bin_path}" | awk '{print $1}')"
+  else
+    warn "sha256sum/shasum missing — skipping checksum verify"
+    return 0
+  fi
+  if [[ "${got}" != "${hash}" ]]; then
+    err "sha256 mismatch for downloaded nbvpn (expected ${hash}, got ${got})"
+  fi
+  log "sha256 OK (${hash:0:12}…)"
+}
+
+nbvpn_file_looks_executable() {
+  local path="$1"
+  [[ -s "${path}" ]] || return 1
+  # Reject HTML error pages / tiny stubs
+  local sz
+  sz="$(wc -c <"${path}" | tr -d ' ')"
+  [[ "${sz}" -gt 1000000 ]] || return 1
+  if command -v file >/dev/null 2>&1; then
+    file -b "${path}" 2>/dev/null | grep -qiE 'executable|ELF|Mach-O|PE32' && return 0
+    # Still accept large opaque blobs (some systems lack file(1) magic)
+  fi
+  return 0
+}
+
+# Resolve + download nbvpn into INSTALL_BIN_DIR/nbvpn. Tries candidates; clear error on total failure.
+download_nbvpn_binary() {
+  local tmp tried="" url dest
+  dest="${INSTALL_BIN_DIR}/nbvpn"
+  mkdir -p "${INSTALL_BIN_DIR}"
+
+  # Deduplicate candidates while preserving order.
+  local -a urls=()
+  local u seen
+  while IFS= read -r u; do
+    [[ -n "${u}" ]] || continue
+    seen=0
+    for x in "${urls[@]+"${urls[@]}"}"; do
+      [[ "${x}" == "${u}" ]] && { seen=1; break; }
+    done
+    [[ "${seen}" == "1" ]] && continue
+    urls+=("${u}")
+  done < <(nbvpn_binary_candidate_urls)
+
+  if [[ "${#urls[@]}" -eq 0 ]]; then
+    err "no download URL candidates (set NBVPN_BINARY_URL or NBVPN_DOWNLOAD_URL)"
+  fi
+
+  for url in "${urls[@]}"; do
+    tried="${tried}  - ${url}"$'\n'
+    if ! nbvpn_url_ok "${url}"; then
+      warn "skip (HTTP not 200): ${url}"
+      continue
+    fi
+    log "trying download: ${url}"
+    tmp="$(mktemp)"
+    if nbvpn_download_url_to "${url}" "${tmp}" \
+      && nbvpn_file_looks_executable "${tmp}"; then
+      nbvpn_verify_sha256_if_present "${tmp}" "${url}"
+      install -m 0755 "${tmp}" "${dest}"
+      rm -f "${tmp}"
+      log "downloaded nbvpn from ${url}"
+      return 0
+    fi
+    rm -f "${tmp}"
+    warn "download failed or not a binary: ${url}"
+  done
+
+  cat >&2 <<EOF
+error: could not download nbvpn binary (all candidates failed).
+
+Tried:
+${tried}
+Root cause often: GitHub \`releases/latest\` is a client-only tag (APK/exe) without
+\`nbvpn-linux-amd64\` / \`nbvpn-linux-arm64\`. Last known good example:
+  https://github.com/$(nbvpn_github_repo)/releases/download/v0.1.11/$(nbvpn_linux_asset_name)
+
+Immediate workaround (JP/VPS):
+  sudo NBVPN_BINARY_URL='https://github.com/$(nbvpn_github_repo)/releases/download/v0.1.11/$(nbvpn_linux_asset_name)' \\
+    bash -c 'curl -fsSL https://raw.githubusercontent.com/$(nbvpn_github_repo)/main/server/install/ubuntu.sh | bash'
+
+Or scp a local build:
+  scp server/nbvpn/dist/$(nbvpn_linux_asset_name) root@HOST:/opt/netbridge/nbvpn
+  sudo chmod +x /opt/netbridge/nbvpn
+  curl -fsSL …/ubuntu.sh | sudo bash
+
+Docs: server/install/LINUX-PREFLIGHT.md
+EOF
+  exit 1
+}
+
 install_nbvpn_binary() {
   mkdir -p "${INSTALL_BIN_DIR}"
   local arch
@@ -311,15 +536,14 @@ install_nbvpn_binary() {
     log "building nbvpn from source (Go $(go version | awk '{print $3}'))"
     (cd "${NBVPN_SRC}" && go build -o nbvpn .)
     install -m 0755 "${NBVPN_SRC}/nbvpn" "${INSTALL_BIN_DIR}/nbvpn"
-  elif [[ -n "${NBVPN_BINARY_URL:-}" ]]; then
-    log "downloading nbvpn from ${NBVPN_BINARY_URL}"
-    local tmp
-    tmp="$(mktemp)"
-    curl -fsSL "${NBVPN_BINARY_URL}" -o "${tmp}"
-    install -m 0755 "${tmp}" "${INSTALL_BIN_DIR}/nbvpn"
-    rm -f "${tmp}"
+  elif [[ -n "${NBVPN_DOWNLOAD_URL:-}${NBVPN_BINARY_URL:-}" ]] || [[ "${NBVPN_FORCE_DOWNLOAD:-0}" == "1" ]] \
+    || ! [[ -d "${NBVPN_SRC}" ]]; then
+    # curl|bash / remote install: resolve GitHub Release asset (with fallbacks).
+    download_nbvpn_binary
   else
-    err "no nbvpn binary found. Build with: ./server/nbvpn/scripts/build-release.sh  or set NBVPN_BINARY_URL"
+    # Local tree without binary — still try Releases before failing.
+    warn "no local nbvpn binary/Go — falling back to GitHub Releases download"
+    download_nbvpn_binary
   fi
   require_cmd "${INSTALL_BIN_DIR}/nbvpn"
   log "installed ${INSTALL_BIN_DIR}/nbvpn (label ${NBVPN_VERSION})"

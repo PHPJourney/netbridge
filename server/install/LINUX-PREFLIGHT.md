@@ -117,7 +117,31 @@ sudo dnf clean all   # or yum clean all
 
 | Env | Effect |
 | --- | --- |
+| `NBVPN_BINARY_URL` / `NBVPN_DOWNLOAD_URL` | Exact URL for `nbvpn` binary (skips auto-resolve) |
+| `NBVPN_VERSION` | Pin Release tag when auto-resolving (e.g. `v0.1.11`) |
 | `NBVPN_SKIP_PREFLIGHT_REPOS=1` | Do not rewrite CentOS yum/dnf repos to vault |
 | `NBVPN_SKIP_KERNEL_UPDATE=1` | Do not attempt kernel package updates (RHEL family) |
 | `NBVPN_SKIP_FIREWALL=1` | Skip host firewall rules |
 | `NBVPN_SKIP_INSTALL=1` | Install binary/tools only; skip `nbvpn install` |
+| `NBVPN_SPLIT_TUNNEL=1` | New installs: client `allowedIPs` = VPN subnet only (not `0.0.0.0/0`) |
+
+## Binary download (curl\|bash)
+
+Asset name (CI / Releases): **`nbvpn-linux-amd64`** or **`nbvpn-linux-arm64`** (not renamed).
+
+`releases/latest/download/nbvpn-linux-amd64` **404s** when the GitHub “latest” Release is a **client-only** tag (APK/exe only; e.g. v0.1.12–v0.1.15). Filename is correct; the asset is missing from that Release.
+
+Installer auto-resolve order: override URL → `NBVPN_VERSION` tag → `latest` → GitHub API (newest Release that has the asset) → known-good `v0.1.11`. Checksum verified when `*.sha256` is published.
+
+**Immediate workaround** (until this script is on `main` / a Release backfills assets):
+
+```bash
+sudo NBVPN_BINARY_URL='https://github.com/PHPJourney/netbridge/releases/download/v0.1.11/nbvpn-linux-amd64' \
+  bash -c 'curl -fsSL https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/ubuntu.sh | bash'
+```
+
+Or scp a local build to `/opt/netbridge/nbvpn` and re-run the installer.
+
+**Note:** `curl|bash` pulls scripts from **GitHub `main` raw**. Local repo fixes do nothing on the VPS until pushed.
+
+Kernel package newer than `uname -r` (e.g. `5.15.0-190` vs running `5.15.0-187`) is **informational** when WireGuard already works — not an install failure.

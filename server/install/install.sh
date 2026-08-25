@@ -11,12 +11,14 @@
 # assessment + remediation via preflight_linux / family ensure_* before nbvpn.
 #
 # Env:
-#   NBVPN_BINARY_URL    download prebuilt nbvpn if no local binary/Go
-#   NBVPN_SKIP_INSTALL  if 1, skip `nbvpn install`
-#   NBVPN_SKIP_FIREWALL  if 1, skip ufw / firewalld allow rules
-#   NBVPN_LISTEN_PORT     override port for firewall rules (default from nbvpn config)
+#   NBVPN_BINARY_URL / NBVPN_DOWNLOAD_URL  exact URL for prebuilt nbvpn (optional)
+#   NBVPN_VERSION            pin Release tag (e.g. v0.1.11) when auto-resolving
+#   NBVPN_SKIP_INSTALL       if 1, skip `nbvpn install`
+#   NBVPN_SKIP_FIREWALL      if 1, skip ufw / firewalld allow rules
+#   NBVPN_LISTEN_PORT        override port for firewall rules (default from nbvpn config)
 #   NBVPN_SKIP_PREFLIGHT_REPOS  if 1, do not rewrite CentOS repos to vault
 #   NBVPN_SKIP_KERNEL_UPDATE     if 1, skip kernel package updates on RHEL family
+#   NBVPN_SPLIT_TUNNEL=1         new installs: client AllowedIPs = VPN subnet only (not 0.0.0.0/0)
 #
 # Docs: LINUX-PREFLIGHT.md  |  FIREWALL.md §7
 set -eo pipefail

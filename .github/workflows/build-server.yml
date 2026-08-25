@@ -430,6 +430,9 @@ jobs:
             nbvpn-server-*.zip
             release-upload/
       - name: Create GitHub Release (tags only)
+        # Uploads nbvpn-linux-amd64 / arm64 (+ Windows). Client-only tags that skip
+        # this job used to leave releases/latest without linux binaries (install 404).
+        # build-clients.yml backfills those assets when missing.
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:

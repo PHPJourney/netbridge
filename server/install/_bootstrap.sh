@@ -73,18 +73,24 @@ nbvpn_bootstrap_ensure_dir() {
       ;;
   esac
 
-  if [[ -z "${NBVPN_BINARY_URL:-}" ]]; then
-    local arch
+  # Do NOT pin NBVPN_BINARY_URL to releases/latest here — client-only tags
+  # (APK/exe) often become "latest" without nbvpn-linux-* assets (404).
+  # _common.sh download_nbvpn_binary resolves: override → NBVPN_VERSION →
+  # latest → known-good tag → GitHub API scan. Overrides:
+  #   NBVPN_DOWNLOAD_URL / NBVPN_BINARY_URL  (exact URL)
+  #   NBVPN_VERSION=v0.1.11                  (tag pin)
+  if [[ -n "${NBVPN_DOWNLOAD_URL:-}" ]]; then
+    nbvpn_bootstrap_log "NBVPN_DOWNLOAD_URL=${NBVPN_DOWNLOAD_URL}"
+  elif [[ -n "${NBVPN_BINARY_URL:-}" ]]; then
+    nbvpn_bootstrap_log "NBVPN_BINARY_URL=${NBVPN_BINARY_URL}"
+  else
+    local arch asset
     arch="$(uname -m)"
     case "${arch}" in
-      aarch64|arm64)
-        export NBVPN_BINARY_URL="https://github.com/${NBVPN_INSTALL_REPO}/releases/latest/download/nbvpn-linux-arm64"
-        ;;
-      *)
-        export NBVPN_BINARY_URL="https://github.com/${NBVPN_INSTALL_REPO}/releases/latest/download/nbvpn-linux-amd64"
-        ;;
+      aarch64|arm64) asset="nbvpn-linux-arm64" ;;
+      *) asset="nbvpn-linux-amd64" ;;
     esac
-    nbvpn_bootstrap_log "NBVPN_BINARY_URL=${NBVPN_BINARY_URL}"
+    nbvpn_bootstrap_log "nbvpn asset will auto-resolve (${asset}; overrides: NBVPN_BINARY_URL / NBVPN_VERSION)"
   fi
 }
 

@@ -26,14 +26,17 @@ sudo ./server/install/install.sh
 #   sudo ./server/install/centos.sh
 #   sudo ./server/install/rhel.sh
 
-# Or with prebuilt binary:
-# sudo NBVPN_BINARY_URL='https://…/nbvpn-linux-amd64' ./server/install/install.sh
+# Or with prebuilt binary (use when latest Release is client-only / 404):
+# sudo NBVPN_BINARY_URL='https://github.com/PHPJourney/netbridge/releases/download/v0.1.11/nbvpn-linux-amd64' \
+#   bash -c 'curl -fsSL https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/ubuntu.sh | bash'
+# sudo NBVPN_VERSION=v0.1.11 ./server/install/install.sh
 ```
 
 Expect: preflight (OS/kernel/arch/WireGuard) → WireGuard tools + **kernel can `modprobe wireguard`** → `nbvpn` on PATH → `nbvpn install` creates node + first peer → host firewall.
 
 **All Linux one-liners** run assessment/remediation (`LINUX-PREFLIGHT.md`). **CentOS 8 / Stream:** old kernels may need vault + reboot or Rocky/Alma migrate (`FIREWALL.md` §7). Do not use `--skip-broken`.
 
+If download 404s on `releases/latest/download/nbvpn-linux-amd64`, the asset name is right but **latest is a client-only Release** — see `LINUX-PREFLIGHT.md` § Binary download.
 
 
 ## One-command verify

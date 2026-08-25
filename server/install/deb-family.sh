@@ -7,7 +7,7 @@
 #   sudo ./server/install/ubuntu.sh
 #   curl -fsSL …/debian.sh | sudo bash   # via _bootstrap.sh
 #
-# Env: NBVPN_VERSION, NBVPN_BINARY_URL, INSTALL_BIN_DIR, NBVPN_SKIP_INSTALL, NBVPN_DATA_DIR
+# Env: NBVPN_VERSION, NBVPN_BINARY_URL / NBVPN_DOWNLOAD_URL, INSTALL_BIN_DIR, NBVPN_SKIP_INSTALL, NBVPN_DATA_DIR
 # Preflight: preflight_linux in _common.sh (all Linux one-liners).
 set -euo pipefail
 
@@ -44,10 +44,24 @@ ensure_wireguard_deb() {
     DEBIAN_FRONTEND=noninteractive apt-get install -y resolvconf 2>/dev/null || \
     warn "openresolv/resolvconf not installed; DNS= in wg configs may need manual handling"
 
+  # Newer linux-image packages (e.g. 5.15.0-190 while running 5.15.0-187) are
+  # informational when WireGuard already works — soft warn only, do not fail.
   if kernel_reboot_pending_deb; then
-    warn "kernel modules dir for $(uname -r) missing — a reboot may be required"
-    print_reboot_required_bilingual
-    exit 1
+    if wireguard_kernel_ok; then
+      warn "kernel modules dir for $(uname -r) looks incomplete, but WireGuard works — continuing (reboot optional)"
+    else
+      warn "kernel modules dir for $(uname -r) missing — reboot required before WireGuard can load"
+      print_reboot_required_bilingual
+      exit 1
+    fi
+  elif wireguard_kernel_ok; then
+    # apt may have installed a newer image than uname -r; that is not an install failure.
+    local running newest_img
+    running="$(uname -r 2>/dev/null || true)"
+    newest_img="$(dpkg -l 'linux-image-[0-9]*' 2>/dev/null | awk '/^ii/{print $2}' | sed 's/^linux-image-//' | sort -V | tail -1 || true)"
+    if [[ -n "${running}" && -n "${newest_img}" && "${newest_img}" != "${running}" ]]; then
+      warn "newer kernel package installed (${newest_img}) than running (${running}) — informational; reboot later if desired"
+    fi
   fi
 
   ensure_wireguard_kernel

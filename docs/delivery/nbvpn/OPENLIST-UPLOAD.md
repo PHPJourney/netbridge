@@ -154,7 +154,8 @@ OpenList 仍可作为镜像；**默认分发改为 GitHub Releases + Pages**。
 | Store UI | https://phpjourney.github.io/netbridge/ （workflow `pages-store.yml`） |
 | 产物 | Actions artifacts；打 `v*` tag 后挂到 GitHub Release |
 | 服务端 workflow | `build-server.yml` → `nbvpn-linux-amd64` / `arm64` / `nbvpn-windows-amd64.exe` / `nbvpn-windows-amd64-win2012.exe` + install zip |
-| 客户端 workflow | `build-clients.yml` → Android APK、Windows exe；**macOS / iOS 跳过分发**（仅 skip note） |
+| 客户端 workflow | `build-clients.yml` → Android APK、Windows exe；**macOS / iOS 跳过分发**（仅 skip note）；release 时若缺 linux 服务端资产会从上一版 **backfill**（避免 `latest/download/nbvpn-linux-amd64` 404） |
 | `releases.json` | 已改为 `…/releases/latest/download/<filename>` 占位；首个 Release 发布后更新 sha256 |
+| 安装下载 | 资产名固定为 `nbvpn-linux-amd64`（与 CI 一致）。若 `latest` 仅为客户端 tag，安装脚本会 API 回退 / 可用 `NBVPN_BINARY_URL` 钉 `v0.1.11` |
 
 本地大文件不必上传 OpenList 也可完成分发：在 Actions 下载 artifact，或使用 Release 直链。

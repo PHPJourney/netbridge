@@ -198,6 +198,76 @@ jobs:
           mkdir -p upload
           find clients-out -type f -exec cp -f {} upload/ \;
           ls -la upload
+      # Client-only tags become GitHub "latest" and previously omitted nbvpn-linux-*,
+      # which 404s curl|bash install (releases/latest/download/nbvpn-linux-amd64).
+      # If Build Server has not attached them yet, backfill from the newest prior
+      # release that published those assets so latest stays installable.
+      - name: Backfill nbvpn linux server binaries if missing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          need=(nbvpn-linux-amd64 nbvpn-linux-amd64.sha256 nbvpn-linux-arm64 nbvpn-linux-arm64.sha256)
+          missing=0
+          for f in "${need[@]}"; do
+            [[ -f "upload/$f" ]] || missing=1
+          done
+          if [[ "$missing" -eq 0 ]]; then
+            echo "Server linux assets already staged."
+            exit 0
+          fi
+          echo "Client upload lacks nbvpn-linux-* — scanning prior releases to backfill…"
+          api="https://api.github.com/repos/${REPO}/releases?per_page=40"
+          curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" \
+            "$api" -o /tmp/releases.json
+          python3 <<'PY'
+          import json, os, urllib.request
+          with open("/tmp/releases.json", encoding="utf-8") as f:
+              rels = json.load(f)
+          want = [
+              "nbvpn-linux-amd64",
+              "nbvpn-linux-amd64.sha256",
+              "nbvpn-linux-arm64",
+              "nbvpn-linux-arm64.sha256",
+          ]
+          token = os.environ.get("GH_TOKEN", "")
+          found = False
+          for r in rels:
+              if r.get("draft"):
+                  continue
+              by_name = {a["name"]: a for a in (r.get("assets") or [])}
+              if "nbvpn-linux-amd64" not in by_name:
+                  continue
+              found = True
+              print(f"Backfilling from {r.get('tag_name')}", flush=True)
+              for name in want:
+                  a = by_name.get(name)
+                  if not a:
+                      continue
+                  dest = os.path.join("upload", name)
+                  if os.path.isfile(dest):
+                      continue
+                  req = urllib.request.Request(
+                      a["url"],
+                      headers={
+                          "Accept": "application/octet-stream",
+                          "Authorization": f"Bearer {token}",
+                          "User-Agent": "netbridge-ci-backfill",
+                      },
+                  )
+                  with urllib.request.urlopen(req) as resp, open(dest, "wb") as out:
+                      out.write(resp.read())
+                  print(f"  + {name} ({os.path.getsize(dest)} bytes)", flush=True)
+              break
+          if not found:
+              print(
+                  "WARNING: no prior release had nbvpn-linux-amd64 — "
+                  "install may 404 until Build Server uploads.",
+                  flush=True,
+              )
+          PY
+          ls -la upload/nbvpn-linux-* 2>/dev/null || true
       - uses: softprops/action-gh-release@v2
         with:
           files: upload/*
