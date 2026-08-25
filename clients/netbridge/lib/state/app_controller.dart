@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../config/build_flags.dart';
 import '../models/server_entry.dart';
+import '../profile/cidr_util.dart';
 import '../profile/nbvpn_profile.dart';
 import '../services/server_store.dart';
 import '../services/settings_store.dart';
@@ -35,6 +36,8 @@ class AppController extends ChangeNotifier {
   bool loading = true;
   bool killSwitch = true;
   bool excludePrivateNetworks = BuildFlags.defaultExcludePrivateNetworks;
+  bool leakProtection = BuildFlags.defaultLeakProtection;
+  List<String> whitelistEntries = const [];
   AppLocaleMode localeMode = AppLocaleMode.system;
   /// Resolved UI language for errors / snackbars without BuildContext (`zh`|`en`).
   String languageCode = 'zh';
@@ -83,6 +86,8 @@ class AppController extends ChangeNotifier {
       servers = await _serverStore.load();
       killSwitch = await _settingsStore.getKillSwitch();
       excludePrivateNetworks = await _settingsStore.getExcludePrivateNetworks();
+      leakProtection = await _settingsStore.getLeakProtection();
+      whitelistEntries = await _settingsStore.getWhitelistEntries();
       localeMode = await _settingsStore.getLocaleMode();
       refreshResolvedLanguage();
       try {
@@ -391,6 +396,29 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setLeakProtection(bool value) async {
+    leakProtection = value;
+    await _settingsStore.setLeakProtection(value);
+    // Leak mode forces full tunnel on connect; keep KS preference aligned.
+    if (value && !killSwitch) {
+      killSwitch = true;
+      await _settingsStore.setKillSwitch(true);
+    }
+    notifyListeners();
+  }
+
+  Future<void> setWhitelistEntries(List<String> entries) async {
+    whitelistEntries = List<String>.from(entries);
+    await _settingsStore.setWhitelistEntries(whitelistEntries);
+    notifyListeners();
+  }
+
+  /// IPv4 CIDRs from whitelist that are applied to AllowedIPs on connect.
+  List<String> get whitelistCidrs => whitelistEntries
+      .map((e) => e.trim())
+      .where(looksLikeIpv4Cidr)
+      .toList();
+
   Future<void> setLocaleMode(AppLocaleMode mode) async {
     localeMode = mode;
     refreshResolvedLanguage();
@@ -525,8 +553,10 @@ class AppController extends ChangeNotifier {
         try {
           await tunnel.connect(
             entry.profile,
-            killSwitch: killSwitch,
+            killSwitch: leakProtection ? true : killSwitch,
             excludePrivateNetworks: excludePrivateNetworks,
+            forceFullTunnel: leakProtection,
+            bypassCidrs: whitelistCidrs,
           );
           if (epoch != _tunnelEpoch) return;
           // Prefer live stage over assuming connect() completion == connected.
@@ -549,6 +579,8 @@ class AppController extends ChangeNotifier {
           final allowedIPs = VpnConnectivityVerifier.effectiveAllowedIPs(
             entry.profile.server.allowedIPs,
             excludePrivateNetworks: excludePrivateNetworks,
+            forceFullTunnel: leakProtection,
+            bypassCidrs: whitelistCidrs,
           );
           final verifyResult = await _connectivityVerifier.verify(
             allowedIPs: allowedIPs,

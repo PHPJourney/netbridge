@@ -37,6 +37,8 @@ class StubVpnTunnel implements VpnTunnel {
     NbVpnProfile profile, {
     required bool killSwitch,
     bool excludePrivateNetworks = false,
+    bool forceFullTunnel = false,
+    List<String> bypassCidrs = const [],
   }) async {
     _reconnectTimer?.cancel();
     _emit(VpnTunnelStage.connecting);

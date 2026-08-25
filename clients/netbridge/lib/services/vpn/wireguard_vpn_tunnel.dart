@@ -42,7 +42,8 @@ class WireGuardVpnTunnel implements VpnTunnel {
     if (kIsWeb) return 'Web 不支持 VPN 隧道。';
     if (Platform.isAndroid) {
       return 'Android：通过 wireguard_flutter 建立真实隧道（需系统 VPN 授权）。'
-          'Kill Switch 依赖隧道断开策略，完整阻断以系统能力为准。';
+          '防泄漏=强制全隧道；Kill Switch 偏好已保存，插件未暴露 setBlocking——'
+          '完整阻断请用系统「始终开启的 VPN」。';
     }
     if (Platform.isWindows) {
       return 'Windows：wireguard_flutter 可建隧道，需管理员权限；'
@@ -101,15 +102,20 @@ class WireGuardVpnTunnel implements VpnTunnel {
     NbVpnProfile profile, {
     required bool killSwitch,
     bool excludePrivateNetworks = false,
+    bool forceFullTunnel = false,
+    List<String> bypassCidrs = const [],
   }) async {
     await initialize();
     final conf = ProfileCodec.toWireGuardConf(
       profile,
       excludePrivateNetworks: excludePrivateNetworks,
+      forceFullTunnel: forceFullTunnel,
+      bypassCidrs: bypassCidrs,
     );
-    // killSwitch preference is persisted in Settings; OS-level KS varies by
-    // platform (see IMPL.md). Parameter kept for future native wiring.
-    // ignore: unused_local_variable
+    // Kill switch / leak protection: wireguard_flutter (GoBackend) does not
+    // expose VpnService.setBlocking / allowBypass. Full-tunnel AllowedIPs +
+    // DNS-in-conf reduce leaks while connected; true "block without VPN" is
+    // Android Always-on VPN (system setting). Parameter retained for prefs.
     final _ = killSwitch;
     _controller.add(VpnTunnelStage.connecting);
     await WireGuardFlutter.instance.startVpn(

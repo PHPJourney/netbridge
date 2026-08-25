@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/build_flags.dart';
@@ -26,6 +28,8 @@ class SettingsStore {
   static const killSwitchPromptedKey = 'nbvpn.killSwitch.prompted';
   static const localeModeKey = 'nbvpn.localeMode';
   static const excludePrivateNetworksKey = 'nbvpn.splitTunnel.excludePrivate';
+  static const leakProtectionKey = 'nbvpn.leakProtection';
+  static const whitelistEntriesKey = 'nbvpn.whitelist.entries';
 
   Future<bool> getKillSwitch() async {
     final prefs = await SharedPreferences.getInstance();
@@ -68,5 +72,43 @@ class SettingsStore {
   Future<void> setExcludePrivateNetworks(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(excludePrivateNetworksKey, value);
+  }
+
+  /// IP leak protection: force full tunnel + kill-switch intent on connect.
+  Future<bool> getLeakProtection() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(leakProtectionKey) ??
+        BuildFlags.defaultLeakProtection;
+  }
+
+  Future<void> setLeakProtection(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(leakProtectionKey, value);
+  }
+
+  /// Whitelist entries: IPv4 CIDRs (applied) and/or domains (stored, future DNS).
+  Future<List<String>> getWhitelistEntries() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(whitelistEntriesKey);
+    if (raw == null || raw.isEmpty) return const [];
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return const [];
+      return decoded
+          .map((e) => e.toString().trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<void> setWhitelistEntries(List<String> entries) async {
+    final prefs = await SharedPreferences.getInstance();
+    final cleaned = entries
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+    await prefs.setString(whitelistEntriesKey, jsonEncode(cleaned));
   }
 }

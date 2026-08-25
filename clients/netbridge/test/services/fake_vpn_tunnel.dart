@@ -23,6 +23,10 @@ class FakeVpnTunnel implements VpnTunnel {
   int connectCount = 0;
   int disconnectCount = 0;
   final List<String> connectedEndpoints = [];
+  bool? lastForceFullTunnel;
+  bool? lastExcludePrivate;
+  bool? lastKillSwitch;
+  List<String> lastBypassCidrs = const [];
 
   @override
   bool get supportsRealTunnel => true;
@@ -49,9 +53,15 @@ class FakeVpnTunnel implements VpnTunnel {
     NbVpnProfile profile, {
     required bool killSwitch,
     bool excludePrivateNetworks = false,
+    bool forceFullTunnel = false,
+    List<String> bypassCidrs = const [],
   }) async {
     connectCount++;
     connectedEndpoints.add(profile.server.activeEndpoint);
+    lastForceFullTunnel = forceFullTunnel;
+    lastBypassCidrs = List<String>.from(bypassCidrs);
+    lastExcludePrivate = excludePrivateNetworks;
+    lastKillSwitch = killSwitch;
     _emit(VpnTunnelStage.connecting);
     await Future<void>.delayed(connectDelay);
     if (failConnect) {

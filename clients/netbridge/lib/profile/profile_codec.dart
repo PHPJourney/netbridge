@@ -264,17 +264,25 @@ class ProfileCodec {
 
   /// wg-quick compatible client config.
   ///
-  /// When [excludePrivateNetworks] is true, `0.0.0.0/0` / `::/0` in the profile
-  /// are rewritten to the official WireGuard exclude-private CIDR decomposition
-  /// so LAN / car / Bluetooth traffic stays off the tunnel.
+  /// When [excludePrivateNetworks] is true (and [forceFullTunnel] is false),
+  /// `0.0.0.0/0` / `::/0` in the profile are rewritten to the official WireGuard
+  /// exclude-private CIDR decomposition so LAN / car / Bluetooth traffic stays
+  /// off the tunnel.
+  ///
+  /// [forceFullTunnel] (leak protection) wins over exclude-private.
+  /// [bypassCidrs] are IPv4 ranges removed from AllowedIPs (direct / whitelist).
   static String toWireGuardConf(
     NbVpnProfile p, {
     bool excludePrivateNetworks = false,
+    bool forceFullTunnel = false,
+    Iterable<String> bypassCidrs = const [],
   }) {
     validate(p);
     final allowedIPs = SplitTunnel.resolveAllowedIPs(
       p.server.allowedIPs,
       excludePrivate: excludePrivateNetworks,
+      forceFullTunnel: forceFullTunnel,
+      bypassCidrs: bypassCidrs,
     );
     final ka = (p.server.persistentKeepalive == null ||
             p.server.persistentKeepalive == 0)

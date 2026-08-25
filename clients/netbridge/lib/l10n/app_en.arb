@@ -4,8 +4,26 @@
   "settings": "Settings",
   "settingsTitle": "Settings",
   "killSwitch": "Kill Switch",
-  "killSwitchSubtitleReal": "When on, the app will try to block traffic leaks if the VPN drops (depends on the OS; full blocking varies by platform).",
+  "killSwitchSubtitleReal": "When on, the app prefers blocking traffic outside the VPN while connected (OS-dependent). Full “block without VPN” may need Android Always-on VPN in system settings.",
   "killSwitchSubtitleStub": "Stub tunnel only — Kill Switch preference is saved but does not block traffic.",
+  "leakProtectionTitle": "IP leak protection",
+  "leakProtectionSubtitle": "When on, forces full tunnel (disables private-LAN split for this session) and keeps Kill Switch intent. DNS uses the tunnel. Reconnect to apply. Browsers may still expose local IPs via WebRTC — use browser settings/extensions if needed.",
+  "leakProtectionVsSplitHint": "Leak protection overrides “Automatic split tunnel” while connected. Turn off leak protection if you need LAN/car hotspot access.",
+  "whitelistTitle": "Bypass whitelist",
+  "whitelistSubtitle": "IPv4 CIDRs that skip the VPN (direct). Domains are saved for a future DNS-based split and are not applied yet. Reconnect to apply CIDR changes.",
+  "whitelistEmpty": "No whitelist entries",
+  "whitelistAdd": "Add CIDR or domain",
+  "whitelistAddHint": "e.g. 192.168.1.0/24 or example.com",
+  "whitelistInvalid": "Enter an IPv4 address/CIDR or a domain name",
+  "whitelistDomainNote": "Domain saved; routing applies after DNS split (not yet).",
+  "whitelistCidrNote": "CIDR · direct on connect",
+  "whitelistRemove": "Remove",
+  "whitelistCount": "{count} entries",
+  "@whitelistCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
   "tunnelCapability": "Tunnel capability",
   "tunnelStubSuffix": "(Stub ≠ production-ready)",
   "tunnelAppleLinkedNote": "WGExtension is embedded. Debug builds can sign with a Personal Team; real Packet Tunnel / distribution need a paid Apple Developer account (NE), provisioning, and WireGuardKit. Personal Team cannot activate NE. Notarization is typically required before sharing builds.",

@@ -67,10 +67,14 @@ class VpnConnectivityVerifier {
   static List<String> effectiveAllowedIPs(
     List<String> profileAllowedIPs, {
     required bool excludePrivateNetworks,
+    bool forceFullTunnel = false,
+    Iterable<String> bypassCidrs = const [],
   }) {
     return SplitTunnel.resolveAllowedIPs(
       profileAllowedIPs,
       excludePrivate: excludePrivateNetworks,
+      forceFullTunnel: forceFullTunnel,
+      bypassCidrs: bypassCidrs,
     );
   }
 

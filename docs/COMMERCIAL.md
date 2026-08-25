@@ -11,14 +11,50 @@
 
 商业仓是**独立私有仓库**（不是公开仓的 GitHub Fork——公开仓无法再改为 private fork）。
 
-## v0.1.16 商业版更新（自动分流）
+## v0.1.17 商业功能（防泄漏 + 白名单）
+
+### 防 IP 泄漏（设置 →「防 IP 泄漏」）
+
+连接时在 VPN 层尽量减少真实公网/本地 IP 被外站探测：
+
+| 能力 | 说明 |
+|------|------|
+| 强制全隧道 | 本会话**忽略**「自动分流（排除私网）」，AllowedIPs 保持 `0.0.0.0/0`（及 `::/0`） |
+| Kill Switch 意图 | 开启防泄漏时同步打开 Kill Switch 偏好；`wireguard_flutter` **无法**调用 `VpnService.setBlocking` / `allowBypass`，完整「无 VPN 则断网」需用户在 **Android 系统设置 → 始终开启的 VPN** |
+| DNS 走隧道 | Profile 中的 `DNS = …` 写入 wg-quick conf（既有行为） |
+| 商业构建默认 | `--dart-define=COMMERCIAL_BUILD=true` 时默认 **ON**（可用 `DEFAULT_LEAK_PROTECTION=false` 覆盖） |
+
+**与「排除私网」的取舍：** 开启自动分流后，局域网/链路本地走直连，外站或本机接口枚举仍可能看到局域网 IP。防泄漏模式优先隐藏本地出口路径，车机热点场景请先关防泄漏再开分流。
+
+**WebRTC 局限：** 浏览器可对所有网卡收集 ICE host 候选，VPN 应用**无法**在进程内关闭第三方浏览器的 WebRTC。防泄漏降低「流量绕过隧道」的概率；若 IP 检测站仍显示本机局域网 IP，需在浏览器关闭 WebRTC / 使用扩展，或仅用系统浏览器策略。
+
+### 直连白名单（设置 →「直连白名单」）
+
+| 类型 | MVP 行为 |
+|------|----------|
+| **IPv4 CIDR** | 从 AllowedIPs 中挖除该段 → 目标直连（不经隧道）。修改后需 **断开再连** |
+| **域名** | 可保存，**路由尚未生效**（需后续 DNS 分流） |
+| **按 App（Android）** | 未实现：`wireguard_flutter` 未暴露 `addDisallowedApplication` |
+
+### 构建示例
+
+```bash
+cd clients/netbridge
+flutter build apk --release \
+  --dart-define=COMMERCIAL_BUILD=true
+# 防泄漏默认 ON；可选：
+#   --dart-define=DEFAULT_LEAK_PROTECTION=false
+#   --dart-define=DEFAULT_EXCLUDE_PRIVATE_NETWORKS=true
+```
+
+## v0.1.16 自动分流（排除私网）
 
 自 **v0.1.16** 起，客户端提供 **可选** 的 **自动分流（排除私网）**（设置 → 默认关闭，全隧道）：
 
 - 开启后：连接时若 profile 含 `0.0.0.0/0, ::/0`，会改写为与官方 WireGuard Android「Exclude private networks」一致的公网 CIDR 列表
-- **公网**仍走 VPN；**10.x / 192.168.x / 链路本地**等私网直连，车机热点、蓝牙互联、本地控车不再被全隧道劫持
-- **设置 → 自动分流（排除私网）** 可开关；修改后需 **断开再连**
-- **服务端无需重装**；`nbvpn show` 仍导出全隧道 URI（除非安装时 `NBVPN_SPLIT_TUNNEL=1`），客户端分流在连接时生效
+- **公网**仍走 VPN；**10.x / 192.168.x / 链路本地**等私网直连
+- **设置 → 自动分流（排除私网）**；修改后需 **断开再连**
+- 与防泄漏同时开时：**防泄漏优先**（连接仍全隧道）
 
 ### IPv6 / 双公网
 
@@ -28,20 +64,13 @@
 - Profile 可选字段 `endpointV6` / `ipv6Enabled`（向后兼容）；连接时 **单一** WireGuard Endpoint（启用则用 V6）
 - 第二 IPv4：用 `config set endpoint` 切换主地址（详见 `server/install/FIREWALL.md`）
 
-商业交付构建（可选品牌标识 + 车机友好默认分流）：
+公开 MIT 仓与商业仓功能一致；`COMMERCIAL_BUILD` 用于白牌 / 交付标识与防泄漏默认值。
 
-```bash
-cd clients/netbridge
-flutter build apk --release \
-  --dart-define=COMMERCIAL_BUILD=true \
-  --dart-define=DEFAULT_EXCLUDE_PRIVATE_NETWORKS=true
-```
+### 仍未包含 / 后续
 
-公开 MIT 仓与商业仓功能一致；`COMMERCIAL_BUILD` 用于白牌 / 交付标识。分流默认关闭，可按需用 `DEFAULT_EXCLUDE_PRIVATE_NETWORKS=true` 开启。
-
-### 明确未包含（截至 v0.1.16）
-
-- **域名 / App 白名单**（按域名或按应用绕过 VPN）：未实现。当前可用替代：手动缩小 Allowed IPs、或开启「自动分流（排除私网）」。若需真正白名单，需另开规格（客户端路由例外 + 可选 DNS 分流）。
+- **域名白名单生效**（DNS 分流）
+- **Android 按应用绕过**（需 fork / 扩展 `wireguard_flutter`）
+- **插件级 setBlocking kill switch**（同上）
 
 ## 交付范围（默认）
 

@@ -1,3 +1,5 @@
+import 'cidr_util.dart';
+
 /// WireGuard "exclude private networks" AllowedIPs decomposition.
 ///
 /// Matches the static CIDR list used by the official WireGuard Android app
@@ -68,25 +70,41 @@ class SplitTunnel {
   }
 
   /// Rewrite full-tunnel defaults to exclude-private CIDR lists when [excludePrivate].
+  ///
+  /// When [bypassCidrs] is non-empty, those IPv4 ranges are carved out of the
+  /// resulting AllowedIPs so traffic to them goes direct (whitelist).
+  ///
+  /// When [forceFullTunnel] is true (leak-protection mode), [excludePrivate] is
+  /// ignored so LAN is not intentionally exposed via route exceptions.
   static List<String> resolveAllowedIPs(
     List<String> allowedIPs, {
     required bool excludePrivate,
+    bool forceFullTunnel = false,
+    Iterable<String> bypassCidrs = const [],
   }) {
-    if (!excludePrivate || allowedIPs.isEmpty) {
-      return List<String>.from(allowedIPs);
-    }
-    final out = <String>[];
-    for (final raw in allowedIPs) {
-      final cidr = raw.trim();
-      switch (cidr) {
-        case _ipv4Default:
-          out.addAll(ipv4ExcludePrivate);
-        case _ipv6Default:
-          out.addAll(ipv6ExcludePrivate);
-        default:
-          if (cidr.isNotEmpty) out.add(cidr);
+    final useExclude = excludePrivate && !forceFullTunnel;
+    List<String> out;
+    if (!useExclude || allowedIPs.isEmpty) {
+      out = List<String>.from(allowedIPs);
+    } else {
+      out = <String>[];
+      for (final raw in allowedIPs) {
+        final cidr = raw.trim();
+        switch (cidr) {
+          case _ipv4Default:
+            out.addAll(ipv4ExcludePrivate);
+          case _ipv6Default:
+            out.addAll(ipv6ExcludePrivate);
+          default:
+            if (cidr.isNotEmpty) out.add(cidr);
+        }
       }
     }
-    return out;
+    final bypass = bypassCidrs
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty && looksLikeIpv4Cidr(e))
+        .toList();
+    if (bypass.isEmpty) return out;
+    return applyIpv4BypassCidrs(out, bypass);
   }
 }

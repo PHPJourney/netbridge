@@ -125,7 +125,7 @@ abstract class AppLocalizations {
   /// No description provided for @killSwitchSubtitleReal.
   ///
   /// In en, this message translates to:
-  /// **'When on, the app will try to block traffic leaks if the VPN drops (depends on the OS; full blocking varies by platform).'**
+  /// **'When on, the app prefers blocking traffic outside the VPN while connected (OS-dependent). Full “block without VPN” may need Android Always-on VPN in system settings.'**
   String get killSwitchSubtitleReal;
 
   /// No description provided for @killSwitchSubtitleStub.
@@ -133,6 +133,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stub tunnel only — Kill Switch preference is saved but does not block traffic.'**
   String get killSwitchSubtitleStub;
+
+  /// No description provided for @leakProtectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'IP leak protection'**
+  String get leakProtectionTitle;
+
+  /// No description provided for @leakProtectionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When on, forces full tunnel (disables private-LAN split for this session) and keeps Kill Switch intent. DNS uses the tunnel. Reconnect to apply. Browsers may still expose local IPs via WebRTC — use browser settings/extensions if needed.'**
+  String get leakProtectionSubtitle;
+
+  /// No description provided for @leakProtectionVsSplitHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Leak protection overrides “Automatic split tunnel” while connected. Turn off leak protection if you need LAN/car hotspot access.'**
+  String get leakProtectionVsSplitHint;
+
+  /// No description provided for @whitelistTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bypass whitelist'**
+  String get whitelistTitle;
+
+  /// No description provided for @whitelistSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'IPv4 CIDRs that skip the VPN (direct). Domains are saved for a future DNS-based split and are not applied yet. Reconnect to apply CIDR changes.'**
+  String get whitelistSubtitle;
+
+  /// No description provided for @whitelistEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No whitelist entries'**
+  String get whitelistEmpty;
+
+  /// No description provided for @whitelistAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add CIDR or domain'**
+  String get whitelistAdd;
+
+  /// No description provided for @whitelistAddHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 192.168.1.0/24 or example.com'**
+  String get whitelistAddHint;
+
+  /// No description provided for @whitelistInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an IPv4 address/CIDR or a domain name'**
+  String get whitelistInvalid;
+
+  /// No description provided for @whitelistDomainNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Domain saved; routing applies after DNS split (not yet).'**
+  String get whitelistDomainNote;
+
+  /// No description provided for @whitelistCidrNote.
+  ///
+  /// In en, this message translates to:
+  /// **'CIDR · direct on connect'**
+  String get whitelistCidrNote;
+
+  /// No description provided for @whitelistRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get whitelistRemove;
+
+  /// No description provided for @whitelistCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} entries'**
+  String whitelistCount(int count);
 
   /// No description provided for @tunnelCapability.
   ///

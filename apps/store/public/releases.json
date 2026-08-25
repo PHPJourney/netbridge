@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-25T04:30:00Z",
+  "updatedAt": "2026-08-25T09:40:00Z",
   "meta": {
     "landingPage": "GitHub Pages (apps/store)",
     "artifactStorage": "GitHub Releases (primary); OpenList optional mirror",
@@ -10,11 +10,11 @@
     "openlistBrowse": "http://154.37.213.245:5244/store",
     "downloadUrlHint": "Primary: GitHub Releases latest/download/<filename>. OpenList remains an optional mirror — see docs/delivery/nbvpn/OPENLIST-UPLOAD.md",
     "status": "github_releases_published",
-    "note": "v0.1.16: 可选自动分流（设置中开启，默认全隧道）；车机/局域网问题可开分流。连上无公网见 TRY-CONNECT §5.4 查服务端 NAT。",
+    "note": "v0.1.17: 防 IP 泄漏（强制全隧道）+ IPv4 CIDR 直连白名单；商业构建默认开防泄漏。浏览器 WebRTC 仍可能需浏览器侧处理。",
     "officialSite": "https://phpjourney.github.io/netbridge/",
     "termsUrl": "./terms.html",
     "privacyUrl": "./privacy.html",
-    "updatedAt": "2026-08-25T04:30:00Z",
+    "updatedAt": "2026-08-25T09:40:00Z",
     "partners": [
       {
         "name": "TradeMind",
@@ -27,8 +27,8 @@
         "url": "#"
       }
     ],
-    "releaseTag": "v0.1.16",
-    "releaseUrl": "https://github.com/PHPJourney/netbridge/releases/tag/v0.1.16"
+    "releaseTag": "v0.1.17",
+    "releaseUrl": "https://github.com/PHPJourney/netbridge/releases/tag/v0.1.17"
   },
   "clients": {
     "windows": {
@@ -55,12 +55,12 @@
     },
     "android": {
       "label": "Android",
-      "version": "0.1.16",
-      "sha256": "4fde6f60e7620599b10cc223ce8537d1152e42660540d694e9e55aa19056111e",
+      "version": "0.1.17",
+      "sha256": "",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-android-arm64.apk",
       "filename": "NetBridge-android-arm64.apk",
       "status": "available",
-      "note": "R8 release arm64，upload-keystore 正式签。v0.1.16 分流可选（设置默认关）；旧 debug 签包需卸载再装。Also NetBridge-android-armeabi-v7a.apk / NetBridge-android.apk in same Release."
+      "note": "R8 release arm64。v0.1.17 防泄漏 + CIDR 白名单；sha256 发版后回填。旧包需卸载再装。"
     },
     "ios": {
       "label": "iOS",

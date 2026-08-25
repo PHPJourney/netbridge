@@ -7,10 +7,17 @@ abstract class VpnTunnel {
   Future<void> initialize();
 
   /// Start tunnel for [profile]. Implementations must not log private keys.
+  ///
+  /// [killSwitch]: preference for blocking non-VPN traffic (OS-dependent).
+  /// [excludePrivateNetworks]: rewrite full-tunnel AllowedIPs to exclude LAN.
+  /// [forceFullTunnel]: leak-protection mode — ignores exclude-private.
+  /// [bypassCidrs]: IPv4 CIDRs removed from AllowedIPs (direct whitelist).
   Future<void> connect(
     NbVpnProfile profile, {
     required bool killSwitch,
     bool excludePrivateNetworks = false,
+    bool forceFullTunnel = false,
+    List<String> bypassCidrs = const [],
   });
 
   Future<void> disconnect();

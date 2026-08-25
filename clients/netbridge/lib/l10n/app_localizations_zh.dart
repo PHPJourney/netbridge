@@ -21,10 +21,55 @@ class AppLocalizationsZh extends AppLocalizations {
   String get killSwitch => 'Kill Switch';
 
   @override
-  String get killSwitchSubtitleReal => '开启后，VPN 断开时将尝试阻止流量泄漏（视系统能力；完整阻断因平台而异）。';
+  String get killSwitchSubtitleReal =>
+      '开启后，连接期间尽量阻止绕过 VPN 的流量（视系统能力）。完整「无 VPN 则断网」可能还需在 Android 系统设置中开启「始终开启的 VPN」。';
 
   @override
   String get killSwitchSubtitleStub => '当前为模拟隧道，Kill Switch 仅保存偏好，不会真正阻断流量。';
+
+  @override
+  String get leakProtectionTitle => '防 IP 泄漏';
+
+  @override
+  String get leakProtectionSubtitle =>
+      '开启后强制全隧道（本会话忽略「排除私网」分流）并保持 Kill Switch 意图；DNS 走隧道。修改后需断开再连。浏览器 WebRTC 仍可能暴露本机 IP，必要时请在浏览器中关闭或使用扩展。';
+
+  @override
+  String get leakProtectionVsSplitHint =>
+      '防泄漏开启时会覆盖「自动分流」。若需车机/局域网，请关闭防泄漏后再开分流。';
+
+  @override
+  String get whitelistTitle => '直连白名单';
+
+  @override
+  String get whitelistSubtitle =>
+      'IPv4 CIDR 将绕过 VPN 直连；域名会保存，待后续 DNS 分流后生效。修改 CIDR 后需断开再连。';
+
+  @override
+  String get whitelistEmpty => '暂无白名单条目';
+
+  @override
+  String get whitelistAdd => '添加 CIDR 或域名';
+
+  @override
+  String get whitelistAddHint => '例如 192.168.1.0/24 或 example.com';
+
+  @override
+  String get whitelistInvalid => '请输入 IPv4 地址/CIDR 或域名';
+
+  @override
+  String get whitelistDomainNote => '域名已保存；路由需 DNS 分流（尚未实现）。';
+
+  @override
+  String get whitelistCidrNote => 'CIDR · 连接时直连';
+
+  @override
+  String get whitelistRemove => '删除';
+
+  @override
+  String whitelistCount(int count) {
+    return '$count 条';
+  }
 
   @override
   String get tunnelCapability => '隧道能力';
@@ -545,7 +590,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get exportServersTitle => '导出服务器';
 
   @override
-  String get exportAlsoWireGuard => 'Also export WireGuard .conf';
+  String get exportAlsoWireGuard => '同时导出 WireGuard .conf';
 
   @override
   String get exportWireGuard => '导出 WireGuard';

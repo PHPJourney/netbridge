@@ -18,4 +18,13 @@ class BuildFlags {
     'DEFAULT_EXCLUDE_PRIVATE_NETWORKS',
     defaultValue: false,
   );
+
+  /// Default for Settings → IP leak protection (force full tunnel + KS intent).
+  ///
+  /// Defaults to [commercialBuild] when `DEFAULT_LEAK_PROTECTION` is unset, so
+  /// commercial APKs ship with leak protection ON.
+  static const defaultLeakProtection = bool.fromEnvironment(
+    'DEFAULT_LEAK_PROTECTION',
+    defaultValue: commercialBuild,
+  );
 }

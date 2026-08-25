@@ -7,8 +7,9 @@ import '../services/settings_store.dart';
 import '../state/app_controller.dart';
 import '../theme.dart';
 import '../utils/open_url.dart';
+import 'whitelist_screen.dart';
 
-/// C-11: Kill Switch + About / legal links / language. No login.
+/// C-11: Kill Switch + leak protection + whitelist / About / language.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key, required this.controller});
 
@@ -25,6 +26,12 @@ class SettingsScreen extends StatelessWidget {
         final real = c.supportsRealTunnel;
         final tiles = <Widget>[
           SwitchListTile(
+            title: Text(l10n.leakProtectionTitle),
+            subtitle: Text(l10n.leakProtectionSubtitle),
+            value: c.leakProtection,
+            onChanged: (v) => c.setLeakProtection(v),
+          ),
+          SwitchListTile(
             title: Text(l10n.killSwitch),
             subtitle: Text(
               real
@@ -32,13 +39,37 @@ class SettingsScreen extends StatelessWidget {
                   : l10n.killSwitchSubtitleStub,
             ),
             value: c.killSwitch,
-            onChanged: (v) => c.setKillSwitch(v),
+            onChanged: c.leakProtection
+                ? null
+                : (v) => c.setKillSwitch(v),
           ),
           SwitchListTile(
             title: Text(l10n.splitTunnelTitle),
-            subtitle: Text(l10n.splitTunnelSubtitle),
+            subtitle: Text(
+              c.leakProtection
+                  ? '${l10n.splitTunnelSubtitle}\n${l10n.leakProtectionVsSplitHint}'
+                  : l10n.splitTunnelSubtitle,
+            ),
             value: c.excludePrivateNetworks,
-            onChanged: (v) => c.setExcludePrivateNetworks(v),
+            onChanged: c.leakProtection
+                ? null
+                : (v) => c.setExcludePrivateNetworks(v),
+          ),
+          ListTile(
+            title: Text(l10n.whitelistTitle),
+            subtitle: Text(
+              c.whitelistEntries.isEmpty
+                  ? l10n.whitelistSubtitle
+                  : l10n.whitelistCount(c.whitelistEntries.length),
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => WhitelistScreen(controller: c),
+                ),
+              );
+            },
           ),
           const Divider(height: 1),
           ListTile(
