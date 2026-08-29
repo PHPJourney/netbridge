@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-25T09:40:00Z",
+  "updatedAt": "2026-08-30T00:00:00Z",
   "meta": {
     "landingPage": "GitHub Pages (apps/store)",
     "artifactStorage": "GitHub Releases (primary); OpenList optional mirror",
@@ -10,11 +10,11 @@
     "openlistBrowse": "http://154.37.213.245:5244/store",
     "downloadUrlHint": "Primary: GitHub Releases latest/download/<filename>. OpenList remains an optional mirror — see docs/delivery/nbvpn/OPENLIST-UPLOAD.md",
     "status": "github_releases_published",
-    "note": "v0.1.17: 防 IP 泄漏（强制全隧道）+ IPv4 CIDR 直连白名单；商业构建默认开防泄漏。浏览器 WebRTC 仍可能需浏览器侧处理。",
+    "note": "v0.1.18: 自研传输层 obfs2（WireGuard over 伪装 HTTPS：多通道×多入口、TCP 端口转发 RDP/SSH、防主动探测、流量整形）；iOS/macOS 接入 WireGuardKit 数据面（macOS system extension + Developer ID 公证）。",
     "officialSite": "https://phpjourney.github.io/netbridge/",
     "termsUrl": "./terms.html",
     "privacyUrl": "./privacy.html",
-    "updatedAt": "2026-08-25T09:40:00Z",
+    "updatedAt": "2026-08-30T00:00:00Z",
     "partners": [
       {
         "name": "TradeMind",
@@ -27,8 +27,8 @@
         "url": "#"
       }
     ],
-    "releaseTag": "v0.1.17",
-    "releaseUrl": "https://github.com/PHPJourney/netbridge/releases/tag/v0.1.17"
+    "releaseTag": "v0.1.18",
+    "releaseUrl": "https://github.com/PHPJourney/netbridge/releases/tag/v0.1.18"
   },
   "clients": {
     "windows": {
@@ -49,8 +49,8 @@
       "sha256": "",
       "url": "",
       "filename": "",
-      "status": "local_source_only",
-      "note": "源码本机运行 / 暂不分发。flutter run -d macos；真隧道用官方 WireGuard + nbvpn show --conf。详见 TRY-CONNECT.md「本机 macOS 业务」。",
+      "status": "local_signed_notarized",
+      "note": "WireGuardKit 数据面已接入（system extension 形态）；本机 Developer ID 签名 + Apple 公证 DMG（dist/NetBridge-macOS.dmg）。按团队决策暂不上 Releases；分发即发 DMG。",
       "noteEn": "Run from source locally / not distributed. flutter run -d macos; real tunnel: official WireGuard + nbvpn show --conf. See TRY-CONNECT.md."
     },
     "android": {
@@ -68,15 +68,15 @@
       "sha256": "",
       "url": "",
       "filename": "",
-      "status": "skipped_signing",
-      "note": "CI skips signed IPA (no Apple certs). Not an installable download."
+      "status": "signed_locally",
+      "note": "WireGuardKit 数据面已接入；本机已签 App Store IPA（dist/NetBridge-iOS.ipa），走 TestFlight/App Store 上传。CI 仍不签（无证书）。"
     }
   },
   "servers": {
     "debian": {
       "label": "Debian",
-      "version": "0.1.11",
-      "sha256": "5b36208387ebbe4b7551fceffac57d019e6c775a76eb0f3c57a6bda5c738442e",
+      "version": "0.1.18",
+      "sha256": "4c36c8561b39a812d3f631173259aa96ae058a2ccde1a2c953ebb2e2ae697ccd",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-linux-amd64",
       "filename": "nbvpn-linux-amd64",
       "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/debian.sh",
@@ -86,8 +86,8 @@
     },
     "ubuntu": {
       "label": "Ubuntu",
-      "version": "0.1.11",
-      "sha256": "5b36208387ebbe4b7551fceffac57d019e6c775a76eb0f3c57a6bda5c738442e",
+      "version": "0.1.18",
+      "sha256": "4c36c8561b39a812d3f631173259aa96ae058a2ccde1a2c953ebb2e2ae697ccd",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-linux-amd64",
       "filename": "nbvpn-linux-amd64",
       "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/ubuntu.sh",
@@ -97,8 +97,8 @@
     },
     "centos": {
       "label": "CentOS",
-      "version": "0.1.11",
-      "sha256": "5b36208387ebbe4b7551fceffac57d019e6c775a76eb0f3c57a6bda5c738442e",
+      "version": "0.1.18",
+      "sha256": "4c36c8561b39a812d3f631173259aa96ae058a2ccde1a2c953ebb2e2ae697ccd",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-linux-amd64",
       "filename": "nbvpn-linux-amd64",
       "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/centos.sh",
@@ -108,8 +108,8 @@
     },
     "rhel": {
       "label": "RHEL",
-      "version": "0.1.11",
-      "sha256": "5b36208387ebbe4b7551fceffac57d019e6c775a76eb0f3c57a6bda5c738442e",
+      "version": "0.1.18",
+      "sha256": "4c36c8561b39a812d3f631173259aa96ae058a2ccde1a2c953ebb2e2ae697ccd",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/nbvpn-linux-amd64",
       "filename": "nbvpn-linux-amd64",
       "installScriptUrl": "https://raw.githubusercontent.com/PHPJourney/netbridge/main/server/install/rhel.sh",
