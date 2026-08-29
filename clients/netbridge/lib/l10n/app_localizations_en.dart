@@ -732,4 +732,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shareAppMessage => 'Download NetBridge VPN:';
+
+  @override
+  String get diagnosticLogTitle => 'Diagnostic Log';
+
+  @override
+  String get diagnosticLogSubtitle =>
+      'Connection attempts, stages and errors (incl. obfs2 tunnel)';
+
+  @override
+  String get diagnosticLogEmpty =>
+      'No entries yet. Try connecting once, then come back.';
+
+  @override
+  String get diagnosticLogClear => 'Clear';
+
+  @override
+  String get diagnosticLogExport => 'Export';
 }

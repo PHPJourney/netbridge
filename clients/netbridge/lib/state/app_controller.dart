@@ -11,6 +11,8 @@ import '../services/server_store.dart';
 import '../services/settings_store.dart';
 import '../services/vpn/vpn_connectivity_verifier.dart';
 import '../services/vpn/vpn_errors.dart';
+import '../services/vpn/vpn_logger.dart';
+import '../services/vpn/vpn_notifier.dart';
 import '../services/vpn/vpn_tunnel.dart';
 import '../services/vpn/wireguard_vpn_tunnel.dart';
 
@@ -83,6 +85,9 @@ class AppController extends ChangeNotifier {
     loading = true;
     notifyListeners();
     try {
+      await VpnLog.init();
+      await VpnNotifier.init();
+
       servers = await _serverStore.load();
       killSwitch = await _settingsStore.getKillSwitch();
       excludePrivateNetworks = await _settingsStore.getExcludePrivateNetworks();
@@ -146,6 +151,7 @@ class AppController extends ChangeNotifier {
   }
 
   void _onStage(VpnTunnelStage stage) {
+    VpnLog.stage(stage.name);
     _applyStage(stage, clearActiveOnDisconnect: !_suppressDisconnectClear);
   }
 
@@ -513,6 +519,8 @@ class AppController extends ChangeNotifier {
           status = VpnUiStatus.error;
           lastError = stubVpnBlockedMessage;
           notifyListeners();
+          VpnLog.error('connect blocked: stub tunnel ($stubVpnBlockedMessage)');
+          VpnNotifier.failed(stubVpnBlockedMessage);
           return;
         }
 
@@ -595,6 +603,8 @@ class AppController extends ChangeNotifier {
 
           if (verifyResult != VpnVerificationResult.success) {
             final handshakeError = _handshakeFailedMessage;
+            VpnLog.error('handshake verify failed: $handshakeError');
+            VpnNotifier.failed(handshakeError);
             try {
               await _disconnectAndWait(epoch: epoch);
             } catch (_) {
@@ -619,6 +629,8 @@ class AppController extends ChangeNotifier {
           status = VpnUiStatus.connected;
           statusDetail = null;
           notifyListeners();
+          VpnLog.connect('connected to ${entry.profile.server.activeEndpoint} (id=$serverId)');
+          VpnNotifier.connected(entry.profile.server.activeEndpoint);
         } catch (e) {
           if (epoch != _tunnelEpoch) return;
           // Apple: do not silently fall back to Stub “connected”.
@@ -629,12 +641,16 @@ class AppController extends ChangeNotifier {
                 '$stubVpnBlockedMessage ${languageCode == 'en' ? 'Detail' : '详情'}: ${humanize(e)}';
             activeServerId = null;
             notifyListeners();
+            VpnLog.error('connect failed: $lastError');
+            VpnNotifier.failed(lastError ?? 'connection failed');
             return;
           }
           status = VpnUiStatus.error;
           lastError = humanize(e);
           activeServerId = null;
           notifyListeners();
+          VpnLog.error('connect failed: $lastError');
+          VpnNotifier.failed(lastError ?? 'connection failed');
         } finally {
           if (_handshakeVerifyEpoch == epoch) {
             _handshakeVerifyEpoch = null;

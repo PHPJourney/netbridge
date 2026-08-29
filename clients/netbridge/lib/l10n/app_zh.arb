@@ -21,7 +21,9 @@
   "whitelistCount": "{count} 条",
   "@whitelistCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "tunnelCapability": "隧道能力",
@@ -170,10 +172,25 @@
   "importBluetoothPickFile": "选择已接收的文件",
   "nfcTooLargePlainBody": "配置过长，无法写入 NFC 标签。请逐台同步，或改用蓝牙/加密分享。",
   "importBatchTitle": "导入 {count} 台服务器？",
-  "@importBatchTitle": {"placeholders": {"count": {"type": "int"}}},
+  "@importBatchTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "importBatchBody": "将添加以下服务器（已存在的会自动跳过）：",
   "importBatchResult": "已添加 {added} 台，跳过 {skipped} 台（重复）",
-  "@importBatchResult": {"placeholders": {"added": {"type": "int"}, "skipped": {"type": "int"}}},
+  "@importBatchResult": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "skipped": {
+        "type": "int"
+      }
+    }
+  },
   "torchToggleFailed": "无法切换闪光灯",
   "torchOn": "打开闪光灯",
   "torchOff": "关闭闪光灯",
@@ -184,7 +201,13 @@
   "scanQrCameraHint": "支持明文与加密二维码；加密码扫到后会提示输入口令",
   "scanFromGallery": "从相册选图",
   "cameraOpenFailed": "无法打开相机：{code}\n请允许相机权限，或改用相册/粘贴。",
-  "@cameraOpenFailed": {"placeholders": {"code": {"type": "String"}}},
+  "@cameraOpenFailed": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "exportSecretTitle": "导出含密钥",
   "exportSecretBody": "导出文件包含私钥——等同密码。请勿公开发布。",
   "exportServersTitle": "导出服务器",
@@ -222,5 +245,10 @@
   "shareApp": "分享应用",
   "shareAppSubtitle": "下载页 / 商店链接",
   "shareAppConfirm": "分享下载链接？\n{url}",
-  "shareAppMessage": "下载网桥 VPN："
+  "shareAppMessage": "下载网桥 VPN：",
+  "diagnosticLogTitle": "诊断日志",
+  "diagnosticLogSubtitle": "查看连接尝试、阶段流转与错误（含 obfs2 隧道）",
+  "diagnosticLogEmpty": "暂无日志。尝试连接一次后回来查看。",
+  "diagnosticLogClear": "清空",
+  "diagnosticLogExport": "导出"
 }

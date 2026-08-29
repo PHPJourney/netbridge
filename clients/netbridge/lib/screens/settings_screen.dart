@@ -4,9 +4,11 @@ import '../config/brand_links.dart';
 import '../l10n/app_localizations.dart';
 import '../layout/responsive.dart';
 import '../services/settings_store.dart';
+import '../services/vpn/vpn_logger.dart';
 import '../state/app_controller.dart';
 import '../theme.dart';
 import '../utils/open_url.dart';
+import '../utils/share_text.dart';
 import 'whitelist_screen.dart';
 
 /// C-11: Kill Switch + leak protection + whitelist / About / language.
@@ -169,6 +171,59 @@ class SettingsScreen extends StatelessWidget {
           ListTile(
             title: Text(l10n.partnersTitle),
             subtitle: Text(l10n.partnersBody),
+          ),
+          ListTile(
+            title: Text(l10n.diagnosticLogTitle),
+            subtitle: Text(l10n.diagnosticLogSubtitle),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => showDialog<void>(
+              context: context,
+              builder: (ctx) {
+                final d = AppLocalizations.of(ctx);
+                return AlertDialog(
+                  title: Text(d.diagnosticLogTitle),
+                  content: SizedBox(
+                    width: double.maxFinite,
+                    height: 400,
+                    child: SingleChildScrollView(
+                      child: SelectableText(
+                        VpnLog.tail(300).isEmpty
+                            ? d.diagnosticLogEmpty
+                            : VpnLog.tail(300).join('\n'),
+                        style: const TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () async {
+                        await VpnLog.clear();
+                        if (ctx.mounted) Navigator.pop(ctx);
+                      },
+                      child: Text(d.diagnosticLogClear),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        final text = await VpnLog.readFile();
+                        if (!ctx.mounted) return;
+                        await shareText(
+                          ctx,
+                          text.isEmpty ? VpnLog.tail(300).join('\n') : text,
+                        );
+                      },
+                      child: Text(d.diagnosticLogExport),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(d.close),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
           ListTile(
             title: Text(l10n.aboutDetails),

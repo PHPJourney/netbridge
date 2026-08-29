@@ -695,4 +695,19 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get shareAppMessage => '下载网桥 VPN：';
+
+  @override
+  String get diagnosticLogTitle => '诊断日志';
+
+  @override
+  String get diagnosticLogSubtitle => '查看连接尝试、阶段流转与错误（含 obfs2 隧道）';
+
+  @override
+  String get diagnosticLogEmpty => '暂无日志。尝试连接一次后回来查看。';
+
+  @override
+  String get diagnosticLogClear => '清空';
+
+  @override
+  String get diagnosticLogExport => '导出';
 }

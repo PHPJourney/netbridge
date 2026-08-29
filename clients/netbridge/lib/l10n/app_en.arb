@@ -21,7 +21,9 @@
   "whitelistCount": "{count} entries",
   "@whitelistCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "tunnelCapability": "Tunnel capability",
@@ -41,7 +43,9 @@
   "versionLabel": "Version {version}",
   "@versionLabel": {
     "placeholders": {
-      "version": {"type": "String"}
+      "version": {
+        "type": "String"
+      }
     }
   },
   "officialWebsite": "Official website",
@@ -58,7 +62,9 @@
   "versionFooter": "Version {version} · no account · no built-in servers",
   "@versionFooter": {
     "placeholders": {
-      "version": {"type": "String"}
+      "version": {
+        "type": "String"
+      }
     }
   },
   "openLinkFailed": "Could not open link",
@@ -68,7 +74,9 @@
   "alreadyAdded": "Already added \"{name}\"",
   "@alreadyAdded": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "added": "Added",
@@ -80,13 +88,17 @@
   "deleteConfirmConnected": "You will need to re-import to connect again. This server is active and will disconnect first. Delete \"{name}\"?",
   "@deleteConfirmConnected": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "deleteConfirm": "You will need to re-import to connect again. Delete \"{name}\"?",
   "@deleteConfirm": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "delete": "Delete",
@@ -101,13 +113,17 @@
   "statusConnectedDetail": "Connected · {name}",
   "@statusConnectedDetail": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "statusConnectingDetail": "Connecting to {name}…",
   "@statusConnectingDetail": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "statusReconnectingDetail": "Network interrupted, reconnecting…",
@@ -205,10 +221,25 @@
   "importBluetoothPickFile": "Pick received file",
   "nfcTooLargePlainBody": "Config is too long for an NFC tag. Sync one server at a time, or use Bluetooth / encrypted share.",
   "importBatchTitle": "Import {count} servers?",
-  "@importBatchTitle": {"placeholders": {"count": {"type": "int"}}},
+  "@importBatchTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "importBatchBody": "The following servers will be added (duplicates are skipped):",
   "importBatchResult": "Added {added}, skipped {skipped} (duplicate)",
-  "@importBatchResult": {"placeholders": {"added": {"type": "int"}, "skipped": {"type": "int"}}},
+  "@importBatchResult": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "skipped": {
+        "type": "int"
+      }
+    }
+  },
   "torchToggleFailed": "Could not toggle torch",
   "torchOn": "Turn torch on",
   "torchOff": "Turn torch off",
@@ -219,7 +250,13 @@
   "scanQrCameraHint": "Plain and encrypted QR supported; encrypted scans prompt for passphrase",
   "scanFromGallery": "Pick from gallery",
   "cameraOpenFailed": "Could not open camera: {code}\nAllow camera permission, or use gallery / paste.",
-  "@cameraOpenFailed": {"placeholders": {"code": {"type": "String"}}},
+  "@cameraOpenFailed": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "exportSecretTitle": "Export contains secrets",
   "exportSecretBody": "Exported files include private keys — equivalent to passwords. Do not share publicly.",
   "exportServersTitle": "Export servers",
@@ -259,8 +296,15 @@
   "shareAppConfirm": "Share download link?\n{url}",
   "@shareAppConfirm": {
     "placeholders": {
-      "url": {"type": "String"}
+      "url": {
+        "type": "String"
+      }
     }
   },
-  "shareAppMessage": "Download NetBridge VPN:"
+  "shareAppMessage": "Download NetBridge VPN:",
+  "diagnosticLogTitle": "Diagnostic Log",
+  "diagnosticLogSubtitle": "Connection attempts, stages and errors (incl. obfs2 tunnel)",
+  "diagnosticLogEmpty": "No entries yet. Try connecting once, then come back.",
+  "diagnosticLogClear": "Clear",
+  "diagnosticLogExport": "Export"
 }

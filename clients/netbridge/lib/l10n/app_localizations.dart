@@ -1387,6 +1387,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Download NetBridge VPN:'**
   String get shareAppMessage;
+
+  /// No description provided for @diagnosticLogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostic Log'**
+  String get diagnosticLogTitle;
+
+  /// No description provided for @diagnosticLogSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection attempts, stages and errors (incl. obfs2 tunnel)'**
+  String get diagnosticLogSubtitle;
+
+  /// No description provided for @diagnosticLogEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No entries yet. Try connecting once, then come back.'**
+  String get diagnosticLogEmpty;
+
+  /// No description provided for @diagnosticLogClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get diagnosticLogClear;
+
+  /// No description provided for @diagnosticLogExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get diagnosticLogExport;
 }
 
 class _AppLocalizationsDelegate
