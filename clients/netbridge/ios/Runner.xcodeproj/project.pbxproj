@@ -17,6 +17,20 @@
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		B53BC59D280C25ED15EFBC90 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9B95F77270D119C93B148B09 /* Pods_Runner.framework */; };
 		000000000000000000F10B01 /* PacketTunnelProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000F10B04 /* PacketTunnelProvider.swift */; };
+		00000000000000000000B101 /* Array+ConcurrentMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B201 /* Array+ConcurrentMap.swift */; };
+		00000000000000000000B102 /* DNSResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B202 /* DNSResolver.swift */; };
+		00000000000000000000B103 /* DNSServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B203 /* DNSServer.swift */; };
+		00000000000000000000B104 /* Endpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B204 /* Endpoint.swift */; };
+		00000000000000000000B105 /* InterfaceConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B205 /* InterfaceConfiguration.swift */; };
+		00000000000000000000B106 /* IPAddress+AddrInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B206 /* IPAddress+AddrInfo.swift */; };
+		00000000000000000000B107 /* IPAddressRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B207 /* IPAddressRange.swift */; };
+		00000000000000000000B108 /* PacketTunnelSettingsGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B208 /* PacketTunnelSettingsGenerator.swift */; };
+		00000000000000000000B109 /* PeerConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B209 /* PeerConfiguration.swift */; };
+		00000000000000000000B10A /* PrivateKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B20A /* PrivateKey.swift */; };
+		00000000000000000000B10B /* TunnelConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B20B /* TunnelConfiguration.swift */; };
+		00000000000000000000B10C /* WireGuardAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B20C /* WireGuardAdapter.swift */; };
+		00000000000000000000B10D /* key.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B20D /* key.c */; };
+		00000000000000000000B10E /* x25519.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B20E /* x25519.c */; };
 		000000000000000000F10B02 /* WGExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 000000000000000000F10B07 /* WGExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -87,6 +101,20 @@
 		F5E63155FEDF0912CEC3193E /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		NBVPNE001000000000000001 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		000000000000000000F10B04 /* PacketTunnelProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacketTunnelProvider.swift; sourceTree = "<group>"; };
+		00000000000000000000B201 /* Array+ConcurrentMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "vendor/WireGuardKit/Array+ConcurrentMap.swift"; sourceTree = "<group>"; };
+		00000000000000000000B202 /* DNSResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "vendor/WireGuardKit/DNSResolver.swift"; sourceTree = "<group>"; };
+		00000000000000000000B203 /* DNSServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "vendor/WireGuardKit/DNSServer.swift"; sourceTree = "<group>"; };
+		00000000000000000000B204 /* Endpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "vendor/WireGuardKit/Endpoint.swift"; sourceTree = "<group>"; };
+		00000000000000000000B205 /* InterfaceConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "vendor/WireGuardKit/InterfaceConfiguration.swift"; sourceTree = "<group>"; };
+		00000000000000000000B206 /* IPAddress+AddrInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "vendor/WireGuardKit/IPAddress+AddrInfo.swift"; sourceTree = "<group>"; };
+		00000000000000000000B207 /* IPAddressRange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "vendor/WireGuardKit/IPAddressRange.swift"; sourceTree = "<group>"; };
+		00000000000000000000B208 /* PacketTunnelSettingsGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "vendor/WireGuardKit/PacketTunnelSettingsGenerator.swift"; sourceTree = "<group>"; };
+		00000000000000000000B209 /* PeerConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "vendor/WireGuardKit/PeerConfiguration.swift"; sourceTree = "<group>"; };
+		00000000000000000000B20A /* PrivateKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "vendor/WireGuardKit/PrivateKey.swift"; sourceTree = "<group>"; };
+		00000000000000000000B20B /* TunnelConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "vendor/WireGuardKit/TunnelConfiguration.swift"; sourceTree = "<group>"; };
+		00000000000000000000B20C /* WireGuardAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "vendor/WireGuardKit/WireGuardAdapter.swift"; sourceTree = "<group>"; };
+		00000000000000000000B20D /* key.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = "vendor/WireGuardKitC/key.c"; sourceTree = "<group>"; };
+		00000000000000000000B20E /* x25519.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = "vendor/WireGuardKitC/x25519.c"; sourceTree = "<group>"; };
 		000000000000000000F10B05 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		000000000000000000F10B06 /* WGExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WGExtension.entitlements; sourceTree = "<group>"; };
 		000000000000000000F10B07 /* WGExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = WGExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -204,6 +232,20 @@
 			isa = PBXGroup;
 			children = (
 				000000000000000000F10B04 /* PacketTunnelProvider.swift */,
+				00000000000000000000B201 /* Array+ConcurrentMap.swift */,
+				00000000000000000000B202 /* DNSResolver.swift */,
+				00000000000000000000B203 /* DNSServer.swift */,
+				00000000000000000000B204 /* Endpoint.swift */,
+				00000000000000000000B205 /* InterfaceConfiguration.swift */,
+				00000000000000000000B206 /* IPAddress+AddrInfo.swift */,
+				00000000000000000000B207 /* IPAddressRange.swift */,
+				00000000000000000000B208 /* PacketTunnelSettingsGenerator.swift */,
+				00000000000000000000B209 /* PeerConfiguration.swift */,
+				00000000000000000000B20A /* PrivateKey.swift */,
+				00000000000000000000B20B /* TunnelConfiguration.swift */,
+				00000000000000000000B20C /* WireGuardAdapter.swift */,
+				00000000000000000000B20D /* key.c */,
+				00000000000000000000B20E /* x25519.c */,
 				000000000000000000F10B05 /* Info.plist */,
 				000000000000000000F10B06 /* WGExtension.entitlements */,
 			);
@@ -464,6 +506,20 @@
 			buildActionMask = 2147483647;
 			files = (
 				000000000000000000F10B01 /* PacketTunnelProvider.swift in Sources */,
+				00000000000000000000B101 /* Array+ConcurrentMap.swift in Sources */,
+				00000000000000000000B102 /* DNSResolver.swift in Sources */,
+				00000000000000000000B103 /* DNSServer.swift in Sources */,
+				00000000000000000000B104 /* Endpoint.swift in Sources */,
+				00000000000000000000B105 /* InterfaceConfiguration.swift in Sources */,
+				00000000000000000000B106 /* IPAddress+AddrInfo.swift in Sources */,
+				00000000000000000000B107 /* IPAddressRange.swift in Sources */,
+				00000000000000000000B108 /* PacketTunnelSettingsGenerator.swift in Sources */,
+				00000000000000000000B109 /* PeerConfiguration.swift in Sources */,
+				00000000000000000000B10A /* PrivateKey.swift in Sources */,
+				00000000000000000000B10B /* TunnelConfiguration.swift in Sources */,
+				00000000000000000000B10C /* WireGuardAdapter.swift in Sources */,
+				00000000000000000000B10D /* key.c in Sources */,
+				00000000000000000000B10E /* x25519.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -557,7 +613,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 846K6R4WU8;
+				DEVELOPMENT_TEAM = LH2LR8BBJ2;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
@@ -579,9 +635,9 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 17;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 0.1.17;
 				PRODUCT_BUNDLE_IDENTIFIER = com.netbridge.netbridge.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
@@ -597,9 +653,9 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 17;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 0.1.17;
 				PRODUCT_BUNDLE_IDENTIFIER = com.netbridge.netbridge.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
@@ -613,9 +669,9 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 17;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 0.1.17;
 				PRODUCT_BUNDLE_IDENTIFIER = com.netbridge.netbridge.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
@@ -742,7 +798,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 846K6R4WU8;
+				DEVELOPMENT_TEAM = LH2LR8BBJ2;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
@@ -767,7 +823,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 846K6R4WU8;
+				DEVELOPMENT_TEAM = LH2LR8BBJ2;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
@@ -788,8 +844,8 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = WGExtension/WGExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 846K6R4WU8;
+				CURRENT_PROJECT_VERSION = 17;
+				DEVELOPMENT_TEAM = LH2LR8BBJ2;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = WGExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = WGExtension;
@@ -799,7 +855,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 0.1.17;
 				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.netbridge.netbridge.WGExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -807,6 +863,10 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			SWIFT_OBJC_BRIDGING_HEADER = "WGExtension/vendor/WGExtension-Bridging-Header.h";
+			HEADER_SEARCH_PATHS = "$(SRCROOT)/WGExtension/vendor";
+			LIBRARY_SEARCH_PATHS = "$(SRCROOT)/WGExtension/vendor";
+			OTHER_LDFLAGS = "$(OTHER_LDFLAGS) -lwg-go";
 			};
 			name = Debug;
 		};
@@ -815,8 +875,8 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = WGExtension/WGExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 846K6R4WU8;
+				CURRENT_PROJECT_VERSION = 17;
+				DEVELOPMENT_TEAM = LH2LR8BBJ2;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = WGExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = WGExtension;
@@ -826,7 +886,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 0.1.17;
 				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.netbridge.netbridge.WGExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -834,6 +894,10 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			SWIFT_OBJC_BRIDGING_HEADER = "WGExtension/vendor/WGExtension-Bridging-Header.h";
+			HEADER_SEARCH_PATHS = "$(SRCROOT)/WGExtension/vendor";
+			LIBRARY_SEARCH_PATHS = "$(SRCROOT)/WGExtension/vendor";
+			OTHER_LDFLAGS = "$(OTHER_LDFLAGS) -lwg-go";
 			};
 			name = Release;
 		};
@@ -842,8 +906,8 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = WGExtension/WGExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 846K6R4WU8;
+				CURRENT_PROJECT_VERSION = 17;
+				DEVELOPMENT_TEAM = LH2LR8BBJ2;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = WGExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = WGExtension;
@@ -853,7 +917,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 0.1.17;
 				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.netbridge.netbridge.WGExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -861,6 +925,10 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			SWIFT_OBJC_BRIDGING_HEADER = "WGExtension/vendor/WGExtension-Bridging-Header.h";
+			HEADER_SEARCH_PATHS = "$(SRCROOT)/WGExtension/vendor";
+			LIBRARY_SEARCH_PATHS = "$(SRCROOT)/WGExtension/vendor";
+			OTHER_LDFLAGS = "$(OTHER_LDFLAGS) -lwg-go";
 			};
 			name = Profile;
 		};

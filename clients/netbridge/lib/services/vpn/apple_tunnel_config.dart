@@ -1,7 +1,8 @@
 /// Apple Packet Tunnel / App Group identifiers for 网桥 VPN.
 ///
-/// No Team ID or provisioning secrets live here. After Xcode embeds WGExtension
-/// and you sign with a real Team, set [extensionTargetLinked] to true.
+/// WireGuardKit is vendored into ios|macos/WGExtension/vendor (Swift + C + Go
+/// data plane, libwg-go.a). [extensionTargetLinked] stays true when WGExtension
+/// is built and signed with a paid Team (Network Extension capability).
 class AppleTunnelConfig {
   AppleTunnelConfig._();
 

@@ -44,6 +44,18 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Apple signing material (private keys / certificates / profiles)
+/apple/*.key
+/apple/*.cer
+/apple/*.p12
+/apple/*.p8
+/apple/*.mobileprovision
+/apple/*.provisionprofile
+
+# WireGuardKitGo build workspace (upstream repo + compiled libs)
+/apple/vendor/
+/apple/vendor-wireguard-apple/
+
 # Local packaged binaries (CI artifacts preferred)
 /dist/*.apk
 /dist/*.dmg

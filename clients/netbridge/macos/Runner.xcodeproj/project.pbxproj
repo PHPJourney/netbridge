@@ -30,7 +30,22 @@
 		33CC10F62044A3C60003C045 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 33CC10F42044A3C60003C045 /* MainMenu.xib */; };
 		33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC11122044BFA00003C045 /* MainFlutterWindow.swift */; };
 		000000000000000000F10A01 /* PacketTunnelProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000F10A04 /* PacketTunnelProvider.swift */; };
-		000000000000000000F10A02 /* WGExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 000000000000000000F10A07 /* WGExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		000000000000000000F10A17 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000F10A18 /* main.swift */; };
+		00000000000000000000B101 /* Array+ConcurrentMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B201 /* Array+ConcurrentMap.swift */; };
+		00000000000000000000B102 /* DNSResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B202 /* DNSResolver.swift */; };
+		00000000000000000000B103 /* DNSServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B203 /* DNSServer.swift */; };
+		00000000000000000000B104 /* Endpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B204 /* Endpoint.swift */; };
+		00000000000000000000B105 /* InterfaceConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B205 /* InterfaceConfiguration.swift */; };
+		00000000000000000000B106 /* IPAddress+AddrInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B206 /* IPAddress+AddrInfo.swift */; };
+		00000000000000000000B107 /* IPAddressRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B207 /* IPAddressRange.swift */; };
+		00000000000000000000B108 /* PacketTunnelSettingsGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B208 /* PacketTunnelSettingsGenerator.swift */; };
+		00000000000000000000B109 /* PeerConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B209 /* PeerConfiguration.swift */; };
+		00000000000000000000B10A /* PrivateKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B20A /* PrivateKey.swift */; };
+		00000000000000000000B10B /* TunnelConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B20B /* TunnelConfiguration.swift */; };
+		00000000000000000000B10C /* WireGuardAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B20C /* WireGuardAdapter.swift */; };
+		00000000000000000000B10D /* key.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B20D /* key.c */; };
+		00000000000000000000B10E /* x25519.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000B20E /* x25519.c */; };
+		000000000000000000F10A02 /* WGExtension.systemextension in Embed System Extensions */ = {isa = PBXBuildFile; fileRef = 000000000000000000F10A07 /* WGExtension.systemextension */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -68,15 +83,15 @@
 			name = "Bundle Framework";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		000000000000000000F10A09 /* Embed Foundation Extensions */ = {
+		000000000000000000F10A09 /* Embed System Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 13;
+			dstPath = "Contents/Library/SystemExtensions";
+			dstSubfolderSpec = 1;
 			files = (
-				000000000000000000F10A02 /* WGExtension.appex in Embed Foundation Extensions */,
+				000000000000000000F10A02 /* WGExtension.systemextension in Embed System Extensions */,
 			);
-			name = "Embed Foundation Extensions";
+			name = "Embed System Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -109,9 +124,24 @@
 		B037C1C398B1E053072544BA /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
 		F1D3B98051CAEC5CD94795FC /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		000000000000000000F10A04 /* PacketTunnelProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacketTunnelProvider.swift; sourceTree = "<group>"; };
+		000000000000000000F10A18 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		00000000000000000000B201 /* Array+ConcurrentMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "vendor/WireGuardKit/Array+ConcurrentMap.swift"; sourceTree = "<group>"; };
+		00000000000000000000B202 /* DNSResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "vendor/WireGuardKit/DNSResolver.swift"; sourceTree = "<group>"; };
+		00000000000000000000B203 /* DNSServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "vendor/WireGuardKit/DNSServer.swift"; sourceTree = "<group>"; };
+		00000000000000000000B204 /* Endpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "vendor/WireGuardKit/Endpoint.swift"; sourceTree = "<group>"; };
+		00000000000000000000B205 /* InterfaceConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "vendor/WireGuardKit/InterfaceConfiguration.swift"; sourceTree = "<group>"; };
+		00000000000000000000B206 /* IPAddress+AddrInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "vendor/WireGuardKit/IPAddress+AddrInfo.swift"; sourceTree = "<group>"; };
+		00000000000000000000B207 /* IPAddressRange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "vendor/WireGuardKit/IPAddressRange.swift"; sourceTree = "<group>"; };
+		00000000000000000000B208 /* PacketTunnelSettingsGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "vendor/WireGuardKit/PacketTunnelSettingsGenerator.swift"; sourceTree = "<group>"; };
+		00000000000000000000B209 /* PeerConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "vendor/WireGuardKit/PeerConfiguration.swift"; sourceTree = "<group>"; };
+		00000000000000000000B20A /* PrivateKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "vendor/WireGuardKit/PrivateKey.swift"; sourceTree = "<group>"; };
+		00000000000000000000B20B /* TunnelConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "vendor/WireGuardKit/TunnelConfiguration.swift"; sourceTree = "<group>"; };
+		00000000000000000000B20C /* WireGuardAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "vendor/WireGuardKit/WireGuardAdapter.swift"; sourceTree = "<group>"; };
+		00000000000000000000B20D /* key.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = "vendor/WireGuardKitC/key.c"; sourceTree = "<group>"; };
+		00000000000000000000B20E /* x25519.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = "vendor/WireGuardKitC/x25519.c"; sourceTree = "<group>"; };
 		000000000000000000F10A05 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		000000000000000000F10A06 /* WGExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WGExtension.entitlements; sourceTree = "<group>"; };
-		000000000000000000F10A07 /* WGExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = WGExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		000000000000000000F10A07 /* WGExtension.systemextension */ = {isa = PBXFileReference; explicitFileType = "wrapper.system-extension"; includeInIndex = 0; path = WGExtension.systemextension; sourceTree = BUILT_PRODUCTS_DIR; };
 		000000000000000000F10A16 /* WGExtension-Debug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "WGExtension-Debug.entitlements"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -178,7 +208,7 @@
 			isa = PBXGroup;
 			children = (
 				33CC10ED2044A3C60003C045 /* netbridge.app */,
-				000000000000000000F10A07 /* WGExtension.appex */,
+				000000000000000000F10A07 /* WGExtension.systemextension */,
 				331C80D5294CF71000263BE5 /* RunnerTests.xctest */,
 			);
 			name = Products;
@@ -246,6 +276,21 @@
 			isa = PBXGroup;
 			children = (
 				000000000000000000F10A04 /* PacketTunnelProvider.swift */,
+				000000000000000000F10A18 /* main.swift */,
+				00000000000000000000B201 /* Array+ConcurrentMap.swift */,
+				00000000000000000000B202 /* DNSResolver.swift */,
+				00000000000000000000B203 /* DNSServer.swift */,
+				00000000000000000000B204 /* Endpoint.swift */,
+				00000000000000000000B205 /* InterfaceConfiguration.swift */,
+				00000000000000000000B206 /* IPAddress+AddrInfo.swift */,
+				00000000000000000000B207 /* IPAddressRange.swift */,
+				00000000000000000000B208 /* PacketTunnelSettingsGenerator.swift */,
+				00000000000000000000B209 /* PeerConfiguration.swift */,
+				00000000000000000000B20A /* PrivateKey.swift */,
+				00000000000000000000B20B /* TunnelConfiguration.swift */,
+				00000000000000000000B20C /* WireGuardAdapter.swift */,
+				00000000000000000000B20D /* key.c */,
+				00000000000000000000B20E /* x25519.c */,
 				000000000000000000F10A05 /* Info.plist */,
 				000000000000000000F10A06 /* WGExtension.entitlements */,
 				000000000000000000F10A16 /* WGExtension-Debug.entitlements */,
@@ -283,7 +328,7 @@
 				33CC10E92044A3C60003C045 /* Sources */,
 				33CC10EA2044A3C60003C045 /* Frameworks */,
 				33CC10EB2044A3C60003C045 /* Resources */,
-				000000000000000000F10A09 /* Embed Foundation Extensions */,
+				000000000000000000F10A09 /* Embed System Extensions */,
 				33CC110E2044A8840003C045 /* Bundle Framework */,
 				3399D490228B24CF009A79C7 /* ShellScript */,
 				53E34CF402F092F5AE50836C /* [CP] Embed Pods Frameworks */,
@@ -313,8 +358,8 @@
 			);
 			name = WGExtension;
 			productName = WGExtension;
-			productReference = 000000000000000000F10A07 /* WGExtension.appex */;
-			productType = "com.apple.product-type.app-extension";
+			productReference = 000000000000000000F10A07 /* WGExtension.systemextension */;
+			productType = "com.apple.product-type.system-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -520,6 +565,21 @@
 			buildActionMask = 2147483647;
 			files = (
 				000000000000000000F10A01 /* PacketTunnelProvider.swift in Sources */,
+				000000000000000000F10A17 /* main.swift in Sources */,
+				00000000000000000000B101 /* Array+ConcurrentMap.swift in Sources */,
+				00000000000000000000B102 /* DNSResolver.swift in Sources */,
+				00000000000000000000B103 /* DNSServer.swift in Sources */,
+				00000000000000000000B104 /* Endpoint.swift in Sources */,
+				00000000000000000000B105 /* InterfaceConfiguration.swift in Sources */,
+				00000000000000000000B106 /* IPAddress+AddrInfo.swift in Sources */,
+				00000000000000000000B107 /* IPAddressRange.swift in Sources */,
+				00000000000000000000B108 /* PacketTunnelSettingsGenerator.swift in Sources */,
+				00000000000000000000B109 /* PeerConfiguration.swift in Sources */,
+				00000000000000000000B10A /* PrivateKey.swift in Sources */,
+				00000000000000000000B10B /* TunnelConfiguration.swift in Sources */,
+				00000000000000000000B10C /* WireGuardAdapter.swift in Sources */,
+				00000000000000000000B10D /* key.c in Sources */,
+				00000000000000000000B10E /* x25519.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -561,9 +621,9 @@
 			baseConfigurationReference = B037C1C398B1E053072544BA /* Pods-RunnerTests.debug.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 17;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 0.1.17;
 				PRODUCT_BUNDLE_IDENTIFIER = com.netbridge.netbridge.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
@@ -576,9 +636,9 @@
 			baseConfigurationReference = 9BD81BA2B7A07A06A632F042 /* Pods-RunnerTests.release.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 17;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 0.1.17;
 				PRODUCT_BUNDLE_IDENTIFIER = com.netbridge.netbridge.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
@@ -591,9 +651,9 @@
 			baseConfigurationReference = 1BFEF70999E002FC9998D1D8 /* Pods-RunnerTests.profile.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 17;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 0.1.17;
 				PRODUCT_BUNDLE_IDENTIFIER = com.netbridge.netbridge.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
@@ -660,7 +720,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = 846K6R4WU8;
+				DEVELOPMENT_TEAM = LH2LR8BBJ2;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -795,7 +855,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = 846K6R4WU8;
+				DEVELOPMENT_TEAM = LH2LR8BBJ2;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -815,17 +875,17 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Release.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = 846K6R4WU8;
+				DEVELOPMENT_TEAM = LH2LR8BBJ2;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				PROVISIONING_PROFILE_SPECIFIER = "";
+				PROVISIONING_PROFILE_SPECIFIER = "NetBridge macOS Host";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
@@ -852,8 +912,8 @@
 				CODE_SIGN_ENTITLEMENTS = WGExtension/WGExtension-Debug.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 846K6R4WU8;
+				CURRENT_PROJECT_VERSION = 17;
+				DEVELOPMENT_TEAM = LH2LR8BBJ2;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = WGExtension/Info.plist;
@@ -864,13 +924,17 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.0;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 0.1.17;
 				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.netbridge.netbridge.WGExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
+			SWIFT_OBJC_BRIDGING_HEADER = "WGExtension/vendor/WGExtension-Bridging-Header.h";
+			HEADER_SEARCH_PATHS = "$(SRCROOT)/WGExtension/vendor";
+			LIBRARY_SEARCH_PATHS = "$(SRCROOT)/WGExtension/vendor";
+			OTHER_LDFLAGS = "$(OTHER_LDFLAGS) -lwg-go";
 			};
 			name = Debug;
 		};
@@ -878,10 +942,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = WGExtension/WGExtension.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 846K6R4WU8;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_STYLE = Manual;
+				PROVISIONING_PROFILE_SPECIFIER = "NetBridge WGExenion macOS Host";
+				CURRENT_PROJECT_VERSION = 17;
+				DEVELOPMENT_TEAM = LH2LR8BBJ2;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = WGExtension/Info.plist;
@@ -892,13 +957,17 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.0;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 0.1.17;
 				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.netbridge.netbridge.WGExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
+			SWIFT_OBJC_BRIDGING_HEADER = "WGExtension/vendor/WGExtension-Bridging-Header.h";
+			HEADER_SEARCH_PATHS = "$(SRCROOT)/WGExtension/vendor";
+			LIBRARY_SEARCH_PATHS = "$(SRCROOT)/WGExtension/vendor";
+			OTHER_LDFLAGS = "$(OTHER_LDFLAGS) -lwg-go";
 			};
 			name = Release;
 		};
@@ -908,8 +977,8 @@
 				CODE_SIGN_ENTITLEMENTS = WGExtension/WGExtension-Debug.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 846K6R4WU8;
+				CURRENT_PROJECT_VERSION = 17;
+				DEVELOPMENT_TEAM = LH2LR8BBJ2;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = WGExtension/Info.plist;
@@ -920,13 +989,17 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.0;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 0.1.17;
 				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.netbridge.netbridge.WGExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
+			SWIFT_OBJC_BRIDGING_HEADER = "WGExtension/vendor/WGExtension-Bridging-Header.h";
+			HEADER_SEARCH_PATHS = "$(SRCROOT)/WGExtension/vendor";
+			LIBRARY_SEARCH_PATHS = "$(SRCROOT)/WGExtension/vendor";
+			OTHER_LDFLAGS = "$(OTHER_LDFLAGS) -lwg-go";
 			};
 			name = Profile;
 		};

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show MethodChannel;
 import 'package:wireguard_flutter/wireguard_flutter.dart';
 
 import '../../profile/nbvpn_profile.dart';
@@ -50,10 +51,10 @@ class WireGuardVpnTunnel implements VpnTunnel {
           'Kill Switch 需额外防火墙规则（见 IMPL.md）。';
     }
     if (Platform.isIOS || Platform.isMacOS) {
-      return 'iOS/macOS：WGExtension 已嵌入（$providerBundleIdentifier）。'
-          'Debug 可用 Personal Team 编过；真 Packet Tunnel 需付费账号 + NE/'
-          'App Group（Release entitlements）。WireGuardKit 尚未 SPM 接入'
-          '（passepartout 源 404），隧道数据面见 apple/*.example / IMPL.md。';
+      return 'iOS/macOS：WGExtension 已嵌入并接入 WireGuardKit 数据面'
+          '（$providerBundleIdentifier）。'
+          'iOS 为 app extension（App Store 分发）；macOS 为 system extension'
+          '（Developer ID 直发，首次连接需在系统设置批准网络扩展）。';
     }
     return '本平台暂无真实隧道集成。';
   }
@@ -106,6 +107,17 @@ class WireGuardVpnTunnel implements VpnTunnel {
     List<String> bypassCidrs = const [],
   }) async {
     await initialize();
+    // macOS: WGExtension is a system extension; ask the host app to activate
+    // it before the tunnel manager tries to start it (first run shows the
+    // System Settings approval dialog; the user then taps connect again).
+    if (Platform.isMacOS) {
+      try {
+        const channel = MethodChannel('netbridge/system_extension');
+        await channel.invokeMethod('activate');
+      } catch (_) {
+        // Non-fatal: activation request is best-effort (e.g. stub builds).
+      }
+    }
     final conf = ProfileCodec.toWireGuardConf(
       profile,
       excludePrivateNetworks: excludePrivateNetworks,

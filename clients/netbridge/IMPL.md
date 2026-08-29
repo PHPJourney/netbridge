@@ -45,12 +45,13 @@ flutter build macos --debug
 | 平台 | 真实隧道 | 备注 |
 |------|----------|------|
 | **Android** | 可用 | 系统 VPN 授权 |
-| **iOS** | Extension **已嵌入** | 同 macOS：付费 Team + NE + WireGuardKit 后才有数据面 |
-| **macOS** | Extension **已嵌入** | Debug 可编过；Release 需 NE 能力 |
+| **iOS** | **可用** | app extension + WireGuardKit 数据面（App Store 分发） |
+| **macOS** | **可用** | system extension + WireGuardKit 数据面（Developer ID 直发 + 公证） |
 | **Windows** | 部分 | 常需管理员 |
 
-Dart：`AppleTunnelConfig.extensionTargetLinked = true` → 走 `WireGuardVpnTunnel`（不再 Stub）。  
-连接时会调插件；**Debug/Personal Team 构建无 NE entitlement**，系统通常无法真正拉起 Packet Tunnel。
+Dart：`AppleTunnelConfig.extensionTargetLinked = true` → 走 `WireGuardVpnTunnel`。
+WireGuardKit（Swift/C/Go）已 vendor 进 `ios|macos/WGExtension/vendor/`，
+`libwg-go.a` 预编译（macOS universal + iOS arm64）；重编见 `apple/README.md`。
 
 ## 诚实边界（必读）
 
@@ -58,19 +59,27 @@ Dart：`AppleTunnelConfig.extensionTargetLinked = true` → 走 `WireGuardVpnTun
 
 | 门槛 | 现状 |
 |------|------|
-| Xcode Embed | **已完成**：`WGExtension.appex` 在 `Contents/PlugIns/` |
+| Xcode Embed | **已完成**：iOS `WGExtension.appex` 在 `PlugIns/`；macOS `WGExtension.systemextension` 在 `Contents/Library/SystemExtensions/` |
 | Bundle 族 / App Group 字符串 | Host `com.netbridge.netbridge`；Extension `…WGExtension`；Group `group.com.netbridge.netbridge` |
-| DEVELOPMENT_TEAM | 工程沿用 **`846K6R4WU8`**（本机 Xcode Personal Team）。换账号：Xcode → Signing 选 Team，**勿伪造无效 Team** |
-| Network Extension | **付费** Apple Developer 才稳定；Personal Team 描述文件**不含** NE → Debug 故意用 AdHoc / Debug entitlements |
-| WireGuardKit | **尚未链接**：`passepartoutvpn/wireguard-apple` 已 404；官方 `WireGuard/wireguard-apple` 需 tools-version≥5.5 + Go 编 `WireGuardKitGo`。当前 Provider 为嵌入脚手架，校验 `wgQuickConfig` 后返回 `wireGuardKitNotLinked` |
-| 公证 / 分发 | 给别人用的 macOS 包通常要 Developer ID + **公证**；仅本地 Debug 签名不够 |
+| DEVELOPMENT_TEAM | `LH2LR8BBJ2`（付费账号 Hangzhou Chi Xue science and Technology Co., Ltd.） |
+| Network Extension | 已配：iOS `packet-tunnel-provider`；macOS `packet-tunnel-provider-systemextension`（Developer ID 只签发 system extension 形态） |
+| WireGuardKit | **已接入**（2026-08-29）：源码 vendor（`WireGuardKit` 12 Swift + `WireGuardKitC` C）+ 预编译 `libwg-go.a`（wireguard-go 数据面，Go 1.23 CGO）。重编 Go 库：`apple/vendor-wireguard-apple/Sources/WireGuardKitGo` 的 Makefile（见 `apple/README.md`） |
+| 公证 / 分发 | macOS Developer ID 签名 + `notarytool` 公证 + staple 已跑通（重签要点见 `apple/README.md`） |
 
-### 本机 Personal Team 如何看错误
+### Release / 真连已打通
 
-1. Xcode 打开 `macos/Runner.xcworkspace` → Runner / WGExtension → Signing & Capabilities  
-2. 若把 Debug 改回 `DebugProfile.entitlements`（含 NE），常见报错：`Provisioning profile … doesn't include the Network Extensions capability`  
+1. 付费 Team；门户两个 App ID 已开 **Network Extensions** + **App Groups**  
+2. Release：Runner 用 `Release.entitlements`，Extension 用 `WGExtension.entitlements`  
+3. WireGuardKit 已 vendor（无需 SPM），Provider 为完整实现（`apple/PacketTunnelProvider.WireGuardKit.swift.example` 已落位）  
+4. 真机/本机测：应出现系统 VPN 权限框并能握手自建节点（macOS 首次连接需在系统设置批准网络扩展）  
+5. 外发：iOS `flutter build ipa --release --export-options-plist=ios/ExportOptions.plist`；macOS 构建后按 `apple/README.md` 重签 + 公证 + DMG
+
+### 本机调试（付费 Team 已配）
+
+1. Xcode 打开 `macos/Runner.xcworkspace`（或 `ios/Runner.xcworkspace`）  
+2. Debug 构建无 NE（AdHoc / Debug entitlements）；真连用 Release 配置  
 3. Console.app 过滤 `NESession` / `WGExtension` / `NetworkExtension`  
-4. 无付费账号时：继续用官方 WireGuard App + `nbvpn` 导出的 `.conf`
+4. macOS system extension 批准：系统设置 → 隐私与安全性 → 网络扩展
 
 ### Release / 真连仍须用户完成
 
@@ -92,13 +101,13 @@ Dart：`AppleTunnelConfig.extensionTargetLinked = true` → 走 `WireGuardVpnTun
 | Extension Bundle ID | `com.netbridge.netbridge.WGExtension` |
 | App Group | `group.com.netbridge.netbridge` |
 | `extensionTargetLinked` | **true** |
-| DEVELOPMENT_TEAM | `846K6R4WU8`（Personal；可改） |
+| DEVELOPMENT_TEAM | `LH2LR8BBJ2`（付费） |
 
 ## 已知限制（摘要）
 
-1. Debug macOS：**无 NE** 以便 Personal Team 编过；真连请用付费 Team + Release entitlements  
-2. WireGuardKit 未接入 → Extension 无法建立真实 UDP 隧道数据面  
-3. 分发 / 公证未做  
+1. Debug：无 NE（AdHoc / Debug entitlements）；真连请用 Release 配置  
+2. macOS 首次连接需用户在系统设置批准网络扩展（system extension 机制）  
+3. 分发 / 公证已跑通；版本升级需同步 pbxproj 中 WGExtension 的版本号  
 4. 其余产品限制见历史条目（扫码、`.conf` 导入、Kill Switch 等）  
 
 ## 品牌 / Android 瘦身
