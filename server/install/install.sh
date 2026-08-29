@@ -19,6 +19,11 @@
 #   NBVPN_SKIP_PREFLIGHT_REPOS  if 1, do not rewrite CentOS repos to vault
 #   NBVPN_SKIP_KERNEL_UPDATE     if 1, skip kernel package updates on RHEL family
 #   NBVPN_SPLIT_TUNNEL=1         new installs: client AllowedIPs = VPN subnet only (not 0.0.0.0/0)
+#   NBVPN_OBFS2=1                enable obfs2 transport layer (self-developed, WireGuard over
+#                                disguised HTTPS) after install; see install/_common.sh
+#   NBVPN_OBFS2_HOST=<d|IP>      obfs2 entry host (default: auto-detect public IP)
+#   NBVPN_OBFS2_PORTS=<p,p,…>    obfs2 entry ports (default: 443,8443,2053)
+#   NBVPN_OBFS2_CERT/KEY=<path>  optional CA-signed cert (default: self-signed for the host)
 #
 # Docs: LINUX-PREFLIGHT.md  |  FIREWALL.md §7
 set -eo pipefail

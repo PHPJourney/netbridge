@@ -634,6 +634,124 @@ configure_host_firewall() {
   fi
 }
 
+# ---------------------------------------------------------------------------
+# obfs2: self-developed transport layer (WireGuard over disguised HTTPS).
+# Opt-in via NBVPN_OBFS2=1; otherwise skipped (backward compatible).
+#
+#   NBVPN_OBFS2=1          enable obfs2 layer after nbvpn install
+#   NBVPN_OBFS2_HOST       server domain or public IP (default: auto-detect IP)
+#   NBVPN_OBFS2_PORTS      comma-separated entry ports (default: 443,8443,2053)
+#   NBVPN_OBFS2_CERT/KEY   optional CA-signed cert; default: self-signed for the IP
+#   NBVPN_OBFS2_SKIP_FIREWALL  if 1, skip firewall rules for entry ports
+# ---------------------------------------------------------------------------
+obfs2_detect_public_ip() {
+  local ip=""
+  for u in "https://api.ipify.org" "https://ifconfig.me" "https://ipinfo.io/ip"; do
+    ip="$(curl -fsSL --connect-timeout 8 --max-time 15 "$u" 2>/dev/null | tr -d '[:space:]')" || ip=""
+    [[ -n "${ip}" ]] && break
+  done
+  printf '%s' "${ip}"
+}
+
+install_obfs2_layer() {
+  if [[ "${NBVPN_OBFS2:-0}" != "1" ]]; then
+    return 0
+  fi
+  if [[ ! -x "${INSTALL_BIN_DIR}/nbvpn" ]]; then
+    warn "obfs2 skipped: nbvpn binary not installed"
+    return 0
+  fi
+  if ! "${INSTALL_BIN_DIR}/nbvpn" help 2>/dev/null | grep -q obfs2; then
+    warn "obfs2 skipped: installed nbvpn binary predates obfs2 (update the binary)"
+    return 0
+  fi
+  log "installing obfs2 transport layer (self-developed, WireGuard over HTTPS)"
+
+  # 1. Entry host: explicit env or detected public IP.
+  local host="${NBVPN_OBFS2_HOST:-}"
+  if [[ -z "${host}" ]]; then
+    host="$(obfs2_detect_public_ip)"
+  fi
+  if [[ -z "${host}" ]]; then
+    warn "obfs2 skipped: cannot determine public IP (set NBVPN_OBFS2_HOST)"
+    return 0
+  fi
+
+  # 2. Entry ports.
+  local ports="${NBVPN_OBFS2_PORTS:-443,8443,2053}"
+
+  # 3. Certificate: use provided pair, else self-sign for the host (IP SAN).
+  local cert="${NBVPN_OBFS2_CERT:-/etc/nbvpn/obfs2.crt}"
+  local key="${NBVPN_OBFS2_KEY:-/etc/nbvpn/obfs2.key}"
+  if [[ ! -s "${cert}" || ! -s "${key}" ]]; then
+    log "generating self-signed certificate for ${host} (replace with CA-signed via NBVPN_OBFS2_CERT/KEY)"
+    mkdir -p /etc/nbvpn
+    local san_extra=()
+    if [[ "${host}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+      san_extra=(-addext "subjectAltName=IP:${host}")
+    else
+      san_extra=(-addext "subjectAltName=DNS:${host}")
+    fi
+    openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 \
+      -keyout "${key}" -out "${cert}" \
+      -days 3650 -nodes -subj "/CN=${host}" "${san_extra[@]}" >/dev/null 2>&1 \
+      || { err "self-signed certificate generation failed"; return 1; }
+  fi
+
+  # 4. Invoke the CLI installer (writes obfs2.json with PSK + state).
+  "${INSTALL_BIN_DIR}/nbvpn" obfs2 install \
+    --domain "${host}" --cert "${cert}" --key "${key}" --ports "${ports}" \
+    || { err "nbvpn obfs2 install failed"; return 1; }
+
+  # 5. systemd unit (serve mode).
+  mkdir -p /etc/systemd/system
+  cat >/etc/systemd/system/nbvpn-obfs2.service <<'UNIT'
+[Unit]
+Description=NetBridge obfs2 transport server
+After=network-online.target wg-quick@nbvpn.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/nbvpn obfs2 serve
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+  systemctl daemon-reload
+  systemctl enable --now nbvpn-obfs2 >/dev/null 2>&1 \
+    || warn "systemctl enable --now nbvpn-obfs2 failed — run manually"
+  log "nbvpn-obfs2.service enabled (entries: ${host} on ${ports})"
+
+  # 6. Firewall: allow TCP entry ports.
+  if [[ "${NBVPN_OBFS2_SKIP_FIREWALL:-0}" != "1" ]]; then
+    local p
+    IFS=',' read -r -a port_arr <<<"${ports}"
+    for p in "${port_arr[@]}"; do
+      p="$(printf '%s' "${p}" | tr -d '[:space:]')"
+      [[ -n "${p}" ]] || continue
+      if command -v ufw >/dev/null 2>&1; then
+        ufw allow "${p}/tcp" comment 'nbvpn obfs2' >/dev/null 2>&1 || true
+      fi
+      if command -v firewall-cmd >/dev/null 2>&1 && firewall-cmd --state >/dev/null 2>&1; then
+        firewall-cmd --permanent --add-port="${p}/tcp" >/dev/null 2>&1 || true
+      fi
+    done
+    command -v firewall-cmd >/dev/null 2>&1 && firewall-cmd --reload >/dev/null 2>&1 || true
+    command -v ufw >/dev/null 2>&1 && ufw reload >/dev/null 2>&1 || true
+    log "firewall: allowed TCP entry ports ${ports}"
+    cat <<EOF
+
+  Cloud security group / ACL (manual):
+    • Inbound: TCP ${ports} (obfs2 entries; UDP 51820 can stay closed publicly)
+EOF
+  fi
+
+  log "obfs2 layer installed. Client: nbvpn obfs2 client (WireGuard Endpoint → 127.0.0.1:51822)"
+}
+
 print_cloud_security_group_hints() {
   local port
   port="$(nbvpn_listen_port)"
@@ -680,6 +798,7 @@ nbvpn_install_finish() {
   run_nbvpn_install
   ensure_ufw_forward
   configure_host_firewall
+  install_obfs2_layer
   if [[ -x "${INSTALL_BIN_DIR}/nbvpn" ]]; then
     log "nbvpn binary OK: ${INSTALL_BIN_DIR}/nbvpn"
   fi
