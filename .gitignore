@@ -30,6 +30,7 @@ id_rsa.*
 # Local Go binary (module root)
 /server/nbvpn/nbvpn
 /server/nbvpn/nbvpn.exe
+/server/nbvpn/nbvpn-gui
 
 # Large local build artifacts (prefer CI / Releases)
 /server/nbvpn/dist/

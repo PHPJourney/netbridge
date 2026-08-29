@@ -55,6 +55,10 @@ func Run(args []string) int {
 		err = cmdRestart()
 	case "peer":
 		err = cmdPeer(rest)
+	case "obfs":
+		err = cmdObfs(rest)
+	case "obfs2":
+		err = cmdObfs2(rest)
 	case "uninstall":
 		err = cmdUninstall(rest)
 	case "version", "--version":
@@ -91,6 +95,11 @@ func printHelpZh(w *os.File) {
   peer list                       列出 peer
   peer revoke <id|name>           吊销 peer（保留记录，立即失效凭证）
   peer delete <id|name> [--yes]   永久删除 peer（从列表移除）
+  obfs install [--domain <d>] [--port <443>]
+                                  部署 wstunnel 混淆层（第三方方案）
+  obfs2 install --domain <d> --cert <pem> --key <pem> [--port 443]
+                                  部署自研传输层（WireGuard over 伪装 HTTPS）
+  obfs2 serve | client            自研传输层服务端/桌面客户端模式
   config set endpoint <host[:port]>
                                   设置对外 endpoint（主地址，通常 IPv4）
   config set endpoint-v6 <[ipv6]|host[:port]>
