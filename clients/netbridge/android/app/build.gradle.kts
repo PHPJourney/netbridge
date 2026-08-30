@@ -84,4 +84,6 @@ flutter {
 dependencies {
     // flutter_local_notifications requires core library desugaring.
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    // obfs2 transport bridge (gomobile bind of server/nbvpn/mobile/obfs2bridge).
+    implementation(files("libs/obfs2bridge.aar"))
 }

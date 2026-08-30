@@ -135,14 +135,14 @@ class WireGuardVpnTunnel implements VpnTunnel {
     var serverAddress = profile.server.activeEndpoint;
     final obfs = profile.obfs;
     if (obfs != null && obfs.isObfs2) {
-      if (Platform.isAndroid || Platform.isIOS) {
+      if (Platform.isIOS) {
         throw StateError(
-            'obfs2 embedded transport is not available on mobile yet');
+            'obfs2 embedded transport is not available on iOS yet');
       }
       final ok = await Obfs2Bridge.instance.ensureRunning(profile);
       if (!ok) {
         throw StateError(
-            'obfs2 bridge unavailable — install nbvpn binary on PATH');
+            'obfs2 bridge unavailable — desktop needs the nbvpn binary on PATH');
       }
       serverAddress = '127.0.0.1:${obfs.localUdp}';
     }

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/services.dart' show MethodChannel;
 import 'package:path_provider/path_provider.dart';
 
 import '../../profile/nbvpn_profile.dart';
@@ -84,16 +85,57 @@ class Obfs2Bridge {
 
   /// Ensures the bridge process is running for [profile]'s obfs2 section.
   /// Returns false when obfs2 is not applicable or the bridge cannot start.
+  ///
+  /// Android: embedded Go transport via MethodChannel (gomobile AAR).
+  /// Desktop: spawns the `nbvpn obfs2 client` binary.
   Future<bool> ensureRunning(NbVpnProfile profile) async {
     final obfs = profile.obfs;
     if (obfs == null || !obfs.isObfs2) return false;
+    if (_running) return true;
+
+    if (Platform.isAndroid) {
+      return _ensureAndroid(obfs);
+    }
+    if (Platform.isIOS) {
+      VpnLog.error(
+          'obfs2 bridge: iOS embedded transport not built yet (pending xcframework)');
+      return false;
+    }
+    return _ensureDesktop(profile, obfs);
+  }
+
+  /// Android: invoke the embedded gomobile bridge via MethodChannel.
+  Future<bool> _ensureAndroid(ObfsSection obfs) async {
+    try {
+      const channel = MethodChannel('netbridge/obfs2');
+      final ok = await channel.invokeMethod<bool>('start', {
+        'serverAddrs': obfs.entries.join(','),
+        'psk': obfs.psk,
+        'localUdp': obfs.localUdp,
+        'insecure': obfs.insecure,
+        'channels': obfs.channels,
+      });
+      if (ok == true) {
+        _running = true;
+        VpnLog.connect(
+            'obfs2 bridge (embedded) started: ${obfs.entries.length} entries, channels=${obfs.channels}');
+        return true;
+      }
+      VpnLog.error('obfs2 bridge (embedded) start returned false');
+      return false;
+    } catch (e) {
+      VpnLog.error('obfs2 bridge (embedded) start failed: $e');
+      return false;
+    }
+  }
+
+  /// Desktop: spawn the nbvpn CLI bridge process.
+  Future<bool> _ensureDesktop(NbVpnProfile profile, ObfsSection obfs) async {
     if (!isSupportedPlatform()) {
       VpnLog.error(
           'obfs2 bridge: not supported on this platform (mobile uses embedded transport)');
       return false;
     }
-    if (_running) return true;
-
     final bin = await _findBinary();
     if (bin == null) {
       VpnLog.error('obfs2 bridge: nbvpn binary not found (install nbvpn to PATH)');
@@ -125,8 +167,17 @@ class Obfs2Bridge {
     }
   }
 
-  /// Stops the bridge process (app exit / explicit teardown).
+  /// Stops the bridge (app exit / explicit teardown).
   Future<void> stop() async {
+    if (Platform.isAndroid) {
+      try {
+        const channel = MethodChannel('netbridge/obfs2');
+        await channel.invokeMethod<void>('stop');
+      } catch (_) {}
+      _running = false;
+      VpnLog.info('obfs2 bridge (embedded) stopped');
+      return;
+    }
     final p = _proc;
     _proc = null;
     _running = false;
