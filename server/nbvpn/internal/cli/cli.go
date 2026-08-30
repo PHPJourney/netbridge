@@ -435,7 +435,7 @@ func buildProfile(st *state.ServerState, p *state.PeerRecord) *profile.NbVpnProf
 		srv.EndpointV6 = v6
 		srv.IPv6Enabled = st.IPv6Enabled
 	}
-	return &profile.NbVpnProfile{
+	prof := &profile.NbVpnProfile{
 		V:    1,
 		Name: p.Name,
 		Client: profile.ClientSection{
@@ -445,6 +445,39 @@ func buildProfile(st *state.ServerState, p *state.PeerRecord) *profile.NbVpnProf
 			MTU:        profile.DefaultMTU,
 		},
 		Server: srv,
+	}
+	prof.Obfs = loadObfsForProfile()
+	return prof
+}
+
+// loadObfsForProfile reads obfs2.json (state dir resolved via NBVPN_DATA_DIR)
+// and, when enabled, attaches the transport parameters to client profiles.
+func loadObfsForProfile() *profile.ObfsSection {
+	dir := state.ResolveDataDir()
+	b, err := os.ReadFile(filepath.Join(dir, "obfs2.json"))
+	if err != nil {
+		return nil
+	}
+	var ob obfs2State
+	if err := json.Unmarshal(b, &ob); err != nil || !ob.Enabled {
+		return nil
+	}
+	ports := ob.entryPorts()
+	entries := make([]string, 0, len(ports))
+	for _, p := range ports {
+		entries = append(entries, fmt.Sprintf("%s:%d", ob.Domain, p))
+	}
+	ch := ob.Channels
+	if ch <= 0 {
+		ch = 4
+	}
+	return &profile.ObfsSection{
+		Type:     "obfs2",
+		PSK:      ob.PSKHex,
+		Entries:  entries,
+		LocalUDP: ob.ClientPort,
+		Insecure: ob.Insecure,
+		Channels: ch,
 	}
 }
 
@@ -575,6 +608,10 @@ func showPeer(s *state.Store, st *state.ServerState, p *state.PeerRecord, mode s
 		fmt.Printf("peer id:   %s  (numeric id for CLI/files only — NOT the QR payload)\n", p.ID)
 		if st.Endpoint == "" {
 			fmt.Fprintln(os.Stderr, "warning: endpoint not set — clients cannot reach this node until you run: nbvpn config set endpoint <host[:port]>")
+		}
+		if prof.Obfs != nil && prof.Obfs.Type == "obfs2" {
+			fmt.Printf("obfs2:     enabled (%d entries, local UDP %d) — profile routes through the disguised transport\n",
+				len(prof.Obfs.Entries), prof.Obfs.LocalUDP)
 		}
 		fmt.Println()
 		fmt.Println("--- URI ---")

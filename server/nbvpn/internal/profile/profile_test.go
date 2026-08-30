@@ -2,6 +2,7 @@ package profile_test
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -174,4 +175,52 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func TestObfsSectionRoundTrip(t *testing.T) {
+	p := &profile.NbVpnProfile{
+		V:    1,
+		Name: "obfs-node",
+		Client: profile.ClientSection{
+			PrivateKey: "k",
+			Address:    []string{"10.8.0.2/32"},
+			DNS:        []string{"1.1.1.1"},
+		},
+		Server: profile.ServerSection{
+			PublicKey:  "pk",
+			Endpoint:   "1.2.3.4:51820",
+			AllowedIPs: []string{"0.0.0.0/0"},
+		},
+		Obfs: &profile.ObfsSection{
+			Type:     "obfs2",
+			PSK:      "abcdef0123456789",
+			Entries:  []string{"1.2.3.4:443", "1.2.3.4:8443"},
+			LocalUDP: 51822,
+			Insecure: true,
+			Channels: 4,
+		},
+	}
+	b, err := json.Marshal(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var q profile.NbVpnProfile
+	if err := json.Unmarshal(b, &q); err != nil {
+		t.Fatal(err)
+	}
+	if q.Obfs == nil {
+		t.Fatal("obfs section lost in roundtrip")
+	}
+	if q.Obfs.PSK != p.Obfs.PSK || len(q.Obfs.Entries) != 2 || q.Obfs.LocalUDP != 51822 || !q.Obfs.Insecure {
+		t.Fatalf("obfs mismatch: %+v", q.Obfs)
+	}
+
+	// Profile without obfs must stay valid (backward compatible).
+	var plain profile.NbVpnProfile
+	if err := json.Unmarshal([]byte(`{"v":1,"name":"x","client":{"privateKey":"k"},"server":{"publicKey":"pk","endpoint":"1.2.3.4:51820","allowedIPs":["0.0.0.0/0"]}}`), &plain); err != nil {
+		t.Fatal(err)
+	}
+	if plain.Obfs != nil {
+		t.Fatal("obfs should be nil for legacy profiles")
+	}
 }

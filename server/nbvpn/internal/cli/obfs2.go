@@ -28,6 +28,8 @@ type obfs2State struct {
 	KeyFile    string `json:"keyFile"`
 	WGPort     int    `json:"wgPort"`
 	ClientPort int    `json:"clientPort"`
+	Channels   int    `json:"channels,omitempty"`
+	Insecure   bool   `json:"insecure,omitempty"`
 	Installed  string `json:"installedAt,omitempty"`
 }
 
@@ -97,8 +99,11 @@ func obfs2Install(dir string, args []string) error {
 	var ports []int
 	certFile := ""
 	keyFile := ""
+	insecure := false
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
+		case "--insecure":
+			insecure = true
 		case "--domain":
 			if i+1 >= len(args) {
 				return fmt.Errorf("--domain requires a value")
@@ -166,6 +171,8 @@ func obfs2Install(dir string, args []string) error {
 		KeyFile:    keyFile,
 		WGPort:     51820,
 		ClientPort: obfstransport.DefaultClientPort,
+		Channels:   4,
+		Insecure:   insecure,
 		Installed:  time.Now().UTC().Format(time.RFC3339),
 	}
 	if err := obfs2Save(dir, st); err != nil {

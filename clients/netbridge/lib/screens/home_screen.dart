@@ -554,6 +554,16 @@ class _DesktopDetailPane extends StatelessWidget {
                   fontSize: 15,
                 ),
               ),
+              if (entry.profile.obfs?.isObfs2 ?? false) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'obfs2 · ${entry.profile.obfs!.entries.length} 入口 · 多通道 ${entry.profile.obfs!.channels}',
+                  style: const TextStyle(
+                    color: NbColors.accent,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
               if ((entry.profile.server.endpointV6?.trim() ?? '').isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Text(

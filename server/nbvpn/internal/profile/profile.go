@@ -24,6 +24,19 @@ type NbVpnProfile struct {
 	Name   string         `json:"name"`
 	Client ClientSection  `json:"client"`
 	Server ServerSection  `json:"server"`
+	// Obfs is the optional obfuscation-layer section (obfs2 transport).
+	Obfs   *ObfsSection   `json:"obfs,omitempty"`
+}
+
+// ObfsSection carries the obfs2 transport parameters for one profile.
+// PSK is hex-encoded; Entries form the multi-entry pool.
+type ObfsSection struct {
+	Type     string   `json:"type"`
+	PSK      string   `json:"psk"`
+	Entries  []string `json:"entries"`
+	LocalUDP int      `json:"localUDP,omitempty"`
+	Insecure bool     `json:"insecure,omitempty"`
+	Channels int      `json:"channels,omitempty"`
 }
 
 type ClientSection struct {

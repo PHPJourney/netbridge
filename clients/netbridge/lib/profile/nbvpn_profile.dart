@@ -5,12 +5,16 @@ class NbVpnProfile {
     required this.name,
     required this.client,
     required this.server,
+    this.obfs,
   });
 
   final int v;
   final String name;
   final ClientSection client;
   final ServerSection server;
+
+  /// Optional obfs2 transport section (absent for plain WG profiles).
+  final ObfsSection? obfs;
 
   static const supportedVersion = 1;
 
@@ -19,6 +23,7 @@ class NbVpnProfile {
         'name': name,
         'client': client.toJson(),
         'server': server.toJson(),
+        if (obfs != null) 'obfs': obfs!.toJson(),
       };
 
   factory NbVpnProfile.fromJson(Map<String, dynamic> json) {
@@ -31,6 +36,9 @@ class NbVpnProfile {
       server: ServerSection.fromJson(
         (json['server'] as Map?)?.cast<String, dynamic>() ?? const {},
       ),
+      obfs: json['obfs'] is Map
+          ? ObfsSection.fromJson((json['obfs'] as Map).cast<String, dynamic>())
+          : null,
     );
   }
 
@@ -158,4 +166,58 @@ class ServerSection {
 List<String> _stringList(dynamic v) {
   if (v is! List) return const [];
   return v.map((e) => e.toString()).toList();
+}
+
+/// obfs2 transport section: WireGuard rides a disguised HTTPS tunnel pool.
+class ObfsSection {
+  const ObfsSection({
+    required this.type,
+    required this.psk,
+    required this.entries,
+    this.localUdp = 51822,
+    this.insecure = false,
+    this.channels = 4,
+  });
+
+  /// Transport type, currently `obfs2`.
+  final String type;
+
+  /// Hex-encoded pre-shared key (authenticates to the obfs2 server).
+  final String psk;
+
+  /// Entry pool: "domain:port" / "ip:port", picked at random per tunnel.
+  final List<String> entries;
+
+  /// Local UDP port the obfs2 bridge listens on (WG Endpoint = 127.0.0.1:this).
+  final int localUdp;
+
+  /// True when the server uses a self-signed cert (client skips verify).
+  final bool insecure;
+
+  /// Parallel tunnel count.
+  final int channels;
+
+  bool get isObfs2 => type == 'obfs2' && psk.trim().isNotEmpty && entries.isNotEmpty;
+
+  Map<String, dynamic> toJson() => {
+        'type': type,
+        'psk': psk,
+        'entries': entries,
+        if (localUdp > 0) 'localUDP': localUdp,
+        if (insecure) 'insecure': true,
+        if (channels > 0) 'channels': channels,
+      };
+
+  factory ObfsSection.fromJson(Map<String, dynamic> json) {
+    return ObfsSection(
+      type: json['type']?.toString() ?? '',
+      psk: json['psk']?.toString() ?? '',
+      entries: _stringList(json['entries']),
+      localUdp: json['localUDP'] is num
+          ? (json['localUDP'] as num).toInt()
+          : 51822,
+      insecure: json['insecure'] == true,
+      channels: json['channels'] is num ? (json['channels'] as num).toInt() : 4,
+    );
+  }
 }
