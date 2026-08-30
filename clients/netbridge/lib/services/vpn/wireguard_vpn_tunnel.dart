@@ -8,6 +8,7 @@ import 'package:wireguard_flutter/wireguard_flutter.dart';
 import '../../profile/nbvpn_profile.dart';
 import '../../profile/profile_codec.dart';
 import 'apple_tunnel_config.dart';
+import 'obfs2_bridge.dart';
 import 'stub_vpn_tunnel.dart';
 import 'vpn_tunnel.dart';
 
@@ -129,9 +130,26 @@ class WireGuardVpnTunnel implements VpnTunnel {
     // DNS-in-conf reduce leaks while connected; true "block without VPN" is
     // Android Always-on VPN (system setting). Parameter retained for prefs.
     final _ = killSwitch;
+
+    // obfs2 transport: ensure the local bridge runs, then aim WG at it.
+    var serverAddress = profile.server.activeEndpoint;
+    final obfs = profile.obfs;
+    if (obfs != null && obfs.isObfs2) {
+      if (Platform.isAndroid || Platform.isIOS) {
+        throw StateError(
+            'obfs2 embedded transport is not available on mobile yet');
+      }
+      final ok = await Obfs2Bridge.instance.ensureRunning(profile);
+      if (!ok) {
+        throw StateError(
+            'obfs2 bridge unavailable — install nbvpn binary on PATH');
+      }
+      serverAddress = '127.0.0.1:${obfs.localUdp}';
+    }
+
     _controller.add(VpnTunnelStage.connecting);
     await WireGuardFlutter.instance.startVpn(
-      serverAddress: profile.server.activeEndpoint,
+      serverAddress: serverAddress,
       wgQuickConfig: conf,
       providerBundleIdentifier: providerBundleIdentifier,
     );

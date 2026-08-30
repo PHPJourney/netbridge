@@ -590,9 +590,15 @@ class AppController extends ChangeNotifier {
             forceFullTunnel: leakProtection,
             bypassCidrs: whitelistCidrs,
           );
+          // obfs2: the WG peer is the local bridge, so UDP reachability
+          // probes must target 127.0.0.1:<localUdp>, not the public endpoint.
+          final verifyEndpoint =
+              (entry.profile.obfs?.isObfs2 ?? false)
+                  ? '127.0.0.1:${entry.profile.obfs!.localUdp}'
+                  : entry.profile.server.activeEndpoint;
           final verifyResult = await _connectivityVerifier.verify(
             allowedIPs: allowedIPs,
-            endpoint: entry.profile.server.activeEndpoint,
+            endpoint: verifyEndpoint,
             isCancelled: () => epoch != _tunnelEpoch,
           );
 
