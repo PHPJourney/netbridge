@@ -22,7 +22,14 @@ class VpnNotifier {
     if (_initialized) return;
     try {
       const android = AndroidInitializationSettings('@mipmap/ic_launcher');
-      const darwin = DarwinInitializationSettings();
+      // macOS/iOS: ask the system for notification permission on first use
+      // (the OS prompt appears automatically on the first notification or
+      // when the permission is requested).
+      const darwin = DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      );
       const settings =
           InitializationSettings(android: android, iOS: darwin, macOS: darwin);
       await _plugin.initialize(settings);

@@ -28,6 +28,7 @@ class SettingsStore {
   static const killSwitchPromptedKey = 'nbvpn.killSwitch.prompted';
   static const localeModeKey = 'nbvpn.localeMode';
   static const excludePrivateNetworksKey = 'nbvpn.splitTunnel.excludePrivate';
+  static const domesticDirectKey = 'nbvpn.splitTunnel.domesticDirect';
   static const leakProtectionKey = 'nbvpn.leakProtection';
   static const whitelistEntriesKey = 'nbvpn.whitelist.entries';
 
@@ -72,6 +73,18 @@ class SettingsStore {
   Future<void> setExcludePrivateNetworks(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(excludePrivateNetworksKey, value);
+  }
+
+  /// Domestic-direct split tunnel: bypass China CIDRs so mainland sites go
+  /// direct (kept out of the encrypted tunnel). Default off (full tunnel).
+  Future<bool> getDomesticDirect() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(domesticDirectKey) ?? false;
+  }
+
+  Future<void> setDomesticDirect(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(domesticDirectKey, value);
   }
 
   /// IP leak protection: force full tunnel + kill-switch intent on connect.

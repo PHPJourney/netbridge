@@ -271,11 +271,14 @@ class ProfileCodec {
   ///
   /// [forceFullTunnel] (leak protection) wins over exclude-private.
   /// [bypassCidrs] are IPv4 ranges removed from AllowedIPs (direct / whitelist).
+  /// [endpointOverride] replaces the Endpoint line (used by obfs2: the WG
+  /// endpoint becomes the local bridge, not the public server address).
   static String toWireGuardConf(
     NbVpnProfile p, {
     bool excludePrivateNetworks = false,
     bool forceFullTunnel = false,
     Iterable<String> bypassCidrs = const [],
+    String? endpointOverride,
   }) {
     validate(p);
     final allowedIPs = SplitTunnel.resolveAllowedIPs(
@@ -288,6 +291,7 @@ class ProfileCodec {
             p.server.persistentKeepalive == 0)
         ? defaultKeepalive
         : p.server.persistentKeepalive!;
+    final endpoint = endpointOverride ?? p.server.activeEndpoint;
     final buf = StringBuffer()
       ..writeln('[Interface]')
       ..writeln('PrivateKey = ${p.client.privateKey}')
@@ -300,12 +304,25 @@ class ProfileCodec {
       ..writeln()
       ..writeln('[Peer]')
       ..writeln('PublicKey = ${p.server.publicKey}')
-      ..writeln('Endpoint = ${p.server.activeEndpoint}')
+      ..writeln('Endpoint = $endpoint')
       ..writeln('AllowedIPs = ${allowedIPs.join(', ')}')
       ..writeln('PersistentKeepalive = $ka');
     final psk = p.server.presharedKey;
     if (psk != null && psk.isNotEmpty) {
       buf.writeln('PresharedKey = $psk');
+    }
+    // obfs2: expose the transport server host(s) to the provider so it can
+    // exclude them from the tunnel routes (avoids the bridge loop). The WG
+    // parser treats `#` as a comment; PacketTunnelProvider reads this marker.
+    final obfs = p.obfs;
+    if (obfs != null && obfs.isObfs2) {
+      final hosts = obfs.entries
+          .map((e) => e.split(':').first.trim())
+          .where((h) => h.isNotEmpty && h != '127.0.0.1' && h != 'localhost')
+          .join(',');
+      if (hosts.isNotEmpty) {
+        buf.writeln('# obfs-servers=$hosts');
+      }
     }
     return buf.toString();
   }

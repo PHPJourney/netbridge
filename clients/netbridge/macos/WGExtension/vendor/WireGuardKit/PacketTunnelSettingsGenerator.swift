@@ -16,6 +16,12 @@ class PacketTunnelSettingsGenerator {
     let tunnelConfiguration: TunnelConfiguration
     let resolvedEndpoints: [Endpoint?]
 
+    /// Host routes (as CIDR strings, e.g. "216.73.158.160/32") that must bypass
+    /// the tunnel — the obfs2 server IP. Mirrors the manual
+    /// `sudo route add -host <server> <gateway>` and keeps the bridge from
+    /// looping through the tunnel.
+    var excludedRoutes: [String] = []
+
     init(tunnelConfiguration: TunnelConfiguration, resolvedEndpoints: [Endpoint?]) {
         self.tunnelConfiguration = tunnelConfiguration
         self.resolvedEndpoints = resolvedEndpoints
@@ -118,6 +124,11 @@ class PacketTunnelSettingsGenerator {
 
         let ipv4Settings = NEIPv4Settings(addresses: ipv4Addresses.map { $0.destinationAddress }, subnetMasks: ipv4Addresses.map { $0.destinationSubnetMask })
         ipv4Settings.includedRoutes = ipv4IncludedRoutes
+        if !excludedRoutes.isEmpty {
+            ipv4Settings.excludedRoutes = excludedRoutes.map {
+                NEIPv4Route(destinationAddress: $0, subnetMask: "255.255.255.255")
+            }
+        }
         networkSettings.ipv4Settings = ipv4Settings
 
         let ipv6Settings = NEIPv6Settings(addresses: ipv6Addresses.map { $0.destinationAddress }, networkPrefixLengths: ipv6Addresses.map { $0.destinationNetworkPrefixLength })

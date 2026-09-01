@@ -204,7 +204,7 @@ func (c *Client) dialAndAuth(entry string, pool *channelPool) (*mux, error) {
 		MinVersion:         tls.VersionTLS12,
 		InsecureSkipVerify: c.opts.InsecureSkipVerify,
 	}
-	conn, err := tls.Dial("tcp", entry, tlsCfg)
+	conn, err := tls.DialWithDialer(bindToPhysicalInterface(), "tcp", entry, tlsCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -509,3 +509,4 @@ func hostOf(addr string) string {
 	}
 	return addr
 }
+

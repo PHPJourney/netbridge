@@ -103,6 +103,13 @@ class AppLocalizationsZh extends AppLocalizations {
       '可选。开启后 10.x、192.168.x、链路本地等私网直连，公网仍走 VPN。默认关闭（全隧道）。修改后需断开再连生效。';
 
   @override
+  String get domesticDirectTitle => '国内直连（排除中国 IP）';
+
+  @override
+  String get domesticDirectSubtitle =>
+      '开启后，大陆目的地（内置中国 IP 段列表）直连，其余走加密隧道。适合国内用户，隧道不稳定时国内站点依然快。修改后需断开再连生效。';
+
+  @override
   String get language => '语言';
 
   @override

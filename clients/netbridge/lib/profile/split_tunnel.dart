@@ -1,3 +1,5 @@
+import 'package:flutter/services.dart' show rootBundle;
+
 import 'cidr_util.dart';
 
 /// WireGuard "exclude private networks" AllowedIPs decomposition.
@@ -56,6 +58,22 @@ class SplitTunnel {
 
   static const _ipv4Default = '0.0.0.0/0';
   static const _ipv6Default = '::/0';
+
+  static List<String>? _chinaCache;
+
+  /// Loads the bundled China (mainland) IPv4 CIDR list for the
+  /// "domestic direct" split-tunnel mode. Cached after first load.
+  static Future<List<String>> loadChinaCidrs() async {
+    if (_chinaCache != null) return _chinaCache!;
+    final raw = await rootBundle.loadString('assets/geo/china_ip_list.txt');
+    final list = raw
+        .split('\n')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty && looksLikeIpv4Cidr(e))
+        .toList();
+    _chinaCache = list;
+    return list;
+  }
 
   /// Whether [allowedIPs] looks like a full-tunnel default (`0.0.0.0/0` and/or `::/0`).
   static bool isFullTunnelDefault(Iterable<String> allowedIPs) {

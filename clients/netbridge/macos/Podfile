@@ -30,6 +30,9 @@ target 'Runner' do
   use_frameworks!
 
   flutter_install_all_macos_pods File.dirname(File.realpath(__FILE__))
+  # In-process obfs2 transport bridge (gomobile xcframework, built from
+  # server/nbvpn/mobile/obfs2bridge).
+  pod 'obfs2bridge', :path => 'obfs2bridge/'
   target 'RunnerTests' do
     inherit! :search_paths
   end

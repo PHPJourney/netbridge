@@ -1,7 +1,9 @@
 package cli
 
 import (
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -471,14 +473,38 @@ func loadObfsForProfile() *profile.ObfsSection {
 	if ch <= 0 {
 		ch = 4
 	}
+	// Self-signed certs (issuer == subject) cannot be verified against the
+	// system trust store — clients must skip verification.
+	insecure := ob.Insecure || certIsSelfSigned(ob.CertFile)
 	return &profile.ObfsSection{
 		Type:     "obfs2",
 		PSK:      ob.PSKHex,
 		Entries:  entries,
 		LocalUDP: ob.ClientPort,
-		Insecure: ob.Insecure,
+		Insecure: insecure,
 		Channels: ch,
 	}
+}
+
+// certIsSelfSigned reports whether the PEM cert at path (if readable) is
+// its own issuer — the common case for self-hosted obfs2 deployments.
+func certIsSelfSigned(path string) bool {
+	if path == "" {
+		return false
+	}
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return false
+	}
+	block, _ := pem.Decode(b)
+	if block == nil {
+		return false
+	}
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return false
+	}
+	return cert.RawIssuer != nil && string(cert.RawIssuer) == string(cert.RawSubject)
 }
 
 type showMode int

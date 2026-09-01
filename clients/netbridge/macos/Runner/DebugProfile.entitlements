@@ -8,6 +8,10 @@
 	</array>
 	<key>com.apple.security.app-sandbox</key>
 	<true/>
+	<!-- file_picker (import config / bluetooth pick) requires user-selected
+	     file access — see FilePickerPlugin.swift. -->
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
 	<key>com.apple.security.application-groups</key>
 	<array>
 		<string>group.com.netbridge.netbridge</string>

@@ -1,2 +1,2 @@
 NetBridge-iOS.ipa:      da60c37df9bd506ed8c1e91d973a44d3ccc2cdb3e5b78b2bf30dab82ef59cf57
-NetBridge-macOS.dmg:    d66a0ccc9e8dcb58f6a7fbcc701a615939251ad900faca270d03f1a9c91123c4
+NetBridge-macOS.dmg:    72ac7ec82258c0c4a7edee4f334d6d03b28c1b558a41141232811808c734a40f

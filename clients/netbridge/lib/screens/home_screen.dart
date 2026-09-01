@@ -44,7 +44,11 @@ class _HomeScreenState extends State<HomeScreen> {
     if (imported == null || imported.isEmpty || !context.mounted) return;
 
     if (imported.length == 1) {
-      await _addSingleImported(context, imported.first);
+      final added = await _addSingleImported(context, imported.first);
+      // Newly imported entries become the default connect target.
+      if (added != null) {
+        setState(() => _selectedId = added.id);
+      }
       return;
     }
 
@@ -83,23 +87,31 @@ class _HomeScreenState extends State<HomeScreen> {
 
     var added = 0;
     var skipped = 0;
+    ServerEntry? lastAdded;
     for (final item in imported) {
       final profile = NbVpnProfile(
         v: item.profile.v,
         name: item.localName.isNotEmpty ? item.localName : item.profile.name,
         client: item.profile.client,
         server: item.profile.server,
+        // Preserve the obfs2 transport section — importing must not strip it.
+        obfs: item.profile.obfs,
       );
       final existing = controller.findDuplicate(profile);
       if (existing != null) {
         skipped++;
         continue;
       }
-      await controller.addServer(
+      lastAdded = await controller.addServer(
         profile: profile,
         localName: item.localName.isNotEmpty ? item.localName : profile.name,
       );
       added++;
+    }
+    // Newly imported entries become the default connect target.
+    final selectedId = lastAdded?.id;
+    if (selectedId != null) {
+      setState(() => _selectedId = selectedId);
     }
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -108,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _addSingleImported(
+  Future<ServerEntry?> _addSingleImported(
     BuildContext context,
     ImportedServer item,
   ) async {
@@ -118,6 +130,8 @@ class _HomeScreenState extends State<HomeScreen> {
       name: item.localName.isNotEmpty ? item.localName : item.profile.name,
       client: item.profile.client,
       server: item.profile.server,
+      // Preserve the obfs2 transport section — importing must not strip it.
+      obfs: item.profile.obfs,
     );
 
     final existing = controller.findDuplicate(profile);
@@ -125,7 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.alreadyAdded(existing.localName))),
       );
-      return;
+      return null;
     }
 
     final confirmed = await Navigator.of(context).push<({NbVpnProfile profile, String localName})>(
@@ -133,17 +147,17 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (_) => ConfirmAddScreen(profile: profile),
       ),
     );
-    if (confirmed == null || !context.mounted) return;
+    if (confirmed == null || !context.mounted) return null;
 
     final again = controller.findDuplicate(confirmed.profile);
     if (again != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.alreadyAdded(again.localName))),
       );
-      return;
+      return null;
     }
 
-    await controller.addServer(
+    final added = await controller.addServer(
       profile: confirmed.profile,
       localName: confirmed.localName,
     );
@@ -152,6 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
         SnackBar(content: Text(l10n.added)),
       );
     }
+    return added;
   }
 
   Future<void> _rename(BuildContext context, ServerEntry entry) async {
@@ -245,11 +260,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
   ServerEntry? _resolveSelected(AppController c) {
     if (c.servers.isEmpty) return null;
-    final id = _selectedId ?? c.activeServerId ?? c.servers.first.id;
-    for (final s in c.servers) {
-      if (s.id == id) return s;
+    final id = _selectedId ?? c.activeServerId;
+    if (id != null) {
+      for (final s in c.servers) {
+        if (s.id == id) return s;
+      }
     }
-    return c.servers.first;
+    // No explicit selection: prefer the most recently updated entry so a
+    // freshly imported profile becomes the default connect target (the old
+    // behavior silently targeted the first entry in the list).
+    var newest = c.servers.first;
+    for (final s in c.servers) {
+      if (s.updatedAt.isAfter(newest.updatedAt)) newest = s;
+    }
+    return newest;
   }
 
   @override

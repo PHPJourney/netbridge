@@ -57,6 +57,14 @@ class SettingsScreen extends StatelessWidget {
                 ? null
                 : (v) => c.setExcludePrivateNetworks(v),
           ),
+          SwitchListTile(
+            title: Text(l10n.domesticDirectTitle),
+            subtitle: Text(l10n.domesticDirectSubtitle),
+            value: c.domesticDirect,
+            onChanged: c.leakProtection
+                ? null
+                : (v) => c.setDomesticDirect(v),
+          ),
           ListTile(
             title: Text(l10n.whitelistTitle),
             subtitle: Text(

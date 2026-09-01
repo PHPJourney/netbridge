@@ -35,6 +35,8 @@
   "fullTunnelCarHint": "If car hotspot, Bluetooth, or LAN devices break while connected, turn on automatic split tunnel below; public internet still uses the VPN. Reconnect after changing.",
   "splitTunnelTitle": "Automatic split tunnel",
   "splitTunnelSubtitle": "Optional. When on, private networks (10.x, 192.168.x, link-local, etc.) bypass the VPN; public internet still uses the tunnel. Default off (full tunnel). Reconnect to apply.",
+  "domesticDirectTitle": "Domestic-direct (bypass China)",
+  "domesticDirectSubtitle": "When on, mainland China destinations (from a bundled China IP list) go direct; everything else uses the tunnel. Good for China users so domestic sites stay fast even if the tunnel degrades. Reconnect to apply.",
   "language": "Language",
   "languageSystem": "System",
   "languageChinese": "中文",

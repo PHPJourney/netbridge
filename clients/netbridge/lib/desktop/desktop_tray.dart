@@ -7,6 +7,7 @@ import 'package:window_manager/window_manager.dart';
 
 import '../models/server_entry.dart';
 import '../state/app_controller.dart';
+import '../services/vpn/tunnel_traffic_monitor.dart';
 
 /// Windows (and other desktop) close-to-tray + context menu.
 ///
@@ -18,6 +19,7 @@ class DesktopTrayController with WindowListener, TrayListener {
   final AppController controller;
   bool _ready = false;
   bool _exiting = false;
+  final TunnelTrafficMonitor _traffic = TunnelTrafficMonitor();
 
   bool get isSupported =>
       !kIsWeb &&
@@ -43,7 +45,22 @@ class DesktopTrayController with WindowListener, TrayListener {
     await _initTrayIcon();
     await rebuildMenu();
     controller.addListener(_onControllerChanged);
+    _traffic.status.addListener(_onTrafficChanged);
     _ready = true;
+  }
+
+  /// Live traffic speed/totals → tray tooltip (hover).
+  void _onTrafficChanged() {
+    final s = _traffic.status.value;
+    if (s.isNotEmpty) {
+      trayManager.setToolTip('网桥 VPN $s');
+    }
+  }
+
+  String get _tunnelAddress {
+    final addr = controller.activeServer?.profile.client.address;
+    if (addr == null || addr.isEmpty) return '10.8.0.2';
+    return addr.first.split('/').first;
   }
 
   Future<void> _initTrayIcon() async {
@@ -57,6 +74,12 @@ class DesktopTrayController with WindowListener, TrayListener {
 
   void _onControllerChanged() {
     if (!_ready || _exiting) return;
+    final connected = controller.status == VpnUiStatus.connected;
+    if (connected && !_traffic.isRunning) {
+      _traffic.start(_tunnelAddress);
+    } else if (!connected && _traffic.isRunning) {
+      _traffic.stop();
+    }
     rebuildMenu();
   }
 
@@ -66,6 +89,16 @@ class DesktopTrayController with WindowListener, TrayListener {
       MenuItem(key: 'show', label: '显示主窗口'),
       MenuItem.separator(),
     ];
+
+    // Live traffic line (only meaningful while connected).
+    if (controller.status == VpnUiStatus.connected) {
+      items.add(MenuItem(
+        key: 'traffic',
+        label: '流量 ${_traffic.status.value.isEmpty ? '统计中…' : _traffic.status.value}',
+        disabled: true,
+      ));
+      items.add(MenuItem.separator());
+    }
 
     final servers = controller.servers;
     if (servers.isEmpty) {
@@ -124,6 +157,7 @@ class DesktopTrayController with WindowListener, TrayListener {
     _exiting = true;
     try {
       controller.removeListener(_onControllerChanged);
+      _traffic.stop();
       await trayManager.destroy();
     } catch (_) {}
     await windowManager.setPreventClose(false);

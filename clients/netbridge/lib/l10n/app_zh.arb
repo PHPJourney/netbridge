@@ -35,6 +35,8 @@
   "fullTunnelCarHint": "若车机热点、蓝牙互联或局域网设备异常，可开启下方「自动分流（排除私网）」；公网仍走 VPN。修改后需断开再连。",
   "splitTunnelTitle": "自动分流（排除私网）",
   "splitTunnelSubtitle": "可选。开启后 10.x、192.168.x、链路本地等私网直连，公网仍走 VPN。默认关闭（全隧道）。修改后需断开再连生效。",
+  "domesticDirectTitle": "国内直连（排除中国 IP）",
+  "domesticDirectSubtitle": "开启后，大陆目的地（内置中国 IP 段列表）直连，其余走加密隧道。适合国内用户，隧道不稳定时国内站点依然快。修改后需断开再连生效。",
   "language": "语言",
   "languageSystem": "跟随系统",
   "languageChinese": "中文",

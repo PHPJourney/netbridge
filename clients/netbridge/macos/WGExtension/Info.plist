@@ -6,12 +6,19 @@
 	<string>网桥 VPN Tunnel</string>
 	<key>CFBundleName</key>
 	<string>WGExtension</string>
-	<key>NSExtension</key>
+	<key>NSSystemExtensionUsageDescription</key>
+	<string>网桥 VPN 需要安装网络扩展（Packet Tunnel）以建立加密隧道。该扩展仅用于 VPN 数据传输。</string>
+	<!-- System extension form of a Network Extension provider registers via
+	     NetworkExtension > NEProviderClasses (NOT the NSExtension dict used
+	     by app extensions). The system looks this key up to find the
+	     packet-tunnel provider class. -->
+	<key>NetworkExtension</key>
 	<dict>
-		<key>NSExtensionPointIdentifier</key>
-		<string>com.apple.networkextension.packet-tunnel</string>
-		<key>NSExtensionPrincipalClass</key>
-		<string>$(PRODUCT_MODULE_NAME).PacketTunnelProvider</string>
+		<key>NEProviderClasses</key>
+		<dict>
+			<key>com.apple.networkextension.packet-tunnel</key>
+			<string>$(PRODUCT_MODULE_NAME).PacketTunnelProvider</string>
+		</dict>
 	</dict>
 </dict>
 </plist>

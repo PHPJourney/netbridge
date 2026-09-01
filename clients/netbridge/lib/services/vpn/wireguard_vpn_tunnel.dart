@@ -9,6 +9,7 @@ import '../../profile/nbvpn_profile.dart';
 import '../../profile/profile_codec.dart';
 import 'apple_tunnel_config.dart';
 import 'obfs2_bridge.dart';
+import 'vpn_logger.dart';
 import 'stub_vpn_tunnel.dart';
 import 'vpn_tunnel.dart';
 
@@ -108,30 +109,25 @@ class WireGuardVpnTunnel implements VpnTunnel {
     List<String> bypassCidrs = const [],
   }) async {
     await initialize();
-    // macOS: WGExtension is a system extension; ask the host app to activate
-    // it before the tunnel manager tries to start it (first run shows the
-    // System Settings approval dialog; the user then taps connect again).
+    // macOS: WGExtension is a system extension; activate it and wait for the
+    // request to settle before starting the tunnel. The host app answers
+    // "completed" / "willCompleteAfterReboot" / "timeout" or a FlutterError.
     if (Platform.isMacOS) {
-      try {
-        const channel = MethodChannel('netbridge/system_extension');
-        await channel.invokeMethod('activate');
-      } catch (_) {
-        // Non-fatal: activation request is best-effort (e.g. stub builds).
+      const channel = MethodChannel('netbridge/system_extension');
+      final activation = await channel.invokeMethod<String>('activate');
+      VpnLog.connect('system extension activation requested: $activation');
+      if (activation == 'timeout') {
+        throw StateError(
+            '网络扩展尚未批准：请在系统设置 > 登录项与扩展 > 网络扩展中批准 NetBridge 后重试');
+      }
+      if (activation == 'willCompleteAfterReboot') {
+        throw StateError('系统扩展需重启 Mac 后生效');
       }
     }
-    final conf = ProfileCodec.toWireGuardConf(
-      profile,
-      excludePrivateNetworks: excludePrivateNetworks,
-      forceFullTunnel: forceFullTunnel,
-      bypassCidrs: bypassCidrs,
-    );
-    // Kill switch / leak protection: wireguard_flutter (GoBackend) does not
-    // expose VpnService.setBlocking / allowBypass. Full-tunnel AllowedIPs +
-    // DNS-in-conf reduce leaks while connected; true "block without VPN" is
-    // Android Always-on VPN (system setting). Parameter retained for prefs.
-    final _ = killSwitch;
-
-    // obfs2 transport: ensure the local bridge runs, then aim WG at it.
+    // obfs2 transport: ensure the local bridge runs first, then aim WG at it.
+    // The extension parses wgQuickConfig only (it ignores the protocol's
+    // serverAddress field), so the Endpoint line itself must point at the
+    // bridge — hence endpointOverride below.
     var serverAddress = profile.server.activeEndpoint;
     final obfs = profile.obfs;
     if (obfs != null && obfs.isObfs2) {
@@ -146,6 +142,19 @@ class WireGuardVpnTunnel implements VpnTunnel {
       }
       serverAddress = '127.0.0.1:${obfs.localUdp}';
     }
+    // Kill switch / leak protection: wireguard_flutter (GoBackend) does not
+    // expose VpnService.setBlocking / allowBypass. Full-tunnel AllowedIPs +
+    // DNS-in-conf reduce leaks while connected; true "block without VPN" is
+    // Android Always-on VPN (system setting). Parameter retained for prefs.
+    final _ = killSwitch;
+
+    final conf = ProfileCodec.toWireGuardConf(
+      profile,
+      excludePrivateNetworks: excludePrivateNetworks,
+      forceFullTunnel: forceFullTunnel,
+      bypassCidrs: bypassCidrs,
+      endpointOverride: serverAddress,
+    );
 
     _controller.add(VpnTunnelStage.connecting);
     await WireGuardFlutter.instance.startVpn(

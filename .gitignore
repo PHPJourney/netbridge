@@ -51,3 +51,11 @@ id_rsa.*
 **/key.properties
 **/*.jks
 **/*.keystore
+
+# Build artifacts / local output (added 2026-09)
+/clients/netbridge/dist/*.pkg
+/clients/netbridge/macos/obfs2bridge/*.xcframework
+/clients/netbridge/.bak/
+/clients/netbridge/build.hold/
+/clients/netbridge/dist/.pkg-staging/
+/clients/netbridge/apple/NetBridge-installer.key

@@ -6,8 +6,19 @@
 	<array>
 		<string>packet-tunnel-provider-systemextension</string>
 	</array>
-	<key>com.apple.security.app-sandbox</key>
+	<!-- file_picker (import config / bluetooth pick) requires user-selected
+	     file access even for non-sandboxed apps — see FilePickerPlugin.swift. -->
+	<key>com.apple.security.files.user-selected.read-write</key>
 	<true/>
+	<!-- Required to install/activate the WGExtension system extension.
+	     The Developer ID profile must also carry this key (App ID capability
+	     "System Extension" in Certificates, Identifiers & Profiles). -->
+	<key>com.apple.developer.system-extension.install</key>
+	<true/>
+	<!-- Non-sandboxed: Developer ID direct distribution allows it, and the
+	     desktop obfs2 bridge must spawn the external nbvpn binary
+	     (/usr/local/bin/nbvpn obfs2 client). Hardened runtime + notarization
+	     still apply (Xcode sets --options runtime). -->
 	<key>com.apple.security.application-groups</key>
 	<array>
 		<string>group.com.netbridge.netbridge</string>

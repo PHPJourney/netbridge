@@ -266,6 +266,18 @@ abstract class AppLocalizations {
   /// **'Optional. When on, private networks (10.x, 192.168.x, link-local, etc.) bypass the VPN; public internet still uses the tunnel. Default off (full tunnel). Reconnect to apply.'**
   String get splitTunnelSubtitle;
 
+  /// No description provided for @domesticDirectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Domestic-direct (bypass China)'**
+  String get domesticDirectTitle;
+
+  /// No description provided for @domesticDirectSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When on, mainland China destinations (from a bundled China IP list) go direct; everything else uses the tunnel. Good for China users so domestic sites stay fast even if the tunnel degrades. Reconnect to apply.'**
+  String get domesticDirectSubtitle;
+
   /// No description provided for @language.
   ///
   /// In en, this message translates to:

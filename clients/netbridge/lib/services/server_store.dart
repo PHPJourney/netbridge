@@ -9,10 +9,9 @@ import '../models/server_entry.dart';
 
 /// Persists server list. No default servers.
 ///
-/// Mobile: prefer [FlutterSecureStorage] (Keystore / Keychain).
-/// Desktop (esp. sandboxed macOS): Keychain often fails without Team /
-/// keychain-access-groups — always mirror to [SharedPreferences] and fall back
-/// on read so the list survives Keychain errors.
+/// Mirrored into two stores (Keychain via [FlutterSecureStorage] and
+/// [SharedPreferences]); on load the fresher copy wins and is mirrored back,
+/// so a deleted entry can never resurrect from a stale store.
 class ServerStore {
   ServerStore({
     FlutterSecureStorage? storage,
@@ -33,15 +32,6 @@ class ServerStore {
   Future<SharedPreferences> _prefs() async =>
       _prefsOverride ?? SharedPreferences.getInstance();
 
-  bool get _preferPrefsPrimary {
-    if (kIsWeb) return true;
-    try {
-      return Platform.isMacOS || Platform.isWindows || Platform.isLinux;
-    } catch (_) {
-      return false;
-    }
-  }
-
   List<ServerEntry> _parse(String raw) {
     if (raw.isEmpty) return [];
     final decoded = jsonDecode(raw);
@@ -52,11 +42,30 @@ class ServerStore {
         .toList();
   }
 
+  /// Desktop/web: the app is non-sandboxed and SharedPreferences persists
+  /// fine — the OS keychain is unnecessary and flutter_secure_storage's macOS
+  /// plugin throws ENTITLEMENT_NOT_FOUND for non-sandboxed apps. Mobile keeps
+  /// the keychain (Keystore / Keychain) as the primary store.
+  bool get _useKeychain {
+    if (kIsWeb) return false;
+    return Platform.isIOS || Platform.isAndroid;
+  }
+
   Future<String?> _readSecure() async {
+    if (!_useKeychain) return null;
     try {
       return await _storage.read(key: _key);
     } catch (_) {
       return null;
+    }
+  }
+
+  Future<void> _writeSecure(String payload) async {
+    if (!_useKeychain) return;
+    try {
+      await _storage.write(key: _key, value: payload);
+    } catch (_) {
+      // Keychain unavailable — prefs mirror stays authoritative.
     }
   }
 
@@ -70,30 +79,29 @@ class ServerStore {
 
   Future<List<ServerEntry>> load() async {
     try {
-      if (_preferPrefsPrimary) {
-        final fromPrefs = await _readPrefs();
-        if (fromPrefs != null && fromPrefs.isNotEmpty) {
-          return _parse(fromPrefs);
+      // Prefs is authoritative (desktop + web); Keychain is a mirror.
+      // Never compare the two lists — a stale Keychain copy with a newer
+      // timestamp must not shadow prefs (deleted entries would resurrect).
+      final fromPrefs = await _readPrefs();
+      if (fromPrefs != null && fromPrefs.isNotEmpty) {
+        final list = _parse(fromPrefs);
+        // Heal the mirror so a stale Keychain copy can never win later.
+        try {
+          await _writeSecure(fromPrefs);
+        } catch (_) {
+          // Keychain unavailable — prefs stays authoritative.
         }
-        final fromSecure = await _readSecure();
-        if (fromSecure != null && fromSecure.isNotEmpty) {
-          final list = _parse(fromSecure);
-          // Migrate Keychain → prefs so next launch is reliable.
-          if (list.isNotEmpty) {
-            await _writePrefs(fromSecure);
-          }
-          return list;
-        }
-        return [];
+        return list;
       }
 
       final fromSecure = await _readSecure();
       if (fromSecure != null && fromSecure.isNotEmpty) {
-        return _parse(fromSecure);
-      }
-      final fromPrefs = await _readPrefs();
-      if (fromPrefs != null && fromPrefs.isNotEmpty) {
-        return _parse(fromPrefs);
+        final list = _parse(fromSecure);
+        // Migrate Keychain → prefs so next launch is reliable.
+        if (list.isNotEmpty) {
+          await _writePrefs(fromSecure);
+        }
+        return list;
       }
       return [];
     } catch (_) {
@@ -104,10 +112,6 @@ class ServerStore {
   Future<void> _writePrefs(String payload) async {
     final prefs = await _prefs();
     await prefs.setString(_key, payload);
-  }
-
-  Future<void> _writeSecure(String payload) async {
-    await _storage.write(key: _key, value: payload);
   }
 
   Future<void> save(List<ServerEntry> entries) async {

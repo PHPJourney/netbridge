@@ -22,6 +22,8 @@ profiles：`NetBridge macOS Host` / `NetBridge WGExenion macOS Host`（Developer
 
 **签名与公证（macOS）：**
 - 证书：`Developer ID Application: Hangzhou Chi Xue science and Technology Co., Ltd. (LH2LR8BBJ2)`
+- 安装包证书：`Developer ID Installer`（同一公司主体，见 `apple/developerID_installer.cer` +
+  `NetBridge-installer.key`；pkg 公证强制要求 Installer 类型证书签名）
 - 私钥：`apple/NetBridge-cert.key`（CSR 私钥，已导入钥匙串）
 - 注意：Xcode 手动签名会注入 `get-task-allow` 且缺 `--timestamp`，**公证前必须重签**：
   提取 `codesign -d --entitlements` → 删 `com.apple.security.get-task-allow` →
@@ -29,7 +31,9 @@ profiles：`NetBridge macOS Host` / `NetBridge WGExenion macOS Host`（Developer
 - 公证凭据：`notarytool` keychain-profile `NetBridge`（App Store Connect API Key
   `TPXK82VT64`，Issuer `69a6de90-…`，`.p8` 在 `apple/AuthKey_TPXK82VT64.p8`）
 - 版本一致性：WGExtension 的 `CURRENT_PROJECT_VERSION` / `MARKETING_VERSION`
-  需与 pubspec 同步（当前 0.1.17 / 17，改 pubspec 后要同步 pbxproj）
+  需与 pubspec 同步（当前 0.1.19 / 20，改 pubspec 后要同步 pbxproj）
+- **macOS 安装包**：`scripts/package-macos-pkg.sh` 产出签名+公证的 pkg
+  （NetBridge.app → /Applications，obfs2 桥 nbvpn → /usr/local/bin 且内嵌进 app bundle）
 
 **WireGuardKit 数据面已接入（2026-08-29）：**
 - 源码 vendor：`ios|macos/WGExtension/vendor/WireGuardKit/`（12 个 Swift 文件）

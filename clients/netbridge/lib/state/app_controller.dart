@@ -7,6 +7,7 @@ import '../config/build_flags.dart';
 import '../models/server_entry.dart';
 import '../profile/cidr_util.dart';
 import '../profile/nbvpn_profile.dart';
+import '../profile/split_tunnel.dart';
 import '../services/server_store.dart';
 import '../services/settings_store.dart';
 import '../services/vpn/vpn_connectivity_verifier.dart';
@@ -38,6 +39,7 @@ class AppController extends ChangeNotifier {
   bool loading = true;
   bool killSwitch = true;
   bool excludePrivateNetworks = BuildFlags.defaultExcludePrivateNetworks;
+  bool domesticDirect = false;
   bool leakProtection = BuildFlags.defaultLeakProtection;
   List<String> whitelistEntries = const [];
   AppLocaleMode localeMode = AppLocaleMode.system;
@@ -91,6 +93,7 @@ class AppController extends ChangeNotifier {
       servers = await _serverStore.load();
       killSwitch = await _settingsStore.getKillSwitch();
       excludePrivateNetworks = await _settingsStore.getExcludePrivateNetworks();
+      domesticDirect = await _settingsStore.getDomesticDirect();
       leakProtection = await _settingsStore.getLeakProtection();
       whitelistEntries = await _settingsStore.getWhitelistEntries();
       localeMode = await _settingsStore.getLocaleMode();
@@ -188,6 +191,16 @@ class AppController extends ChangeNotifier {
       return;
     }
 
+    // saveToPreferences 会触发 transient disconnected/connected 通知，
+    // 连接飞行期内忽略，避免闪断清空 activeServerId（“两次点击”根因）。
+    if (!trusted &&
+        _connectInFlightEpoch != null &&
+        (stage == VpnTunnelStage.disconnected ||
+            stage == VpnTunnelStage.noConnection ||
+            stage == VpnTunnelStage.connected)) {
+      return;
+    }
+
     final hasSession = _hasTunnelSession();
 
     // No user session (empty list / never connected / after disconnect):
@@ -195,11 +208,21 @@ class AppController extends ChangeNotifier {
     if (!hasSession) {
       switch (stage) {
         case VpnTunnelStage.connected:
-          status = VpnUiStatus.disconnected;
-          statusDetail = languageCode == 'en'
-              ? 'A system VPN tunnel is still active but no server is bound. '
-                  'Disconnect VPN in system settings, or add a server and connect.'
-              : '检测到系统 VPN 仍在运行，但本地未绑定服务器。请在系统设置中断开 VPN，或添加服务器后连接。';
+          // OS tunnel is up but no server bound (e.g. app restarted while a
+          // session was live, or a transient early "connected"). Bind to an
+          // available server so the UI shows real "connected" + reachable
+          // disconnect instead of a dead-end message.
+          if (servers.isNotEmpty) {
+            activeServerId = activeServerId ?? servers.first.id;
+            status = VpnUiStatus.connected;
+            statusDetail = null;
+          } else {
+            status = VpnUiStatus.disconnected;
+            statusDetail = languageCode == 'en'
+                ? 'A system VPN tunnel is still active but no server is bound. '
+                    'Disconnect VPN in system settings, or add a server and connect.'
+                : '检测到系统 VPN 仍在运行，但本地未绑定服务器。请在系统设置中断开 VPN，或添加服务器后连接。';
+          }
         case VpnTunnelStage.reconnecting:
         case VpnTunnelStage.noConnection:
         case VpnTunnelStage.connecting:
@@ -402,6 +425,38 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Domestic-direct: bypass China CIDRs so mainland sites stay direct.
+  Future<void> setDomesticDirect(bool value) async {
+    domesticDirect = value;
+    await _settingsStore.setDomesticDirect(value);
+    notifyListeners();
+  }
+
+  /// Effective bypass CIDRs = obfs2 server IP(s) (always — else the bridge
+  /// traffic loops via the tunnel) + China list (domestic-direct) + user
+  /// whitelist. Leak-protection mode forces full tunnel — no China/whitelist
+  /// bypass, but the obfs2 server IP must still be excluded or nothing works.
+  Future<List<String>> _effectiveBypassCidrs(ServerEntry entry) async {
+    final serverIps = (entry.profile.obfs?.entries ?? const <String>[])
+        .map((e) => e.split(':').first.trim())
+        .where((h) =>
+            h.isNotEmpty &&
+            h != '127.0.0.1' &&
+            h != 'localhost')
+        .map((h) => '$h/32')
+        .toList();
+    if (leakProtection) return [...serverIps, ...whitelistCidrs];
+    final cidrs = <String>[...serverIps, ...whitelistCidrs];
+    if (domesticDirect) {
+      try {
+        cidrs.addAll(await SplitTunnel.loadChinaCidrs());
+      } catch (_) {
+        // asset load failure — skip domestic carve
+      }
+    }
+    return cidrs;
+  }
+
   Future<void> setLeakProtection(bool value) async {
     leakProtection = value;
     await _settingsStore.setLeakProtection(value);
@@ -558,13 +613,17 @@ class AppController extends ChangeNotifier {
 
         _connectInFlightEpoch = epoch;
         _handshakeVerifyEpoch = epoch;
+        // Traceable connect source: entry id + whether obfs2 transport is
+        // attached (settles "which node was actually clicked" from logs).
+        VpnLog.connect(
+            'connect requested: ${entry.localName} (id=$serverId, obfs=${entry.profile.obfs?.type ?? 'none'})');
         try {
           await tunnel.connect(
             entry.profile,
             killSwitch: leakProtection ? true : killSwitch,
             excludePrivateNetworks: excludePrivateNetworks,
             forceFullTunnel: leakProtection,
-            bypassCidrs: whitelistCidrs,
+            bypassCidrs: await _effectiveBypassCidrs(entry),
           );
           if (epoch != _tunnelEpoch) return;
           // Prefer live stage over assuming connect() completion == connected.
@@ -579,16 +638,21 @@ class AppController extends ChangeNotifier {
             return;
           }
 
-          // Plugin "connected" only means interface up — verify handshake/egress.
-          status = VpnUiStatus.connecting;
-          statusDetail = _verifyingHandshakeDetail;
+          // Interface is up — reflect "connected" immediately so the UI does
+          // not show a long "verifying" state that prompts a second click.
+          // Handshake/egress verification runs below in the background:
+          // it only downgrades the UI on failure, never on the happy path.
+          activeServerId = serverId;
+          status = VpnUiStatus.connected;
+          statusDetail = null;
           notifyListeners();
+          VpnLog.connect('tunnel interface up (id=$serverId) — verifying in background');
 
           final allowedIPs = VpnConnectivityVerifier.effectiveAllowedIPs(
             entry.profile.server.allowedIPs,
             excludePrivateNetworks: excludePrivateNetworks,
             forceFullTunnel: leakProtection,
-            bypassCidrs: whitelistCidrs,
+            bypassCidrs: await _effectiveBypassCidrs(entry),
           );
           // obfs2: the WG peer is the local bridge, so UDP reachability
           // probes must target 127.0.0.1:<localUdp>, not the public endpoint.

@@ -623,7 +623,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CURRENT_PROJECT_VERSION = 17;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 0.1.17;
+				MARKETING_VERSION = 0.1.19;
 				PRODUCT_BUNDLE_IDENTIFIER = com.netbridge.netbridge.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
@@ -638,7 +638,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CURRENT_PROJECT_VERSION = 17;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 0.1.17;
+				MARKETING_VERSION = 0.1.19;
 				PRODUCT_BUNDLE_IDENTIFIER = com.netbridge.netbridge.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
@@ -653,7 +653,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CURRENT_PROJECT_VERSION = 17;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 0.1.17;
+				MARKETING_VERSION = 0.1.19;
 				PRODUCT_BUNDLE_IDENTIFIER = com.netbridge.netbridge.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
@@ -912,7 +912,7 @@
 				CODE_SIGN_ENTITLEMENTS = WGExtension/WGExtension-Debug.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 17;
+				CURRENT_PROJECT_VERSION = 20;
 				DEVELOPMENT_TEAM = LH2LR8BBJ2;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -924,17 +924,18 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.0;
-				MARKETING_VERSION = 0.1.17;
-				OTHER_LDFLAGS = "";
+				MARKETING_VERSION = 0.1.19;
 				PRODUCT_BUNDLE_IDENTIFIER = com.netbridge.netbridge.WGExtension;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "com.netbridge.netbridge.WGExtension";
+				PRODUCT_MODULE_NAME = NetBridgeWGExtension;
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			SWIFT_OBJC_BRIDGING_HEADER = "WGExtension/vendor/WGExtension-Bridging-Header.h";
 			HEADER_SEARCH_PATHS = "$(SRCROOT)/WGExtension/vendor";
 			LIBRARY_SEARCH_PATHS = "$(SRCROOT)/WGExtension/vendor";
-			OTHER_LDFLAGS = "$(OTHER_LDFLAGS) -lwg-go";
+				OTHER_LDFLAGS = "-lwg-go";
+
 			};
 			name = Debug;
 		};
@@ -945,7 +946,7 @@
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				PROVISIONING_PROFILE_SPECIFIER = "NetBridge WGExenion macOS Host";
-				CURRENT_PROJECT_VERSION = 17;
+				CURRENT_PROJECT_VERSION = 20;
 				DEVELOPMENT_TEAM = LH2LR8BBJ2;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -957,17 +958,18 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.0;
-				MARKETING_VERSION = 0.1.17;
-				OTHER_LDFLAGS = "";
+				MARKETING_VERSION = 0.1.19;
 				PRODUCT_BUNDLE_IDENTIFIER = com.netbridge.netbridge.WGExtension;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "com.netbridge.netbridge.WGExtension";
+				PRODUCT_MODULE_NAME = NetBridgeWGExtension;
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			SWIFT_OBJC_BRIDGING_HEADER = "WGExtension/vendor/WGExtension-Bridging-Header.h";
 			HEADER_SEARCH_PATHS = "$(SRCROOT)/WGExtension/vendor";
 			LIBRARY_SEARCH_PATHS = "$(SRCROOT)/WGExtension/vendor";
-			OTHER_LDFLAGS = "$(OTHER_LDFLAGS) -lwg-go";
+				OTHER_LDFLAGS = "-lwg-go";
+
 			};
 			name = Release;
 		};
@@ -977,7 +979,7 @@
 				CODE_SIGN_ENTITLEMENTS = WGExtension/WGExtension-Debug.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 17;
+				CURRENT_PROJECT_VERSION = 20;
 				DEVELOPMENT_TEAM = LH2LR8BBJ2;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -989,17 +991,18 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.0;
-				MARKETING_VERSION = 0.1.17;
-				OTHER_LDFLAGS = "";
+				MARKETING_VERSION = 0.1.19;
 				PRODUCT_BUNDLE_IDENTIFIER = com.netbridge.netbridge.WGExtension;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "com.netbridge.netbridge.WGExtension";
+				PRODUCT_MODULE_NAME = NetBridgeWGExtension;
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			SWIFT_OBJC_BRIDGING_HEADER = "WGExtension/vendor/WGExtension-Bridging-Header.h";
 			HEADER_SEARCH_PATHS = "$(SRCROOT)/WGExtension/vendor";
 			LIBRARY_SEARCH_PATHS = "$(SRCROOT)/WGExtension/vendor";
-			OTHER_LDFLAGS = "$(OTHER_LDFLAGS) -lwg-go";
+				OTHER_LDFLAGS = "-lwg-go";
+
 			};
 			name = Profile;
 		};
