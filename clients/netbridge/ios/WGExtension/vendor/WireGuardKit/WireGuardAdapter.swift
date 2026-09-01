@@ -173,8 +173,10 @@ public class WireGuardAdapter {
     /// Start the tunnel tunnel.
     /// - Parameters:
     ///   - tunnelConfiguration: tunnel configuration.
+    ///   - excludedRoutes: host-route CIDRs that must bypass the tunnel (the
+    ///     obfs2 server IP), added as NEPacketTunnelNetworkSettings.excludedRoutes.
     ///   - completionHandler: completion handler.
-    public func start(tunnelConfiguration: TunnelConfiguration, completionHandler: @escaping (WireGuardAdapterError?) -> Void) {
+    public func start(tunnelConfiguration: TunnelConfiguration, excludedRoutes: [String] = [], completionHandler: @escaping (WireGuardAdapterError?) -> Void) {
         workQueue.async {
             guard case .stopped = self.state else {
                 completionHandler(.invalidState)
@@ -189,6 +191,7 @@ public class WireGuardAdapter {
 
             do {
                 let settingsGenerator = try self.makeSettingsGenerator(with: tunnelConfiguration)
+                settingsGenerator.excludedRoutes = excludedRoutes
                 try self.setNetworkSettings(settingsGenerator.generateNetworkSettings())
 
                 let (wgConfig, resolutionResults) = settingsGenerator.uapiConfiguration()

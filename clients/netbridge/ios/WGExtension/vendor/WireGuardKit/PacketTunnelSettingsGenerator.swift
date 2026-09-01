@@ -16,6 +16,10 @@ class PacketTunnelSettingsGenerator {
     let tunnelConfiguration: TunnelConfiguration
     let resolvedEndpoints: [Endpoint?]
 
+    /// Host routes (CIDR strings) that must bypass the tunnel — the obfs2
+    /// server IP. Equivalent to the macOS `excludedRoutes` fix.
+    var excludedRoutes: [String] = []
+
     init(tunnelConfiguration: TunnelConfiguration, resolvedEndpoints: [Endpoint?]) {
         self.tunnelConfiguration = tunnelConfiguration
         self.resolvedEndpoints = resolvedEndpoints
@@ -118,6 +122,11 @@ class PacketTunnelSettingsGenerator {
 
         let ipv4Settings = NEIPv4Settings(addresses: ipv4Addresses.map { $0.destinationAddress }, subnetMasks: ipv4Addresses.map { $0.destinationSubnetMask })
         ipv4Settings.includedRoutes = ipv4IncludedRoutes
+        if !excludedRoutes.isEmpty {
+            ipv4Settings.excludedRoutes = excludedRoutes.map {
+                NEIPv4Route(destinationAddress: $0, subnetMask: "255.255.255.255")
+            }
+        }
         networkSettings.ipv4Settings = ipv4Settings
 
         let ipv6Settings = NEIPv6Settings(addresses: ipv6Addresses.map { $0.destinationAddress }, networkPrefixLengths: ipv6Addresses.map { $0.destinationNetworkPrefixLength })

@@ -335,7 +335,15 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         }
         
         log("adapter.start")
-        adapter.start(tunnelConfiguration: tunnelConfiguration) { [weak self] adapterError in
+        // obfs2: exclude the transport server IP(s) from the tunnel so the
+        // bridge never loops through the utun (the iOS counterpart of the
+        // macOS excludedRoutes fix). The app embeds the server IPs in the
+        // wgQuickConfig as a `# obfs-servers=` comment.
+        let obfsServerCidrs = Self.extractObfsServerCidrs(from: wgQuickConfig)
+        if !obfsServerCidrs.isEmpty {
+            log("Excluding obfs2 server from tunnel routes: \(obfsServerCidrs)")
+        }
+        adapter.start(tunnelConfiguration: tunnelConfiguration, excludedRoutes: obfsServerCidrs) { [weak self] adapterError in
             guard let self = self else { return }
             if let adapterError = adapterError {
                 self.log("WireGuard adapter error: \(adapterError.localizedDescription)")
@@ -345,6 +353,26 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
             }
             completionHandler(adapterError)
         }
+    }
+
+    /// Parses `# obfs-servers=host[:port],host[:port]` comment lines from the
+    /// wgQuickConfig and returns "/32" CIDRs for each host.
+    private static func extractObfsServerCidrs(from wgQuickConfig: String) -> [String] {
+        var out = [String]()
+        for line in wgQuickConfig.split(separator: "\n") {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard trimmed.hasPrefix("#"), let eq = trimmed.firstIndex(of: "=") else { continue }
+            let key = trimmed[..<eq].trimmingCharacters(in: .whitespaces)
+            guard key == "obfs-servers" else { continue }
+            let val = trimmed[trimmed.index(after: eq)...]
+            for entry in val.split(separator: ",") {
+                let host = entry.split(separator: ":").first.map(String.init) ?? ""
+                if !host.isEmpty && host != "127.0.0.1" && host != "localhost" {
+                    out.append("\(host)/32")
+                }
+            }
+        }
+        return out
     }
 
     override func stopTunnel(with reason: NEProviderStopReason, completionHandler: @escaping () -> Void) {
