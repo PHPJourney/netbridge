@@ -1,0 +1,8 @@
+framework module "Obfs2bridge" {
+	header "ref.h"
+    header "Obfs2bridge.objc.h"
+    header "Universe.objc.h"
+    header "Obfs2bridge.h"
+
+    export *
+}
