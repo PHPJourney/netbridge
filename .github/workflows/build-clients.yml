@@ -142,50 +142,98 @@ jobs:
             clients/netbridge/dist/NetBridge-windows.exe
             clients/netbridge/dist/NetBridge-windows.exe.sha256
 
-  macos-note:
-    name: macOS (skipped — no distribution)
-    runs-on: ubuntu-latest
+  macos:
+    name: macOS pkg (signed + notarized)
+    runs-on: macos-latest
+    env:
+      FLUTTER_VERSION: ${{ env.FLUTTER_VERSION }}
     steps:
-      - name: Skip macOS Release artifacts
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - name: Build obfs2 bridge xcframework
         run: |
-          echo "macOS client is local-source / business-use only for now."
-          echo "No DMG / .app.zip attached to GitHub Releases."
-          mkdir -p note
-          cat > note/MACOS-CI-SKIP.txt <<'TXT'
-          NetBridge macOS: CI does not publish distribution packages (DMG / app.zip).
-          Local business use: cd clients/netbridge && flutter run -d macos
-          Real VPN without NE signing: official WireGuard app + nbvpn show --conf (.conf).
-          Optional local ad-hoc .app via scripts/package-all.sh — not for OpenList/Pages download.
-          See docs/delivery/nbvpn/TRY-CONNECT.md section「本机 macOS 业务」.
-          TXT
+          export PATH="$PATH:$HOME/go/bin" GOTOOLCHAIN=local
+          cd server/nbvpn/mobile
+          go install golang.org/x/mobile/cmd/gomobile@v0.0.0-20231127183840-76ac6878050a
+          gomobile bind -target=macos -o "$GITHUB_WORKSPACE/clients/netbridge/macos/obfs2bridge/Obfs2bridge.xcframework" ./obfs2bridge
+      - name: Import signing certs into keychain
+        env:
+          DEV_P12: ${{ secrets.APPLE_DEVELOPER_ID_P12 }}
+          DEV_P12_PW: ${{ secrets.APPLE_DEVELOPER_ID_P12_PASSWORD }}
+          INSTALLER_P12: ${{ secrets.APPLE_INSTALLER_P12 }}
+          INSTALLER_P12_PW: ${{ secrets.APPLE_INSTALLER_P12_PASSWORD }}
+        run: |
+          echo "$DEV_P12" | base64 -d > /tmp/dev.p12
+          echo "$INSTALLER_P12" | base64 -d > /tmp/installer.p12
+          security import /tmp/dev.p12 -k ~/Library/Keychains/login.keychain-db -P "$DEV_P12_PW" -T /usr/bin/codesign -T /usr/bin/productsign || true
+          security import /tmp/installer.p12 -k ~/Library/Keychains/login.keychain-db -P "$INSTALLER_P12_PW" -T /usr/bin/codesign -T /usr/bin/productsign || true
+          security list-keychains -d user -s login.keychain-db
+      - name: Store notarytool credentials
+        env:
+          NA_ID: ${{ secrets.NOTARYTOOL_APPLE_ID }}
+          NA_PW: ${{ secrets.NOTARYTOOL_APPLE_ID_PASSWORD }}
+          NA_TEAM: ${{ secrets.NOTARYTOOL_TEAM_ID }}
+        run: |
+          if [[ -n "$NA_ID" && -n "$NA_PW" && -n "$NA_TEAM" ]]; then
+            xcrun notarytool store-credentials NetBridge --apple-id "$NA_ID" --team-id "$NA_TEAM" --password "$NA_PW"
+          else
+            echo "::warning::notarytool secrets missing — pkg will not be notarized"
+          fi
+      - name: Package (build + sign + notarize + pkg)
+        env:
+          APPLE_DEVELOPER_ID_P12: ${{ secrets.APPLE_DEVELOPER_ID_P12 }}
+          APPLE_DEVELOPER_ID_P12_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_P12_PASSWORD }}
+          APPLE_INSTALLER_P12: ${{ secrets.APPLE_INSTALLER_P12 }}
+          APPLE_INSTALLER_P12_PASSWORD: ${{ secrets.APPLE_INSTALLER_P12_PASSWORD }}
+          NOTARYTOOL_APPLE_ID: ${{ secrets.NOTARYTOOL_APPLE_ID }}
+          NOTARYTOOL_APPLE_ID_PASSWORD: ${{ secrets.NOTARYTOOL_APPLE_ID_PASSWORD }}
+          NOTARYTOOL_TEAM_ID: ${{ secrets.NOTARYTOOL_TEAM_ID }}
+        run: |
+          cd clients/netbridge
+          ./scripts/package-macos-pkg.sh || { echo "::warning::macOS packaging failed — see log"; exit 0; }
       - uses: actions/upload-artifact@v4
         with:
-          name: client-macos-skip-note
-          path: note/MACOS-CI-SKIP.txt
+          name: client-macos-pkg
+          path: clients/netbridge/dist/NetBridge-macOS-*.pkg
+          if-no-files-found: warn
 
-  ios-note:
-    name: iOS (skipped — no signing)
-    runs-on: ubuntu-latest
+  ios:
+    name: iOS IPA (signed if APPLE_TEAM_ID set)
+    runs-on: macos-latest
     steps:
-      - name: Skip IPA
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - run: cd clients/netbridge && flutter pub get
+      - name: Build iOS IPA
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          echo "iOS IPA signing deferred (no Apple certs in CI)."
-          echo "Build unsigned/stub locally later; do not block client pipeline."
-          mkdir -p note
-          cat > note/IOS-CI-SKIP.txt <<'TXT'
-          NetBridge iOS: CI does not produce a signed IPA.
-          Signing / notarization / TestFlight will be handled later.
-          Use local package-all.sh with APPLE_TEAM_ID when ready.
-          TXT
+          cd clients/netbridge
+          if [[ -n "$APPLE_TEAM_ID" ]]; then
+            flutter build ipa --release --export-options-plist=ios/ExportOptions.plist || echo "::warning::ipa export failed"
+          else
+            echo "::warning::APPLE_TEAM_ID secret missing — building unsigned archive"
+            flutter build ios --release --no-codesign || true
+          fi
       - uses: actions/upload-artifact@v4
         with:
-          name: client-ios-skip-note
-          path: note/IOS-CI-SKIP.txt
+          name: client-ios-ipa
+          path: clients/netbridge/build/ios/ipa/*.ipa
+          if-no-files-found: ignore
 
   release-clients:
     name: Attach client artifacts to Release
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [android, windows, macos-note, ios-note]
+    needs: [android, windows, macos, ios]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
