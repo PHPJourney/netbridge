@@ -246,6 +246,14 @@ jobs:
           mkdir -p upload
           find clients-out -type f -exec cp -f {} upload/ \;
           ls -la upload
+      - name: Normalize release asset names
+        run: |
+          cd upload
+          shopt -s nullglob
+          # Stable names so apps store links survive version bumps.
+          for f in NetBridge-macOS-*.pkg; do mv "$f" NetBridge-macOS.pkg; done
+          for f in *.ipa; do mv "$f" NetBridge-iOS.ipa; done
+          ls -la upload
       # Client-only tags become GitHub "latest" and previously omitted nbvpn-linux-*,
       # which 404s curl|bash install (releases/latest/download/nbvpn-linux-amd64).
       # If Build Server has not attached them yet, backfill from the newest prior

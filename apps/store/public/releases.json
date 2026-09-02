@@ -10,7 +10,7 @@
     "openlistBrowse": "http://154.37.213.245:5244/store",
     "downloadUrlHint": "Primary: GitHub Releases latest/download/<filename>. OpenList remains an optional mirror — see docs/delivery/nbvpn/OPENLIST-UPLOAD.md",
     "status": "github_releases_published",
-    "note": "v0.1.18: 自研传输层 obfs2（WireGuard over 伪装 HTTPS：多通道×多入口、TCP 端口转发 RDP/SSH、防主动探测、流量整形）；iOS/macOS 接入 WireGuardKit 数据面（macOS system extension + Developer ID 公证）。",
+    "note": "v0.1.19: 自研传输层 obfs2（WireGuard over 伪装 HTTPS：多通道×多入口、TCP 端口转发 RDP/SSH、防主动探测、流量整形）；iOS/macOS 接入 WireGuardKit 数据面（macOS system extension + Developer ID 公证）。",
     "officialSite": "https://phpjourney.github.io/netbridge/",
     "termsUrl": "./terms.html",
     "privacyUrl": "./privacy.html",
@@ -27,8 +27,8 @@
         "url": "#"
       }
     ],
-    "releaseTag": "v0.1.18",
-    "releaseUrl": "https://github.com/PHPJourney/netbridge/releases/tag/v0.1.18"
+    "releaseTag": "v0.1.19",
+    "releaseUrl": "https://github.com/PHPJourney/netbridge/releases/tag/v0.1.19"
   },
   "clients": {
     "windows": {
@@ -48,10 +48,12 @@
       "version": "—",
       "sha256": "",
       "url": "",
-      "filename": "",
-      "status": "local_signed_notarized",
-      "note": "WireGuardKit 数据面已接入（system extension 形态）；本机 Developer ID 签名 + Apple 公证 DMG（dist/NetBridge-macOS.dmg）。按团队决策暂不上 Releases；分发即发 DMG。",
-      "noteEn": "Run from source locally / not distributed. flutter run -d macos; real tunnel: official WireGuard + nbvpn show --conf. See TRY-CONNECT.md."
+      "filename": "NetBridge-macOS.pkg",
+      "status": "available",
+      "version": "0.1.19",
+      "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-macOS.pkg",
+      "note": "0.1.19：obfs2 隧道重建 + 国内直连分流 + 服务器 IP 排除；Developer ID 签名+公证 pkg。",
+      "noteEn": "0.1.19: obfs2 tunnel rebuild + domestic-direct split + server-IP exclusion; Developer ID signed + notarized pkg."
     },
     "android": {
       "label": "Android",
@@ -64,12 +66,13 @@
     },
     "ios": {
       "label": "iOS",
-      "version": "—",
+      "version": "0.1.19",
       "sha256": "",
-      "url": "",
-      "filename": "",
-      "status": "signed_locally",
-      "note": "WireGuardKit 数据面已接入；本机已签 App Store IPA（dist/NetBridge-iOS.ipa），走 TestFlight/App Store 上传。CI 仍不签（无证书）。"
+      "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-iOS.ipa",
+      "filename": "NetBridge-iOS.ipa",
+      "status": "available",
+      "note": "0.1.19：obfs2 内嵌桥 + excludedRoutes；App Store 分发（TestFlight/商店）。",
+      "noteEn": "0.1.19: embedded obfs2 bridge + excludedRoutes; App Store distribution."
     }
   },
   "servers": {
