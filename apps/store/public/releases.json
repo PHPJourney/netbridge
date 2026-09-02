@@ -46,11 +46,11 @@
     "macos": {
       "label": "macOS",
       "version": "0.1.19",
-      "sha256": "",
+      "sha256": "157f24c468145048312d7bcc5d6b6c7a17278f675c26e0ba4891eeb61906d39e",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-macOS.pkg",
       "filename": "NetBridge-macOS.pkg",
       "status": "available",
-      "note": "0.1.19：obfs2 隧道重建 + 国内直连分流 + 服务器 IP 排除；Developer ID 签名+公证 pkg。",
+      "note": "0.1.19：obfs2 隧道重建 + 国内直连分流 + 服务器 IP 排除；Developer ID 签名+公证 pkg。SHA256 为本地构建值，发布后按 Release 回填。",
       "noteEn": "0.1.19: obfs2 tunnel rebuild + domestic-direct split + server-IP exclusion; Developer ID signed + notarized pkg."
     },
     "android": {

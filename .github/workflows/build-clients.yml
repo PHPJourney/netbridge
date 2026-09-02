@@ -197,10 +197,17 @@ jobs:
         run: |
           cd clients/netbridge
           ./scripts/package-macos-pkg.sh || { echo "::warning::macOS packaging failed — see log"; exit 0; }
+      - name: Emit pkg SHA256
+        run: |
+          cd clients/netbridge
+          shopt -s nullglob
+          for f in dist/NetBridge-macOS-*.pkg; do
+            shasum -a 256 "$f" | tee "$f.sha256"
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: client-macos-pkg
-          path: clients/netbridge/dist/NetBridge-macOS-*.pkg
+          path: clients/netbridge/dist/NetBridge-macOS-*.pkg*
           if-no-files-found: warn
 
   ios:
@@ -224,10 +231,17 @@ jobs:
             echo "::warning::APPLE_TEAM_ID secret missing — building unsigned archive"
             flutter build ios --release --no-codesign || true
           fi
+      - name: Emit IPA SHA256
+        run: |
+          cd clients/netbridge
+          shopt -s nullglob
+          for f in build/ios/ipa/*.ipa; do
+            shasum -a 256 "$f" | tee "$f.sha256"
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: client-ios-ipa
-          path: clients/netbridge/build/ios/ipa/*.ipa
+          path: clients/netbridge/build/ios/ipa/*.ipa*
           if-no-files-found: ignore
 
   release-clients:
@@ -252,7 +266,9 @@ jobs:
           shopt -s nullglob
           # Stable names so apps store links survive version bumps.
           for f in NetBridge-macOS-*.pkg; do mv "$f" NetBridge-macOS.pkg; done
+          for f in NetBridge-macOS-*.pkg.sha256; do base="${f%.pkg.sha256}"; mv "$f" "NetBridge-macOS.pkg.sha256"; done
           for f in *.ipa; do mv "$f" NetBridge-iOS.ipa; done
+          for f in *.ipa.sha256; do mv "$f" NetBridge-iOS.ipa.sha256; done
           ls -la upload
       # Client-only tags become GitHub "latest" and previously omitted nbvpn-linux-*,
       # which 404s curl|bash install (releases/latest/download/nbvpn-linux-amd64).
