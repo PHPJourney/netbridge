@@ -33,7 +33,7 @@
   "clients": {
     "windows": {
       "label": "Windows",
-      "version": "0.1.11",
+      "version": "0.1.19",
       "sha256": "4cb4d845ce7f7763eebc9ed92244dfd16f2b4dfa525b1cd6a76c53980630d9ba",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-windows-setup.exe",
       "filename": "NetBridge-windows-setup.exe",
@@ -45,19 +45,17 @@
     },
     "macos": {
       "label": "macOS",
-      "version": "—",
+      "version": "0.1.19",
       "sha256": "",
-      "url": "",
+      "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-macOS.pkg",
       "filename": "NetBridge-macOS.pkg",
       "status": "available",
-      "version": "0.1.19",
-      "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-macOS.pkg",
       "note": "0.1.19：obfs2 隧道重建 + 国内直连分流 + 服务器 IP 排除；Developer ID 签名+公证 pkg。",
       "noteEn": "0.1.19: obfs2 tunnel rebuild + domestic-direct split + server-IP exclusion; Developer ID signed + notarized pkg."
     },
     "android": {
       "label": "Android",
-      "version": "0.1.17",
+      "version": "0.1.19",
       "sha256": "",
       "url": "https://github.com/PHPJourney/netbridge/releases/latest/download/NetBridge-android-arm64.apk",
       "filename": "NetBridge-android-arm64.apk",
